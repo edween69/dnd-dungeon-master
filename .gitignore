@@ -1,41 +1,93 @@
-# Prerequisites
+# ---------- Prerequisites ----------
 *.d
 
-# Compiled Object files
+# ---------- Compiled objects ----------
 *.slo
 *.lo
 *.o
 *.obj
 
-# Precompiled Headers
+# ---------- Precompiled headers ----------
 *.gch
 *.pch
 
-# Linker files
+# ---------- Linker / debug ----------
 *.ilk
-
-# Debugger Files
 *.pdb
+*.dwo
+*.tds
+*.map
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
+# ---------- Libraries ----------
 *.lai
 *.la
 *.a
 *.lib
+*.so
+*.dylib
+*.dll
 
-# Executables
+# ---------- Executables ----------
 *.exe
 *.out
 *.app
 
-# debug information files
-*.dwo
+# ---------- Coverage / profiling ----------
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+
+# ---------- Logs / dumps ----------
+*.log
+core
+*.stackdump
+
+# ---------- CMake (generated) ----------
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+Makefile
+*.ninja
+.build-id/
+Testing/
+_compile_commands.json
+# (Keep compile_commands.json if you use clangd; otherwise ignore)
+compile_commands.json
+
+# ---------- Build folders ----------
+build/
+build-*/
+out/
+out-*/
+bin/
+obj/
+dist/
+Debug/
+Release/
+x64/
+x86/
+
+# ---------- VS Code / IDEs ----------
+.vscode/
+.vscode-test/
+.vs/
+*.code-workspace
+*.sln
+*.vcxproj
+*.vcxproj.filters
+.idea/
+*.iml
+
+# ---------- OS cruft ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ---------- Misc ----------
+*.swp
+*.swo
+*.tmp
