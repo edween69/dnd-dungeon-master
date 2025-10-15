@@ -247,7 +247,7 @@ class Atilla : public PlayerCharacter
             att.constitution = 2;
             att.wisdom = 0;
             att.charisma = 0;
-            def.armor = 3; // Kevlar Vest
+            def.armor = 3; 
             def.armorClass = 10 + def.armor + att.dexterity;
             def.magicResist = 1;
             cbt.meleeDamage = 6; // Feathers of Fury(fists)
