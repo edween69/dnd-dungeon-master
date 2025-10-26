@@ -334,7 +334,7 @@
 *     3. This notice may not be removed or altered from any source distribution.
 *
 **********************************************************************************************/
-
+#include <cmath>
 #ifndef RAYGUI_H
 #define RAYGUI_H
 
@@ -549,9 +549,9 @@ typedef enum {
     BASE_COLOR_DISABLED,        // Control base color in STATE_DISABLED
     TEXT_COLOR_DISABLED,        // Control text color in STATE_DISABLED
     BORDER_WIDTH = 12,          // Control border size, 0 for no border
-    //TEXT_SIZE,                  // Control text size (glyphs max height) -> GLOBAL for all controls
-    //TEXT_SPACING,               // Control text spacing between glyphs -> GLOBAL for all controls
-    //TEXT_LINE_SPACING,          // Control text spacing between lines -> GLOBAL for all controls
+    //TEXT_SIZE=16,                  // Control text size (glyphs max height) -> GLOBAL for all controls
+    //TEXT_SPACING=0,               // Control text spacing between glyphs -> GLOBAL for all controls
+    //TEXT_LINE_SPACING=0,          // Control text spacing between lines -> GLOBAL for all controls
     TEXT_PADDING = 13,          // Control text padding, not considering border
     TEXT_ALIGNMENT = 14,        // Control text horizontal alignment inside control text bound (after border and padding)
     //TEXT_WRAP_MODE              // Control text wrap-mode inside text bounds -> GLOBAL for all controls
