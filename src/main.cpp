@@ -6,7 +6,7 @@
 
 
 #include "raylib.h"
-#include "ScreenManager.h"
+#include "screenManager.h"
 
 int main() {
     InitWindow(1920, 1080, "The Last Lift"); // Windowed mode for development
