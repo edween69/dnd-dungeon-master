@@ -33,16 +33,21 @@ OBJS := $(SRCS:.cpp=.o) # The object files we want to create from the src files 
 
 LDFLAGS :=                 # default linker flags (will be set based on OS later)
 LDLIBS  :=                 # default libraries for linking (this will also be set based on OS later)
+RM :=                      # Command to remove files (OS dependent, will be set later)
 
 # Detecting the OS and setting the appropriate flags and libraries for raylib
 # On Windows, $(OS) is already set to Windows_NT so we don't need to call uname
 ifeq ($(OS),Windows_NT)     # This is for the windows case (OS is a free environment variable in windows)
-	CXXFLAGS += -IC:/msys64/ucrt64/include 
-	LDFLAGS  += -LC:/msys64/ucrt64/lib 
-	LDLIBS   += -lraylib -lopengl32 -lgdi32 -lwinmm
+	CXXFLAGS  += -IC:/msys64/ucrt64/include 
+	LDFLAGS   += -LC:/msys64/ucrt64/lib 
+	LDLIBS    += -lraylib -lopengl32 -lgdi32 -lwinmm
+	RM        := del /Q
+	OBJSCLEAN := $(subst /,\,$(OBJS)) # Apparently windows uses "\" instead of "/" for file paths
 else
 	# Non-Windows (Linux or macOS), here we can safely call uname
 	UNAME_S := $(shell uname -s)  # Detecting the OS (Linux, MacOS (Darwin))
+	RM	   := rm -f 
+	OBJSCLEAN := $(OBJS)
 	ifeq ($(UNAME_S),Darwin)
 		# macOS needs frameworks
 		LDLIBS += -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
@@ -53,20 +58,25 @@ else
 endif
 
 all: $(TARGET) # Default to target(the executable) when "make" command is run
+	
 
 # Link it all toghether and make the executable
 $(TARGET): $(OBJS)#Basically saying that to make the target we need all the object files
 	$(CXX) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
-# Rule for compiling .cpp files to .o files (but inside src/)
+	$(RM) $(OBJSCLEAN) # Cleaning up the object files after they are linked
+	
 
+# Rule for compiling .cpp files to .o files (but inside src/)
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+	
 
 run: $(TARGET) # Run the executable
 	./$(TARGET) # Execute the target file
+	
 
 clean:           # Clean up the build files
-	rm -f $(SRC_DIR)/*.o $(TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all clean run # Phony targets (not files)
 
