@@ -49,7 +49,6 @@ CMakeCache.txt
 cmake_install.cmake
 CTestTestfile.cmake
 install_manifest.txt
-Makefile
 *.ninja
 .build-id/
 Testing/
