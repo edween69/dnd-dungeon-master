@@ -5,7 +5,7 @@
 // main.cpp
 
 
-// #include "raylib.h"
+#include "raylib.h"
 #include "ScreenManager.h"
 
 int main() {
