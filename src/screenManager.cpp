@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include "characters.h"
-// #include "raylib.h"
+#include "raylib.h"
 #include "raygui.h"
 
 //Getting character stats data for display
