@@ -1,7 +1,7 @@
 #ifndef SCREENMANAGER_H
 #define SCREENMANAGER_H
 
-#include "raylib.h"
+// #include "raylib.h"
 #include <cmath>
 
 
