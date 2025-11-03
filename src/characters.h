@@ -12,9 +12,13 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cstring>
 #ifndef CHARACTERS_H
 #define CHARACTERS_H
 
+enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 
 // Structure to hold character attributes
 struct Attributes 
@@ -259,4 +263,66 @@ class Atilla : public PlayerCharacter
 
 };
 
-#endif
+
+std::ifstream* openStartingStatsCSV()
+{
+    std::ifstream* StartingStatFile = new std::ifstream("../dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
+    if (!StartingStatFile->is_open()) 
+    {
+        std::cerr << "Error: Could not open the character starting stats file." << std::endl;
+    }
+
+    return StartingStatFile;
+}
+
+std::istringstream* storeAllStatLines(std::ifstream* StartingStatFile)
+{
+    if (!StartingStatFile) return nullptr;
+    std::string allLines;
+    std::string line;
+    int count = 1;
+
+    while (std::getline(*StartingStatFile, line)) 
+    {
+        if (count != 1) 
+        {
+            allLines += line + "\n";
+        }
+        count++;
+    }
+
+    StartingStatFile->close();
+
+    return new std::istringstream(allLines);
+}
+
+std::string getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat)
+{
+    std::string line;
+    std::string currentID;
+    while (std::getline(*allLines, line)) 
+    {
+        std::istringstream lineStream(line);
+        std::string cell;
+        std::getline(lineStream, cell, ',');
+        currentID = cell;
+
+        if (currentID == characterID) 
+        {
+            int currentStatIndex = 0;
+            while (std::getline(lineStream, cell, ',')) 
+            {
+                currentStatIndex++;
+                if (currentStatIndex == static_cast<int>(stat)) 
+                {
+                    return cell;
+                }
+            }
+        }
+    }
+    return ""; // Return empty string if character ID or stat not found
+}
+
+
+
+#endif // CHARACTERS_H

@@ -3089,6 +3089,7 @@ int GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, in
                     if ((key >= 48) && (key <= 57))
                     {
                         textValue[keyCount] = (char)key;
+                        textValue[keyCount + 1] = '\0';  // Ensure null termination
                         keyCount++;
                         valueHasChanged = true;
                     }
