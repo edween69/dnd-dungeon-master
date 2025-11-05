@@ -1,6 +1,8 @@
 /*
 
- Game Theme: Escape the Stevens campus during a zombie outbreak. Each character will have a different reason  for escaping and unique abilities to help them survive. The zombies were created by the biochem department and are roaming the campus. The goal is to reach the path to NY  while avoiding or defeating zombies.
+ Game Theme: Escape the Stevens campus during a zombie outbreak. Each character will have a different reason 
+ for escaping and unique abilities to help them survive. The zombies were created by the biochem department and 
+ are roaming the campus. The goal is to reach the path to NY  while avoiding or defeating zombies.
  This file contains the implementation of character-related classes and functions.
  It includes definitions for character attributes, behaviors, and interactions.
  Caste:
@@ -10,16 +12,32 @@
     - Atilla: Hopes to save Tillie the dog and make it off campus safely. Melee: Feathers of Fury(fists). Range: Rubber Duckies.
 */
 
+#include <algorithm>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cstring>
+#include <random>
 #ifndef CHARACTERS_H
 #define CHARACTERS_H
 
 enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 
+/*  Mersenne Twister pseudo­random number engine. This part of the code acts similar to srand(), but it should be better memory wise (need to test).
+    Comes from <random>.  */
+std::mt19937& rng();
+/*  example code:
+auto& gen = rng();
+std::uniform_int_distribution<int> d20(1,20);
+value = d20(gen);  
+
+In the main file:
+std::mt19937& rng() {
+    static std::mt19937 gen(std::random_device{}()); // In an effort t// In an effort to limit the number of included libraries, use random_devices instead of time()o limit the number of included libraries, use random_devices instead of time()
+    return gen;
+}  */
+
+// For stats contained in the Character_Starting_Stats.csv file, do not initialize
 // Structure to hold character attributes
 struct Attributes 
 {
@@ -35,7 +53,6 @@ struct Attributes
 struct DefenseStats
 {
     int armor;
-    int armorClass; //armorclass = flat num + &armor + &dexterity
     int magicResist;
 };
 
@@ -47,10 +64,16 @@ struct CombatStats
     int initiative;
 };
 
+// Structure to hold weapon types
+struct Weapons {
+    int meleeWeapon;
+    int rangeWeapon;
+};
+
 // Structure to hold character vital stats
 struct VitalStats {
-    int health = 100;
-    int maxHealth = 100;
+    int health;
+    int maxHealth;
 };
 
 // Structure to hold character status effects
@@ -79,6 +102,7 @@ class Character
         CombatStats cbt;
         VitalStats vit;
         StatusEffects statEff;
+        Weapons wep;
         
         
         // Constructor to initialize all attributes
@@ -105,6 +129,34 @@ class Character
             {
                 vit.health = 0;
             }
+        }
+
+        // @brief: calculates and applies melee damage
+        // @param enemy - target that will take damage
+        void dealMeleeDamage (Character& enemy)
+        {
+            auto& gen = rng();
+            std::uniform_int_distribution<int> d20(1,20), d6(1,6);
+            this->cbt.meleeDamage = std::max(this->att.dexterity,this->att.strength) + this->wep.meleeWeapon;
+            if (enemy.def.armor < d20(gen) + this->cbt.meleeDamage)
+            {
+                enemy.takeDamage(d6(gen) + this->cbt.meleeDamage);
+            }
+            // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
+        }
+
+        // @brief: calculates and applies range damage
+        // @param enemy - target that will take damage
+        void dealRangeDamage (Character& enemy)
+        {
+            auto& gen = rng();
+            std::uniform_int_distribution<int> d20(1,20), d4(1,4);
+            this->cbt.rangeDamage = std::max(this->att.dexterity,this->att.wisdom) + this->wep.rangeWeapon;
+            if (enemy.def.armor < d20(gen) + this->cbt.rangeDamage)
+            {
+                enemy.takeDamage(d4(gen) + this->cbt.rangeDamage);
+            }
+            // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
         // Heal the character and ensure health doesn't exceed maxHealth
@@ -140,7 +192,6 @@ class PlayerCharacter : public Character
 };
 
 
-
 //@author: Edwin Baiden
 //@brief: Derived class representing non-player characters (NPCs), with additional attributes such as NPC type.
 //@version: 1.0
@@ -167,22 +218,9 @@ class Student : public PlayerCharacter
 
         {
             // Default attributes for Student character
-            att.strength = 2;
-            att.intelligence = 1;
-            att.dexterity = 1;
-            att.constitution = 1;
-            att.wisdom = 0;
-            att.charisma = 0;
-            def.armor = 2; // Ruler and Trashcan Lid
-            def.armorClass = 10 + def.armor + att.dexterity;
-            def.magicResist = 1;
-            cbt.meleeDamage = 5; // Ruler and Trashcan Lid
-            cbt.rangeDamage = 3; // Textbooks
-            cbt.initiative = 1;
-            vit = VitalStats();
-            statEff = StatusEffects();
+            wep.meleeWeapon = 2; // ruler
+            wep.rangeWeapon = 2; // textbooks
         };
-
 };
 
 class Rat : public PlayerCharacter 
@@ -193,22 +231,9 @@ class Rat : public PlayerCharacter
 
         {
             // Default attributes for Rat character
-            att.strength = 1;
-            att.intelligence = 1;
-            att.dexterity = 2;
-            att.constitution = 1;
-            att.wisdom = 0;
-            att.charisma = 0;
-            def.armor = 1; // Rat Fur
-            def.armorClass = 10 + def.armor + att.dexterity;
-            def.magicResist = 1;
-            cbt.meleeDamage = 4; // Italian Stiletto & Bite
-            cbt.rangeDamage = 3; // Water Gun filled with Hudson River Water[Deals poison damage]
-            cbt.initiative = 2;
-            vit = VitalStats();
-            statEff = StatusEffects();
+            wep.meleeWeapon = 3; // Italian Stiletto & Bite
+            wep.rangeWeapon = 1; // Water Gun filled with Hudson River Water[Deals poison damage]
         };
-
 };
 
 class Professor : public PlayerCharacter 
@@ -219,22 +244,9 @@ class Professor : public PlayerCharacter
 
         {
             // Default attributes for Professor character
-            att.strength = 1;
-            att.intelligence = 2;
-            att.dexterity = 1;
-            att.constitution = 1;
-            att.wisdom = 1;
-            att.charisma = 0;
-            def.armor = 1; // Lab Coat
-            def.armorClass = 10 + def.armor + att.dexterity;
-            def.magicResist = 2;
-            cbt.meleeDamage = 4; // Taser, Poison Needle
-            cbt.rangeDamage = 5; // fireball spell(molotov cocktail in a handle of fireball), 200 Watt Laser
-            cbt.initiative = 1;
-            vit = VitalStats();
-            statEff = StatusEffects();
+            wep.meleeWeapon = 3; // Taser, Poison Needle
+            wep.rangeWeapon = 4; // fireball spell(molotov cocktail in a handle of fireball), 200 Watt Laser
         };
-
 };
 
 class Atilla : public PlayerCharacter 
@@ -245,84 +257,9 @@ class Atilla : public PlayerCharacter
 
         {
             // Default attributes for Atilla character
-            att.strength = 2;
-            att.intelligence = 1;
-            att.dexterity = 1;
-            att.constitution = 2;
-            att.wisdom = 0;
-            att.charisma = 0;
-            def.armor = 3; 
-            def.armorClass = 10 + def.armor + att.dexterity;
-            def.magicResist = 1;
-            cbt.meleeDamage = 6; // Feathers of Fury(fists)
-            cbt.rangeDamage = 4; // Rubber Duckies
-            cbt.initiative = 1;
-            vit = VitalStats();
-            statEff = StatusEffects();
+            wep.meleeWeapon = 1; // Feathers of Fury(fists)
+            wep.rangeWeapon = 2; // Rubber Duckies
         };
-
 };
-
-
-std::ifstream* openStartingStatsCSV()
-{
-    std::ifstream* StartingStatFile = new std::ifstream("../dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
-    if (!StartingStatFile->is_open()) 
-    {
-        std::cerr << "Error: Could not open the character starting stats file." << std::endl;
-    }
-
-    return StartingStatFile;
-}
-
-std::istringstream* storeAllStatLines(std::ifstream* StartingStatFile)
-{
-    if (!StartingStatFile) return nullptr;
-    std::string allLines;
-    std::string line;
-    int count = 1;
-
-    while (std::getline(*StartingStatFile, line)) 
-    {
-        if (count != 1) 
-        {
-            allLines += line + "\n";
-        }
-        count++;
-    }
-
-    StartingStatFile->close();
-
-    return new std::istringstream(allLines);
-}
-
-std::string getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat)
-{
-    std::string line;
-    std::string currentID;
-    while (std::getline(*allLines, line)) 
-    {
-        std::istringstream lineStream(line);
-        std::string cell;
-        std::getline(lineStream, cell, ',');
-        currentID = cell;
-
-        if (currentID == characterID) 
-        {
-            int currentStatIndex = 0;
-            while (std::getline(lineStream, cell, ',')) 
-            {
-                currentStatIndex++;
-                if (currentStatIndex == static_cast<int>(stat)) 
-                {
-                    return cell;
-                }
-            }
-        }
-    }
-    return ""; // Return empty string if character ID or stat not found
-}
-
-
 
 #endif // CHARACTERS_H
