@@ -262,4 +262,7 @@ class Atilla : public PlayerCharacter
         };
 };
 
+std::ifstream* openStartingStatsCSV();
+std::istringstream* storeAllStatLines(std::ifstream* statsFile);
+
 #endif // CHARACTERS_H
