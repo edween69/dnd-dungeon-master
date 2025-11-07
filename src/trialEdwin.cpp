@@ -3,9 +3,18 @@
 #include <iostream>
 
 using namespace std;
+
+mt19937& rng() 
+{
+    static mt19937 gen(std::random_device{}()); // In an effort to limit the number of included libraries, use random_devices instead of time()
+    return gen;
+}
+
 int main()
 {
     istringstream*  allStatLines = storeAllStatLines(openStartingStatsCSV());
+
+    
 
     Attributes studentAttrs = {
         getStatForCharacterID(allStatLines, "Student", CSVStats::STR),
@@ -51,25 +60,25 @@ int main()
     cout << "\nInitiative: " << Steve.cbt.initiative << endl;
 
     Attributes ZombieAttrs = {
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::STR),
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::DEX),
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::CON),
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::WIS),
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::CHA),
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::INT)
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::STR),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::DEX),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::CON),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::WIS),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::CHA),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::INT)
     };
     DefenseStats ZombieDef = {
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::ARMOR),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::ARMOR),
         0 // Magic resist not used
     };
     CombatStats ZombieCombat = {
         4, // meleeDamage for now not defined in CSV yet
         0, // rangeDamage for now not defined in CSV yet
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::INITIATIVE)
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::INITIATIVE)
     };
     VitalStats ZombieVital = {
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::MAX_HEALTH),
-        getStatForCharacterID(allStatLines, "Zombie", CSVStats::MAX_HEALTH)
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::MAX_HEALTH),
+        getStatForCharacterID(allStatLines, "Zombie_Standard", CSVStats::MAX_HEALTH)
     };
     StatusEffects ZombieStatus = {};
     NonPlayerCharacter Zombie("Zombie",
