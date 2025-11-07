@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include <random>
+#include "raylib.h"
 #ifndef CHARACTERS_H
 #define CHARACTERS_H
 
@@ -44,16 +45,16 @@ struct Attributes
     int strength;
     int dexterity;
     int constitution;
-    int wisdom;
-    int charisma;
-    int intelligence;
+    int wisdom; //not important, no longer DND game
+    int charisma; //not important, no longer DND game
+    int intelligence; //not important, no longer DND game
 };
 
 // Structure to hold character defense stats
 struct DefenseStats
 {
     int armor;
-    int magicResist;
+    int magicResist; //not important, no longer DND game
 };
 
 // Structure to hold character combat stats
@@ -210,7 +211,7 @@ class NonPlayerCharacter : public Character
 };
 
 // Specific player character classes inheriting from PlayerCharacter
-class Student : public PlayerCharacter 
+class Student : public PlayerCharacter
 {
     public:
         Student(const std::string& playerName, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
@@ -264,5 +265,14 @@ class Atilla : public PlayerCharacter
 
 std::ifstream* openStartingStatsCSV();
 std::istringstream* storeAllStatLines(std::ifstream* statsFile);
+int getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);
+
+struct charCard 
+{
+    Rectangle defaultRow;
+    Rectangle currentAnimationPos;
+    Rectangle targetAnimationPos;
+    Texture2D texture;
+};
 
 #endif // CHARACTERS_H

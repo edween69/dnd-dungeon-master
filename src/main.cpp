@@ -7,6 +7,7 @@
 
 #include "raylib.h"
 #include "screenManager.h"
+#include "characters.h"
 
 int main() {
     InitWindow(1920, 1080, "The Last Lift"); // Windowed mode for development
@@ -17,11 +18,12 @@ int main() {
 
     ScreenManager sm;     //Defining screen manager object
     sm.init();      // Initialize screen manager this loads to the main menu
-
+    
     while (!WindowShouldClose()) { 
         sm.update(GetFrameTime());
         sm.render();
     }
+
 
     CloseWindow();
     return 0;

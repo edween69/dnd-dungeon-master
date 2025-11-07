@@ -5,6 +5,32 @@
 #include "raylib.h"
 #include "raygui.h"
 
+//Definining macros for constants to save runtime memory
+#define MAX_CHAR_CARDS      4
+
+#define MAIN_BTN_WIDTH      600.0f
+#define MAIN_BTN_HEIGHT      70.0f
+#define MAIN_BTN_OFFSET_Y   100.0f
+#define MAIN_BTN_SPACING    100.0f
+
+#define CARD_WIDTH          300.0f
+#define CARD_HEIGHT         400.0f
+#define CARD_SPACING         50.0f
+
+#define DOCK_SPACING         90.0f
+#define PLAY_BTN_WIDTH      400.0f
+#define PLAY_BTN_HEIGHT      60.0f
+#define PLAY_BTN_OFFSET_Y    36.0f
+
+// charCard used for character selection cards
+struct charCard
+{
+    Rectangle defaultRow;
+    Rectangle currentAnimationPos;
+    Rectangle targetAnimationPos;
+    Texture2D texture;
+};
+
 //Getting character stats data for display
 std::ifstream* statsFile = openStartingStatsCSV();
 std::istringstream* allStatLines = storeAllStatLines(statsFile);
@@ -74,13 +100,16 @@ void playerSelectStyles()
 
 
 
-// Example screen-local textures (will be replaced by asset table later once the gameplay screen is implemented)
-static Texture2D gMenuBG{};
-static Texture2D gProgramTitle{};
-static Texture2D gSelectBG{};
-static Texture2D gGameplayBG{};
-static Texture2D gPlayer{};
-static Texture2D gEnemy{};
+//Creating dynamic GUI items Textures and Rectangles
+static Texture2D* ScreenTextures = nullptr;
+static int numScreenTextures = 0;
+
+static Rectangle* ScreenRects = nullptr;
+static int numScreenRects = 0;
+
+static charCard* characterCards = nullptr;
+
+
 
 //@brief: Constructor to initialize the ScreenManager with an initial screen state.
 //@version: 1.0
@@ -155,93 +184,45 @@ void ScreenManager::render()
         {
 
             // Draw the main menu background
-            DrawTexture(gMenuBG, 0, 0, WHITE);
+            DrawTexture(ScreenTextures[0], 0, 0, WHITE);
 
             //draw program title in the top center using getScreenWidth and getScreenHeight
-            DrawTexture(gProgramTitle, (GetScreenWidth() - gProgramTitle.width) / 2, -150, WHITE);
+            DrawTexture(ScreenTextures[1], (GetScreenWidth() - ScreenTextures[1].width) / 2, -150, WHITE);
 
             startMenuStyles(); // Apply main menu styles
 
-            // Create a start button in the center of the screen
-            Rectangle startBtn = {(GetScreenWidth() - 600) / 2.0f, (GetScreenHeight() - 70) / 2.0f + 100, 600, 70};
+            if (GuiButton(ScreenRects[0], "Start Game")) changeScreen(ScreenState::CHARACTER_SELECT); // If start button is clicked, go to character select screen
 
-            if (GuiButton(startBtn, "Start Game")) // If start button is clicked
-            {
-                changeScreen(ScreenState::CHARACTER_SELECT);
-            }
-
-            //create an exit button below the start button
-            Rectangle exitBtn = {(GetScreenWidth() - 600) / 2.0f, (GetScreenHeight() - 70) / 2.0f + 200, 600, 70};
-
-            if (GuiButton(exitBtn, "Exit Game")) // If exit button is clicked
-            {
-                CloseWindow(); // Close the window and exit
-            }
-
+            if (GuiButton(ScreenRects[1], "Exit Game")) CloseWindow(); // Close the window and exit
             break;
         }
         case ScreenState::CHARACTER_SELECT:
         {
             // Draw the character selection background
-            DrawTexture(gSelectBG, 0, 0, WHITE);
+            DrawTexture(ScreenTextures[0], 0, 0, WHITE);
             playerSelectStyles(); // Apply character select styles
 
-            float dt = GetFrameTime();
-            float t= 1.0f - expf(-10.0f * dt); //smoothing factor for animations
-            t= animation::easeInQuad(t);
+            float t = animation::easeInQuad(1.0f - expf(-10.0f * GetFrameTime())); // Animation time factor
 
             static int charSelection = -1; // No selection by default
             int charHovered = -1; // No hover by default
 
-            struct charCard 
+            // assign textures to cards (textures are already loaded in enterScreen)
+            for (int i = 0; i < MAX_CHAR_CARDS; ++i)
             {
-                Rectangle defaultRow;
-                Rectangle currentAnimationPos;
-                Rectangle targetAnimationPos;
-                Texture2D texture;
-            };
+                characterCards[i].texture = ScreenTextures[i + 1];
+            }
 
-            static charCard characterCards[4];
-            characterCards[0].texture = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/south.png");
-            characterCards[1].texture = LoadTexture("../assets/images/characters/pc/Rat-Assassin/rotations/south.png");
-            characterCards[2].texture = LoadTexture("../assets/images/characters/pc/Professor-Mage/rotations/south.png");
-            characterCards[3].texture = LoadTexture("../assets/images/characters/pc/Attila-Brawler/rotations/south.png");
-            for (int i = 0; i < 4; ++i) SetTextureFilter(characterCards[i].texture, TEXTURE_FILTER_POINT);
-            
-
-            struct charStatsDisplay
-            {
-                const char* name;
-                const char* health;
-                const char* strength;
-                const char* dexterity;
-                const char* constitution;
-                const char* wisdom;
-                const char* charisma;
-                const char* intelligence;
-            };
-
-            charStatsDisplay characterStats[4] = 
-            {
-                {"Student","","","","","","",""},
-                {"Rat","","","","","","",""},
-                {"Professor","","","","","","",""},
-                {"Atilla","","","","","","",""}
-            };
-
-        static bool layoutInitialized = false;
+            static bool layoutInitialized = false;
             if (!layoutInitialized) 
             {
-                float cardWidth = 300.0f;
-                float cardHeight = 400.0f;
-                float spacing = 50.0f;
-                float startX = (GetScreenWidth() - (4 * cardWidth + 3 * spacing)) / 2.0f;
-                float targetY = (GetScreenHeight() - cardHeight) / 2.0f;
+                float startX = (GetScreenWidth() - (MAX_CHAR_CARDS * CARD_WIDTH + (MAX_CHAR_CARDS - 1) * CARD_SPACING)) / 2.0f;
+                float targetY = (GetScreenHeight() - CARD_HEIGHT) / 2.0f;
 
-                for (int i = 0; i < 4; ++i) 
+                for (int i = 0; i < MAX_CHAR_CARDS; ++i) 
                 {
-                    float targetX = startX + i * (cardWidth + spacing);
-                    characterCards[i].defaultRow = {targetX, targetY, cardWidth, cardHeight};
+                    float targetX = startX + i * (CARD_WIDTH + CARD_SPACING);
+                    characterCards[i].defaultRow = {targetX, targetY, CARD_WIDTH, CARD_HEIGHT};
                     characterCards[i].currentAnimationPos = characterCards[i].defaultRow;
                     characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
                 }
@@ -250,55 +231,49 @@ void ScreenManager::render()
 
             Vector2 mousePoint = GetMousePosition();
 
-            if (charSelection ==-1)
+            if (charSelection == -1)
             {
-                for (int i = 0; i<4; i++)
+                for (int i = 0; i < MAX_CHAR_CARDS; i++)
                 {
                     characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
                 }
-                
-            }else
+            }
+            else
             {
-                float cardWidth = characterCards[charSelection].defaultRow.width;
-                float cardHeight = characterCards[charSelection].defaultRow.height;
-
                 Rectangle centeredCard = 
                 {
-                    (GetScreenWidth() - cardWidth) / 2.0f,
+                    (GetScreenWidth() - CARD_WIDTH) / 2.0f,
                     characterCards[charSelection].defaultRow.y,
-                    cardWidth,
-                    cardHeight
+                    CARD_WIDTH,
+                    CARD_HEIGHT
                 };
                 characterCards[charSelection].targetAnimationPos = centeredCard;
 
-                float dockX = GetScreenWidth() - cardWidth - 40.0f;
-                float dockY = GetScreenHeight() - cardHeight -300.0f;
-                float spacing = 90.0f;
+                float dockX = GetScreenWidth() - CARD_WIDTH - 40.0f;
+                float dockY = GetScreenHeight() - CARD_HEIGHT - 300.0f;
 
                 int dockIndex = 0;
-                for (int i = 0; i < 4; ++i) 
+                for (int i = 0; i < MAX_CHAR_CARDS; ++i) 
                 {
                     if (i != charSelection)
                     {
                         characterCards[i].targetAnimationPos = 
                         {
                             dockX,
-                            dockY + spacing * dockIndex++,
-                            cardWidth,
-                            cardHeight
+                            dockY + DOCK_SPACING * dockIndex++,
+                            CARD_WIDTH,
+                            CARD_HEIGHT
                         };
-                        
                     }
-
                 }
-
-        
             }
 
-            for (int i=0; i<4; i++)
+            // animate & draw cards
+            for (int i = 0; i < MAX_CHAR_CARDS; i++)
             {
                 characterCards[i].currentAnimationPos.x = animation::slopeInt(characterCards[i].currentAnimationPos.x, characterCards[i].targetAnimationPos.x, t);
                 characterCards[i].currentAnimationPos.y = animation::slopeInt(characterCards[i].currentAnimationPos.y, characterCards[i].targetAnimationPos.y, t);
+
                 DrawTexturePro(
                     characterCards[i].texture,
                     {0.0f, 0.0f, (float)characterCards[i].texture.width, (float)characterCards[i].texture.height},
@@ -307,86 +282,80 @@ void ScreenManager::render()
                     0.0f,
                     WHITE
                 );
-                SetTextureFilter(characterCards[i].texture, TEXTURE_FILTER_POINT);
 
                 DrawRectangleLinesEx(characterCards[i].currentAnimationPos, 4.0f, Color{0,68,0,255});
 
                 if (CheckCollisionPointRec(mousePoint, characterCards[i].currentAnimationPos)) charHovered = i;
 
-                if (GuiButton(characterCards[i].currentAnimationPos, characterStats[i].name))
+                if (GuiButton(characterCards[i].currentAnimationPos, ""))
                 {
-                    if (charSelection == i)
-                    {
-                        charSelection = -1;
-                    }
-                    else
-                    {
-                        charSelection = i;
-                    }
+                    if (charSelection == i) charSelection = -1;
+                    else charSelection = i;
                 }
 
-                if(charSelection == i)
+                if (charSelection == i)
                 {
-                    Rectangle r1 = {characterCards[i].currentAnimationPos.x - 6, characterCards[i].currentAnimationPos.y -6 , characterCards[i].currentAnimationPos.width + 12, characterCards[i].currentAnimationPos.height + 12};
-                    Rectangle r2 = {characterCards[i].currentAnimationPos.x - 12, characterCards[i].currentAnimationPos.y - 12, characterCards[i].currentAnimationPos.width + 24, characterCards[i].currentAnimationPos.height + 24};
+                    Rectangle r1 = {
+                        characterCards[i].currentAnimationPos.x - 6,
+                        characterCards[i].currentAnimationPos.y - 6,
+                        characterCards[i].currentAnimationPos.width + 12,
+                        characterCards[i].currentAnimationPos.height + 12
+                    };
+                    Rectangle r2 = {
+                        characterCards[i].currentAnimationPos.x - 12,
+                        characterCards[i].currentAnimationPos.y - 12,
+                        characterCards[i].currentAnimationPos.width + 24,
+                        characterCards[i].currentAnimationPos.height + 24
+                    };
 
                     DrawRectangleLinesEx(r1, 4, YELLOW);
                     DrawRectangleLinesEx(r2, 2, YELLOW);
-                    
                 }
-                   
             }
 
+            // ScreenRects[1] = stats box rect (updated dynamically)
             if (charHovered != -1 && charHovered != charSelection)
             {
-                const charStatsDisplay& stats = characterStats[charHovered];
                 Rectangle cRect = characterCards[charHovered].currentAnimationPos;
 
-                bool placeRight = (cRect.x + cRect.width +260) < (GetScreenWidth());
-                Rectangle statsBox = 
-                {
-                    placeRight ? (cRect.x + cRect.width + 5) : (cRect.x - 5 - 260),
-                    cRect.y-250.0f,
+                bool placeRight = (cRect.x + CARD_WIDTH + 260.0f) < GetScreenWidth();
+                ScreenRects[1] = {
+                    placeRight ? (cRect.x + CARD_WIDTH + 5.0f) : (cRect.x - 5.0f - 260.0f),
+                    cRect.y - 250.0f,
                     260.0f,
                     240.0f
                 };
 
-                DrawRectangleRec(statsBox, Color{0,40,0,200});
-                DrawRectangleLinesEx(statsBox, 3.0f , Color{40,255,80,255});
+                DrawRectangleRec(ScreenRects[1], Color{0,40,0,200});
+                DrawRectangleLinesEx(ScreenRects[1], 3.0f , Color{40,255,80,255});
 
-                float textX = statsBox.x + 10.0f;
-                float textY = statsBox.y + 10.0f;
-                DrawText (stats.name, textX, textY, 20, WHITE);
-                DrawText (stats.health, textX, textY + 25.0f, 16, WHITE);
-                DrawText (stats.strength, textX, textY + 50.0f, 16, WHITE);
-                DrawText (stats.dexterity, textX, textY + 75.0f, 16, WHITE);
-                DrawText (stats.constitution, textX, textY + 100.0f, 16, WHITE);
-                DrawText (stats.wisdom, textX, textY + 125.0f, 16, WHITE);
-                DrawText (stats.charisma, textX, textY + 150.0f, 16, WHITE);
-                DrawText (stats.intelligence, textX, textY + 175.0f, 16, WHITE);
-
+                // you can add DrawText() calls here later using stats from allStatLines if you want
             }
 
-            Rectangle playBtn = {(GetScreenWidth() - 400) / 2.0f, characterCards[charSelection == -1 ? 0 : charSelection].currentAnimationPos.y + characterCards[0].currentAnimationPos.height + 36.0f, 400, 60};
+            // ScreenRects[0] = Play button (depends on selected or default card)
+            {
+                int baseIndex = (charSelection == -1) ? 0 : charSelection;
+                Rectangle baseCard = characterCards[baseIndex].currentAnimationPos;
+
+                ScreenRects[0] = {
+                    (GetScreenWidth() - PLAY_BTN_WIDTH) / 2.0f,
+                    baseCard.y + baseCard.height + PLAY_BTN_OFFSET_Y,
+                    PLAY_BTN_WIDTH,
+                    PLAY_BTN_HEIGHT
+                };
+            }
 
             int prevState = GuiGetState();
             if (charSelection == -1) GuiDisable();
-            if (GuiButton(playBtn, "Play Game") && charSelection != -1)
+            if (GuiButton(ScreenRects[0], "Play Game") && charSelection != -1)
             {
                 changeScreen(ScreenState::GAMEPLAY);
             }
-
             GuiSetState(prevState);
-
-            
 
             break;
         }
         case ScreenState::GAMEPLAY:
-            DrawTexture(gGameplayBG, 0, 0, WHITE);
-            // draw player/enemy at positions
-            DrawTexture(gPlayer,  200, 300, WHITE);
-            DrawTexture(gEnemy,   500, 300, WHITE);
             break;
         case ScreenState::SAVE_QUIT:
             // simple overlay/text
@@ -399,12 +368,41 @@ void ScreenManager::render()
 void ScreenManager::enterScreen(ScreenState s) {
     switch (s) {
         case ScreenState::MAIN_MENU:
-            gMenuBG = LoadTexture("../assets/images/UI/startMenuBg.png");
-            gProgramTitle = LoadTexture("../assets/images/UI/gameTitle.png");
+            numScreenTextures = 2;
+            ScreenTextures = new Texture2D[numScreenTextures];
+            ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png"); // Main menu background
+            ScreenTextures[1] = LoadTexture("../assets/images/UI/programTitle.png"); // Program title
+
+            numScreenRects = 2;
+            ScreenRects = new Rectangle[numScreenRects];
+            ScreenRects[0] = {(GetScreenWidth() - MAIN_BTN_WIDTH) / 2.0f, (GetScreenHeight() - MAIN_BTN_HEIGHT) / 2.0f + MAIN_BTN_OFFSET_Y, MAIN_BTN_WIDTH, MAIN_BTN_HEIGHT}; // Start Game button
+            ScreenRects[1] = {(GetScreenWidth() - MAIN_BTN_WIDTH) / 2.0f, (GetScreenHeight() - MAIN_BTN_HEIGHT) / 2.0f + MAIN_BTN_OFFSET_Y + MAIN_BTN_SPACING, MAIN_BTN_WIDTH, MAIN_BTN_HEIGHT}; // Exit Game button
             break;
+
         case ScreenState::CHARACTER_SELECT:
-            gSelectBG = LoadTexture("../assets/images/UI/startMenuBg.png");
+            characterCards = new charCard[MAX_CHAR_CARDS];
+            
+            numScreenTextures = 5;
+            ScreenTextures = new Texture2D[numScreenTextures];
+            ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png");// Character select background
+            ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/south.png"); // Student Fighter
+            ScreenTextures[2] = LoadTexture("../assets/images/characters/pc/Rat-Assassin/rotations/south.png"); // Rat Assassin
+            ScreenTextures[3] = LoadTexture("../assets/images/characters/pc/Professor-Mage/rotations/south.png"); // Professor Mage
+            ScreenTextures[4] = LoadTexture("../assets/images/characters/pc/Attila-Brawler/rotations/south.png"); // Attila Brawler
+
+            // set filtering once here instead of every frame
+            for (int i = 1; i < numScreenTextures; ++i)
+            {
+                SetTextureFilter(ScreenTextures[i], TEXTURE_FILTER_POINT);
+            }
+
+            // Rects: [0] = Play button (set in render), [1] = stats box (set in render)
+            numScreenRects = 2;
+            ScreenRects = new Rectangle[numScreenRects];
+            ScreenRects[0] = {0,0,0,0};
+            ScreenRects[1] = {0,0,0,0};
             break;
+
         case ScreenState::GAMEPLAY:
             // In your version, these paths come from asset tables by id
             //gGameplayBG = LoadTexture("assets/scenes/EnvironButtons.png");
@@ -417,20 +415,38 @@ void ScreenManager::enterScreen(ScreenState s) {
     }
 }
 
-void ScreenManager::exitScreen(ScreenState s) {
-    switch (s) {
+void ScreenManager::exitScreen(ScreenState s) 
+{
+    switch (s) 
+    {
         case ScreenState::MAIN_MENU:
-            if (gMenuBG.id) UnloadTexture(gMenuBG), gMenuBG = {};
-            break;
         case ScreenState::CHARACTER_SELECT:
-            if (gSelectBG.id) UnloadTexture(gSelectBG), gSelectBG = {};
-            break;
         case ScreenState::GAMEPLAY:
-            if (gGameplayBG.id) UnloadTexture(gGameplayBG), gGameplayBG = {};
-            if (gPlayer.id)     UnloadTexture(gPlayer),     gPlayer = {};
-            if (gEnemy.id)      UnloadTexture(gEnemy),      gEnemy = {};
-            break;
         case ScreenState::SAVE_QUIT:
+        {
+            for (int i = 0; i < numScreenTextures; ++i)
+            {
+                UnloadTexture(ScreenTextures[i]);
+                ScreenTextures[i] = {};
+            }
+            delete[] ScreenTextures;
+            ScreenTextures = nullptr;
+            numScreenTextures = 0;
+
+            for (int i = 0; i < numScreenRects; ++i)
+            {
+                ScreenRects[i] = {};
+            }
+            delete[] ScreenRects;
+            ScreenRects = nullptr;
+            numScreenRects = 0;
+
+            if (characterCards)
+            {
+                delete[] characterCards;
+                characterCards = nullptr;
+            }
             break;
+        }
     }
 }

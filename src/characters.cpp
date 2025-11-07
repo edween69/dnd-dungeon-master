@@ -2,10 +2,12 @@
 */
 
 #include "characters.h"
+#include <fstream>
+#include <sstream>
 
 std::ifstream* openStartingStatsCSV()
 {
-    std::ifstream* StartingStatFile = new std::ifstream("../dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
+    std::ifstream* StartingStatFile = new std::ifstream("dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
     if (!StartingStatFile->is_open()) 
     {
         std::cerr << "Error: Could not open the character starting stats file." << std::endl;
@@ -63,5 +65,5 @@ int getStatForCharacterID(std::istringstream* allLines, std::string characterID,
             }
         }
     }
-    return NULL; // Return empty string if character ID or stat not found
+    return -1; // Return -1 if character ID or stat not found
 }
