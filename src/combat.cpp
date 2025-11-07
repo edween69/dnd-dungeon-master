@@ -99,12 +99,16 @@ Action player_choose()
 {
     while (true) 
     {
-        std::cout << "\nChoose action: \n[1] Attack  \n[2] Defend \n[3] Use Ranged Attack \n[4] Use Item ";
+         std::cout << "\nChoose action:\n"
+                     "1) Attack\n"
+                     "2) Defend\n"
+                     "3) Use Item (N/A)\n"
+                     "4) Ranged (N/A)\n> ";
+
         std::string in;
         std::getline(std::cin, in);
+        if (in.empty()) continue;
         
-        if (in == "2") 
-        std::cout << "Invalid choice.\n";
         switch (in[0])
         {
         case '1':
@@ -114,13 +118,16 @@ Action player_choose()
             return {ActionType::Defend, -1, "Defend"};
             break;
         case '3':
+            cout << "Range not implemented yet";
             return {ActionType::UseRange, -1, "useRange"};
         case '4':
+            cout << "Inventory not implemented yet";
             return {ActionType::UseItem, -1, "useItem"}; //Need to create inventory
         //case '5':
             //return {ActionType::Flee, -1, "Flee"};
         
         default:
+            cout << "Invalid Choice";
             break;
         }
     }
