@@ -8,9 +8,10 @@
 #include <limits>    
 #include <ctime>
 #include <algorithm>
+#include <characters.h>
 
 using namespace std;
-
+//steve.vit.health 
 struct RNG
 {
     RNG() 
@@ -30,43 +31,53 @@ struct RNG
         return range(1, 100) <= percent;
     }
 } rng;
-
+//remove actor
 // Actor struct for player and zombie
 struct Actor 
 {
     string name;
     int maxHP, hp, attack, defense;
     bool defending = false;
-    bool isAlive() const {return hp > 0;}
+    bool isAlive() const {return hp > 0;} //reference characters.h
 
 };
-
+//keep
 //Enumerated action types
 enum class ActionType { Attack, Defend, UseRange, UseItem, Flee, None };
 
 struct Action
 {
     ActionType type = ActionType::None;
-    int ItemNum = -1;
+    int ItemNum = -1;//however many the player has
     string description;
 
 };
 
-static int clampi(int v, int lo, int hi)
+static int clampi(int v, int lo, int hi) //remove
 { 
     return max(lo, min(v, hi)); 
 }
 
 int calc_damage(const Actor& attacker, const Actor& defender) 
 {
-    int guard = defender.defending + (defender.defending ? defender.defending/2 + 3 : 0);
+    if(ActionType::type == Attack);
+    {
+        player.dealMeleeDamage(&Zombie)
+    }
+
+    else
+    {
+        player.dealRangedDamage(&Zombie)
+    }
+    
+    /*int guard = defender.defending + (defender.defending ? defender.defending/2 + 3 : 0);
     int base = attacker.attack - guard;
     // small random spread
     base += rng.range(-2, 2);
     base = max(1, base); //Always deals at least 1 damage
-    return base;
+    return base;*/
 }
-
+//deal melee damage
 // Applying attack stats
 void apply_attack(Actor& attacker, Actor& defender, std::stringstream& log) 
 {
@@ -76,14 +87,14 @@ void apply_attack(Actor& attacker, Actor& defender, std::stringstream& log)
         << " damage! " << defender.name << " HP: "
         << defender.hp << "/" << defender.maxHP << "\n";
 }
-
+//character.h
 //Applying defense stats
 void apply_defend(Actor& a, std::stringstream& log) 
 {
     a.defending = true;
     log << a.name << " is defending.\n";
 }
-
+//keep
 // AI engine
 Action ai_choose(const Actor& self, const Actor& foe) 
 {
@@ -93,20 +104,20 @@ Action ai_choose(const Actor& self, const Actor& foe)
     else
         return {ActionType::Attack, -1, "Attack"};
 }
-
+//keep
 //Edit player selection, WIP; will use switch later
 Action player_choose() 
 {
     while (true) 
     {
-         std::cout << "\nChoose action:\n"
+         cout << "\nChoose action:\n"
                      "1) Attack\n"
                      "2) Defend\n"
-                     "3) Use Item (N/A)\n"
-                     "4) Ranged (N/A)\n> ";
+                     "3) Use Range\n"
+                     "4) Use Item\n> ";
 
-        std::string in;
-        std::getline(std::cin, in);
+        string in;
+        getline(cin, in);
         if (in.empty()) continue;
         
         switch (in[0])
@@ -136,10 +147,12 @@ Action player_choose()
 // Game state machine
 void runCombat() 
 {
-    
+    //hp = character.vit.health() 
+    //  maxhp = character.vit.maxHealth()
+    // attack = character.
     //string name; int maxHP, hp, attack, defense;
     Actor player{"You", 40, 40, 10, 5}; //We need to send these values as parameters later
-    Actor zombie{"Zombie", 34, 34, 9, 4};
+    Actor zombie{"Zombie", 34, 34, 9, 4}; 
 
     bool playerTurn = true;
     Action currentAction;
@@ -192,11 +205,13 @@ void runCombat()
 
         //Check for End
         if (!player.isAlive()) {
-            cout << "\n>>> You were defeated...\n"; //Need to add end screen
+            cout << "\n>>> You were defeated...\n"; 
+            //Need to add end screen flag
             break;
         }
         if (!zombie.isAlive()) {
-            cout << "\n>>> Victory! The " << zombie.name << " is destroyed.\n"; //return to normal screen
+            cout << "\n>>> Victory! The " << zombie.name << " is destroyed.\n"; 
+            //return to normal screen flag
             break;
         }
 
