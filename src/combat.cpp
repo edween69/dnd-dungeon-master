@@ -42,7 +42,7 @@ struct Actor
 };
 
 //Enumerated action types
-enum class ActionType { Attack, Defend, UseRange, UseItem, None };
+enum class ActionType { Attack, Defend, UseRange, UseItem, Flee, None };
 
 struct Action
 {
@@ -97,13 +97,32 @@ Action ai_choose(const Actor& self, const Actor& foe)
 //Edit player selection, WIP; will use switch later
 Action player_choose() 
 {
-    while (true) {
-        std::cout << "\nChoose action: [1] Attack  [2] Defend\n> ";
+    while (true) 
+    {
+        std::cout << "\nChoose action: \n[1] Attack  \n[2] Defend \n[3] Use Ranged Attack \n[4] Use Item ";
         std::string in;
         std::getline(std::cin, in);
-        if (in == "1") return {ActionType::Attack, -1, "Attack"};
-        if (in == "2") return {ActionType::Defend, -1, "Defend"};
+        
+        if (in == "2") 
         std::cout << "Invalid choice.\n";
+        switch (in[0])
+        {
+        case '1':
+            return {ActionType::Attack, -1, "Attack"};
+            break;
+        case '2':
+            return {ActionType::Defend, -1, "Defend"};
+            break;
+        case '3':
+            return {ActionType::UseRange, -1, "useRange"};
+        case '4':
+            return {ActionType::UseItem, -1, "useItem"}; //Need to create inventory
+        //case '5':
+            //return {ActionType::Flee, -1, "Flee"};
+        
+        default:
+            break;
+        }
     }
 }
 
@@ -119,17 +138,17 @@ void runCombat()
     Action currentAction;
     stringstream combatLog;
 
-    cout << "== Turn-Based Combat Demo (rand() version) ==\n";
+    cout << "== Turn-Based Combat Demo  ==\n";
     cout << player.name << " vs. " << zombie.name << "\n";
 
     auto print_status = [&]() 
     {
-        std::cout << "\n--------------------------------\n";
-        std::cout << player.name << " HP " << player.hp << "/" << player.maxHP
+        cout << "\n--------------------------------\n";
+        cout << player.name << " HP " << player.hp << "/" << player.maxHP
                   << (player.defending ? " [DEFENDING]" : "") << "\n";
-        std::cout << zombie.name << " HP " << zombie.hp << "/" << zombie.maxHP
+        cout << zombie.name << " HP " << zombie.hp << "/" << zombie.maxHP
                   << (zombie.defending ? " [DEFENDING]" : "") << "\n";
-        std::cout << "--------------------------------\n";
+        cout << "--------------------------------\n";
     };
 
     print_status();
@@ -146,10 +165,10 @@ void runCombat()
             currentAction = player_choose();
         else {
             currentAction = ai_choose(zombie, player);
-            std::cout << zombie.name << " chose: " << currentAction.description << "\n";
+            cout << zombie.name << " chose: " << currentAction.description << "\n";
         }
 
-        // ---- Resolve ----
+        //Resolve turn
         if (playerTurn) {
             if (currentAction.type == ActionType::Attack)
                 apply_attack(player, zombie, combatLog);
@@ -164,21 +183,21 @@ void runCombat()
 
         std::cout << combatLog.str();
 
-        // ---- Check for End ----
+        //Check for End
         if (!player.isAlive()) {
-            std::cout << "\n>>> You were defeated...\n";
+            cout << "\n>>> You were defeated...\n"; //Need to add end screen
             break;
         }
         if (!zombie.isAlive()) {
-            std::cout << "\n>>> Victory! The " << zombie.name << " is destroyed.\n";
+            cout << "\n>>> Victory! The " << zombie.name << " is destroyed.\n"; //return to normal screen
             break;
         }
 
-        // ---- End Turn ----
+        //End Turn
         playerTurn = !playerTurn;
         print_status();
     }
 
-    std::cout << "\nThanks for playing!\n";
+    cout << "\nThanks for playing\n";
     
 }
