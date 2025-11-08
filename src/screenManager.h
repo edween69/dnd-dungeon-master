@@ -12,6 +12,11 @@
 //@version: 1.0
 enum class ScreenState {MAIN_MENU, CHARACTER_SELECT, GAMEPLAY, SAVE_QUIT};
 
+//author: Edwin Baiden
+//@brief: Enum representing different game states (exploration, combat, dialogue, pause menu).
+//@version: 1.0
+enum class GameState { EXPLORATION, COMBAT, DIALOGUE, PAUSE_MENU };
+
 //@author: Edwin Baiden
 //@brief: Class to manage screen states and transitions
 //@version: 1.0
@@ -34,6 +39,23 @@ class ScreenManager
         void render(); // Render the current screen
         //void closeWindow(); // Close the window and clean up resources
 };
+
+//@author: Edwin Baiden
+//@brief: Class to manage game states and transitions
+
+class GameManager
+{
+    private:
+        GameState currentGameState; // Current active game state
+
+    public:
+        explicit GameManager(GameState initial = GameState::EXPLORATION); // Constructor with default initial game state
+        ~GameManager(); // Destructor
+        void changeGameState(GameState newState); // Change the current game state
+        [[nodiscard]] GameState getCurrentGameState() const; // Get the current game state
+}
+
+
 
 namespace animation {
 
