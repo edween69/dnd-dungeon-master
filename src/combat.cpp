@@ -45,8 +45,10 @@ void apply_defend(Character& a, std::stringstream& log)
 // AI engine
 Action ai_choose(const Character& self, const Character& foe) 
 {
+    auto& gen = rng();
+    std::uniform_int_distribution<int> perc(1,100);
     //Edit ai actions 25% chance do nothing
-    if (AIrng.chance(25))
+    if (perc(gen) <= 25)
         return {ActionType::None, -1, "Did Nothing"};
     else
         return {ActionType::Attack, -1, "Attack"};
@@ -58,10 +60,11 @@ Action player_choose()
     while (true) 
     {
          cout << "\nChoose action:\n"
-                     "1) Attack\n"
-                     "2) Defend\n"
-                     "3) Use Range\n"
-                     "4) Use Item\n> ";
+                     "1) Melee Attack\n"
+                     "2) Range Attack\n"
+                     "3) Defend\n"
+                     "4) Use Range\n"
+                     "5) Use Item\n> ";
 
         string in;
         getline(cin, in);
@@ -98,8 +101,14 @@ void runCombat()
     //  maxhp = character.vit.maxHealth()
     // attack = character.
     //string name; int maxHP, hp, attack, defense;
-    Character player{"You", 40, 40, 10, 5}; //We need to send these values as parameters later
-    Character zombie{"Zombie", 34, 34, 9, 4}; 
+    Attributes att{5,5,5,1,1,1};
+    DefenseStats def{5,0};
+    CombatStats cbt{2,1,10};
+    VitalStats vit{40,40};
+    StatusEffects statEff{}; // default
+
+    PlayerCharacter player("You", "Student", att, def, cbt, vit, statEff);
+    NonPlayerCharacter zombie("Zombie", att, def, cbt, vit, statEff);
 
     bool playerTurn = true;
     Action currentAction;
