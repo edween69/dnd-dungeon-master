@@ -7,7 +7,7 @@ void run_combat();
 
 //keep
 //Enumerated action types
-enum class ActionType { Attack, Defend, UseRange, UseRange, UseItem, Flee, None };
+enum class ActionType { Attack, Defend, UseMelee, UseRange, UseItem, Flee, None };
 
 //remove actor
 // Actor struct for player and zombie

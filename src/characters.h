@@ -146,6 +146,18 @@ class Character
             // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
+        void startDefense() 
+        {
+            statEff.defending = true;
+            this->def.armor += 5;
+        }
+
+        void endDefense() 
+        {
+            if(statEff.defending) { this->def.armor -+ 5; }
+            statEff.defending = false;
+        }
+
         // Heal the character and ensure health doesn't exceed maxHealth
         //@brief: Increases the character's health by the specified amount, up to their maximum health.
         //@param amount - The amount of health to restore.
