@@ -66,5 +66,5 @@ int getStatForCharacterID(std::istringstream* allLines, std::string characterID,
             }
         }
     }
-    return INT_MIN; // Return INT_MIN if character ID or stat not found
+    return -1024; // Return -1024 if character ID or stat not found
 }
