@@ -1,14 +1,5 @@
 /*WIP combat state machine*/
-#include <iostream>  
-#include <cstdlib>   
-#include <string>        
-#include <sstream>       
-#include <random>        
-#include <algorithm>     
-#include <limits>    
-#include <ctime>
-#include <algorithm>
-#include "characters.h"
+#include "combat.h"
 
 using namespace std;
 //steve.vit.health 

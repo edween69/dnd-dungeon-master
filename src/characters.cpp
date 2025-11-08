@@ -2,8 +2,6 @@
 */
 
 #include "characters.h"
-#include <fstream>
-#include <sstream>
 
 std::ifstream* openStartingStatsCSV()
 {

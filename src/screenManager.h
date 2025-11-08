@@ -1,9 +1,11 @@
-#ifndef SCREENMANAGER_H
-#define SCREENMANAGER_H
-
 #include "raylib.h"
 #include <cmath>
-
+#include <fstream>
+#include <sstream>
+#include "characters.h"
+#include "raygui.h"
+#ifndef SCREENMANAGER_H
+#define SCREENMANAGER_H
 
 
 
@@ -53,7 +55,7 @@ class GameManager
         ~GameManager(); // Destructor
         void changeGameState(GameState newState); // Change the current game state
         [[nodiscard]] GameState getCurrentGameState() const; // Get the current game state
-}
+};
 
 
 
