@@ -171,6 +171,7 @@ class Character
                 vit.health = vit.maxHealth;
             }
         }
+        virtual const std::string& getName() const = 0;
 };
 
 
@@ -183,6 +184,7 @@ class PlayerCharacter : public Character
     public:
         std::string name;
         std::string characterClass; // e.g., Student, Rat, Professor, Atilla
+        const std::string& getName() const override { return name; }
 
         // Constructor to initialize player character attributes
         PlayerCharacter(const std::string& playerName, const std::string& charClass, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
@@ -201,7 +203,7 @@ class NonPlayerCharacter : public Character
     // NPC-specific attributes
     public:
         std::string npcType; // e.g., Zombie, Civilian, Security
-
+        const std::string& getName() const override { return npcType; }
         // Constructor to initialize NPC attributes
         NonPlayerCharacter(const std::string& type, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
             : Character(false, attributes, defense, combat, vital, statusEffects), npcType(type) {}

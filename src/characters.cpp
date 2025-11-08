@@ -7,7 +7,8 @@
 
 std::ifstream* openStartingStatsCSV()
 {
-    std::ifstream* StartingStatFile = new std::ifstream("dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
+    std::ifstream* StartingStatFile = new std::ifstream("../dat/Character_Starting_Stats.csv");
+    //std::ifstream* StartingStatFile = new std::ifstream("dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
     if (!StartingStatFile->is_open()) 
     {
         std::cerr << "Error: Could not open the character starting stats file." << std::endl;
