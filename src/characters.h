@@ -12,12 +12,11 @@
     - Atilla: Hopes to save Tillie the dog and make it off campus safely. Melee: Feathers of Fury(fists). Range: Rubber Duckies.
 */
 
-#include <algorithm>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <random>
+#include "rng.h"
 #include "raylib.h"
 #ifndef CHARACTERS_H
 #define CHARACTERS_H
@@ -34,7 +33,7 @@ value = d20(gen);
 
 In the main file:
 std::mt19937& rng() {
-    static std::mt19937 gen(std::random_device{}()); // In an effort t// In an effort to limit the number of included libraries, use random_devices instead of time()o limit the number of included libraries, use random_devices instead of time()
+    static std::mt19937 gen(std::random_device{}()); // In an effort to limit the number of included libraries, use random_devices instead of time()
     return gen;
 }  */
 

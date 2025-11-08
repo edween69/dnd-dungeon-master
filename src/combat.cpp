@@ -2,47 +2,6 @@
 #include "combat.h"
 
 using namespace std;
-//steve.vit.health 
-struct RNG
-{
-    RNG() 
-    {
-        // Seed the random number generator once when RNG is created
-        srand(static_cast<unsigned>(std::time(0)));
-    }
-    // Edit after finding the real stats
-    // Generate a random integer between a and b 
-    int range(int a, int b) 
-    {
-        return a + rand() % (b - a + 1);
-    }
-    //For determining AI actions
-    bool chance(int percent) 
-    {
-        return range(1, 100) <= percent;
-    }
-} rng;
-//remove actor
-// Actor struct for player and zombie
-struct Actor 
-{
-    string name;
-    int maxHP, hp, attack, defense;
-    bool defending = false;
-    bool isAlive() const {return hp > 0;} //reference characters.h
-
-};
-//keep
-//Enumerated action types
-enum class ActionType { Attack, Defend, UseRange, UseItem, Flee, None };
-
-struct Action
-{
-    ActionType type = ActionType::None;
-    int ItemNum = -1;//however many the player has
-    string description;
-
-};
 
 static int clampi(int v, int lo, int hi) //remove
 { 
@@ -51,14 +10,13 @@ static int clampi(int v, int lo, int hi) //remove
 
 int calc_damage(const Actor& attacker, const Actor& defender) 
 {
-    if(ActionType::type == Attack);
+    if (ActionType::type == Attack)
     {
-        player.dealMeleeDamage(&Zombie)
+        player.dealMeleeDamage(Zombie);
     }
-
     else
     {
-        player.dealRangedDamage(&Zombie)
+        player.dealRangedDamage(Zombie);
     }
     
     /*int guard = defender.defending + (defender.defending ? defender.defending/2 + 3 : 0);
@@ -68,6 +26,7 @@ int calc_damage(const Actor& attacker, const Actor& defender)
     base = max(1, base); //Always deals at least 1 damage
     return base;*/
 }
+
 //deal melee damage
 // Applying attack stats
 void apply_attack(Actor& attacker, Actor& defender, std::stringstream& log) 
@@ -90,7 +49,7 @@ void apply_defend(Actor& a, std::stringstream& log)
 Action ai_choose(const Actor& self, const Actor& foe) 
 {
     //Edit ai actions 25% chance do nothing
-    if (rng.chance(25))
+    if (AIrng.chance(25))
         return {ActionType::None, -1, "Did Nothing"};
     else
         return {ActionType::Attack, -1, "Attack"};
