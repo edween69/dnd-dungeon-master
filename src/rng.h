@@ -26,6 +26,8 @@ struct AIRNG
         std::uniform_int_distribution<int> perc(1,100);
         return perc(gen) <= percent;
     }
-} AIrng;
+};
+
+inline AIRNG AIrng;
 
 #endif

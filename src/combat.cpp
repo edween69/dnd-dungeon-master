@@ -37,7 +37,7 @@ void apply_ranged(Character& attacker, Character& defender, std::stringstream& l
 //Applying defense stats
 void apply_defend(Character& a, std::stringstream& log) 
 {
-    a.defending = true;
+    a.statEff.defending = true;
     log << a.getName() << " is defending.\n";
 }
 
@@ -106,14 +106,14 @@ void runCombat()
     stringstream combatLog;
 
     cout << "== Turn-Based Combat Demo  ==\n";
-    cout << player.name << " vs. " << zombie.name << "\n";
+    cout << player.getName() << " vs. " << zombie.getName() << "\n";
 
     auto print_status = [&]() 
     {
         cout << "\n--------------------------------\n";
-        cout << player.getName() << " HP " << player.hp << "/" << player.maxHP
+        cout << player.getName() << " HP " << player.vit.health << "/" << player.vit.maxHealth
                   << (player.statEff.defending ? " [DEFENDING]" : "") << "\n";
-        cout << zombie.getName() << " HP " << zombie.hp << "/" << zombie.maxHP
+        cout << zombie.getName() << " HP " << zombie.vit.health << "/" << zombie.vit.maxHealth
                   << (zombie.statEff.defending ? " [DEFENDING]" : "") << "\n";
         cout << "--------------------------------\n";
     };
@@ -132,7 +132,7 @@ void runCombat()
             currentAction = player_choose();
         else {
             currentAction = ai_choose(zombie, player);
-            cout << zombie.name << " chose: " << currentAction.description << "\n";
+            cout << zombie.getName() << " chose: " << currentAction.description << "\n";
         }
 
         //Resolve turn

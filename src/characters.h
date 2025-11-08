@@ -23,20 +23,6 @@
 
 enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 
-/*  Mersenne Twister pseudo­random number engine. This part of the code acts similar to srand(), but it should be better memory wise (need to test).
-    Comes from <random>.  */
-std::mt19937& rng();
-/*  example code:
-auto& gen = rng();
-std::uniform_int_distribution<int> d20(1,20);
-value = d20(gen);  
-
-In the main file:
-std::mt19937& rng() {
-    static std::mt19937 gen(std::random_device{}()); // In an effort to limit the number of included libraries, use random_devices instead of time()
-    return gen;
-}  */
-
 // For stats contained in the Character_Starting_Stats.csv file, do not initialize
 // Structure to hold character attributes
 struct Attributes 

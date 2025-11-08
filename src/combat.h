@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include "characters.h"
-#include "rng.h"
 #ifndef COMBAT_H
 #define COMBAT_H
 
