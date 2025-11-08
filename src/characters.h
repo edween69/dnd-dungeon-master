@@ -86,6 +86,7 @@ struct StatusEffects
     bool isRegenerating = false;
     bool isSlowed = false;
     bool isFast = false;
+    bool defending = false;
 };
 
 

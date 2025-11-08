@@ -8,45 +8,42 @@ static int clampi(int v, int lo, int hi) //remove
     return max(lo, min(v, hi)); 
 }
 
-int calc_damage(const Actor& attacker, const Actor& defender) 
-{
-    if (ActionType::type == Attack)
-    {
-        player.dealMeleeDamage(Zombie);
-    }
-    else
-    {
-        player.dealRangedDamage(Zombie);
-    }
-    
-    /*int guard = defender.defending + (defender.defending ? defender.defending/2 + 3 : 0);
-    int base = attacker.attack - guard;
-    // small random spread
-    base += rng.range(-2, 2);
-    base = max(1, base); //Always deals at least 1 damage
-    return base;*/
-}
-
 //deal melee damage
 // Applying attack stats
-void apply_attack(Actor& attacker, Actor& defender, std::stringstream& log) 
+void apply_attack(Character& attacker, Character& defender, std::stringstream& log) 
 {
-    int dmg = calc_damage(attacker, defender);
-    defender.hp = clampi(defender.hp - dmg, 0, defender.maxHP);
-    log << attacker.name << " attacks for " << dmg
-        << " damage! " << defender.name << " HP: "
-        << defender.hp << "/" << defender.maxHP << "\n";
+    int before = defender.vit.health; // read current HP from Character
+    // Use Character's methods to apply the attack
+    attacker.dealMeleeDamage(defender); // this calls defender.takeDamage(...)
+    int after = defender.vit.health;
+    int dmg = before - after;
+    log << attacker.getName() << " attacks for " << dmg
+        << " damage! " << defender.getName() << " HP: "
+        << defender.vit.health << "/" << defender.vit.maxHealth << "\n";
 }
+
+void apply_ranged(Character& attacker, Character& defender, std::stringstream& log)
+{
+    int before = defender.vit.health;
+    attacker.dealRangeDamage(defender);
+    int after = defender.vit.health;
+    int dmg = before - after;
+    log << attacker.getName() << " fires for " << dmg
+        << " damage! " << defender.getName() << " HP: "
+        << defender.vit.health << "/" << defender.vit.maxHealth << "\n";
+}
+
 //character.h
 //Applying defense stats
-void apply_defend(Actor& a, std::stringstream& log) 
+void apply_defend(Character& a, std::stringstream& log) 
 {
     a.defending = true;
-    log << a.name << " is defending.\n";
+    log << a.getName() << " is defending.\n";
 }
+
 //keep
 // AI engine
-Action ai_choose(const Actor& self, const Actor& foe) 
+Action ai_choose(const Character& self, const Character& foe) 
 {
     //Edit ai actions 25% chance do nothing
     if (AIrng.chance(25))
@@ -101,8 +98,8 @@ void runCombat()
     //  maxhp = character.vit.maxHealth()
     // attack = character.
     //string name; int maxHP, hp, attack, defense;
-    Actor player{"You", 40, 40, 10, 5}; //We need to send these values as parameters later
-    Actor zombie{"Zombie", 34, 34, 9, 4}; 
+    Character player{"You", 40, 40, 10, 5}; //We need to send these values as parameters later
+    Character zombie{"Zombie", 34, 34, 9, 4}; 
 
     bool playerTurn = true;
     Action currentAction;
@@ -114,10 +111,10 @@ void runCombat()
     auto print_status = [&]() 
     {
         cout << "\n--------------------------------\n";
-        cout << player.name << " HP " << player.hp << "/" << player.maxHP
-                  << (player.defending ? " [DEFENDING]" : "") << "\n";
-        cout << zombie.name << " HP " << zombie.hp << "/" << zombie.maxHP
-                  << (zombie.defending ? " [DEFENDING]" : "") << "\n";
+        cout << player.getName() << " HP " << player.hp << "/" << player.maxHP
+                  << (player.statEff.defending ? " [DEFENDING]" : "") << "\n";
+        cout << zombie.getName() << " HP " << zombie.hp << "/" << zombie.maxHP
+                  << (zombie.statEff.defending ? " [DEFENDING]" : "") << "\n";
         cout << "--------------------------------\n";
     };
 
@@ -127,8 +124,8 @@ void runCombat()
         combatLog.str(""); combatLog.clear();
 
         // Reset defending each new turn
-        if (playerTurn) player.defending = false;
-        else zombie.defending = false;
+        if (playerTurn) player.statEff.defending = false;
+        else zombie.statEff.defending = false;
 
         // ---- Choose Action ----
         if (playerTurn)
@@ -160,7 +157,7 @@ void runCombat()
             break;
         }
         if (!zombie.isAlive()) {
-            cout << "\n>>> Victory! The " << zombie.name << " is destroyed.\n"; 
+            cout << "\n>>> Victory! The " << zombie.getName() << " is destroyed.\n"; 
             //return to normal screen flag
             break;
         }
