@@ -154,7 +154,7 @@ class Character
 
         void endDefense() 
         {
-            if(statEff.defending) { this->def.armor -+ 5; }
+            if(statEff.defending) { this->def.armor -= 5; }
             statEff.defending = false;
         }
 
@@ -266,7 +266,7 @@ class Atilla : public PlayerCharacter
 class Zombie : public NonPlayerCharacter
 {
     public:
-        Zombie(const std::string& zombieName, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
+        Zombie(Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
             : NonPlayerCharacter("Zombie", attributes, defense, combat, vital, statusEffects)
         {
             wep.meleeWeapon = 3;
