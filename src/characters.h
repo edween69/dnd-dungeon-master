@@ -263,6 +263,18 @@ class Atilla : public PlayerCharacter
         };
 };
 
+class Zombie : public NonPlayerCharacter
+{
+    public:
+        Zombie(const std::string& zombieName, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
+            : NonPlayerCharacter("Zombie", attributes, defense, combat, vital, statusEffects)
+        {
+            wep.meleeWeapon = 3;
+            wep.rangeWeapon = 2; //default
+        }
+
+};
+
 std::ifstream* openStartingStatsCSV();
 std::istringstream* storeAllStatLines(std::ifstream* statsFile);
 int getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);

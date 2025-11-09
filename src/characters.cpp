@@ -1,4 +1,6 @@
 /*  File hold functions related to character creation and status.
+
+    ***Add unique points -From Andrew - To Andrew
 */
 
 #include "characters.h"
