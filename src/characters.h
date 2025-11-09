@@ -25,6 +25,7 @@ enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 
 // For stats contained in the Character_Starting_Stats.csv file, do not initialize
 // Structure to hold character attributes
+// TODO - a lot of these can be optimized by using smaller int sizes, have to look at what works best
 struct Attributes 
 {
     int strength;
@@ -118,6 +119,7 @@ class Character
             }
         }
 
+        // @Author: Andrew
         // @brief: calculates and applies melee damage
         // @param enemy - target that will take damage
         void dealMeleeDamage (Character& enemy)
@@ -132,6 +134,7 @@ class Character
             // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
+        // @Author: Andrew
         // @brief: calculates and applies range damage
         // @param enemy - target that will take damage
         void dealRangeDamage (Character& enemy)
@@ -146,12 +149,16 @@ class Character
             // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
+        // @Author: Andrew
+        // @brief: adds defense bonus
         void startDefense() 
         {
             statEff.defending = true;
             this->def.armor += 5;
         }
 
+        // @Author: Andrew
+        // @brief: removes defense bonus
         void endDefense() 
         {
             if(statEff.defending) { this->def.armor -= 5; }
@@ -263,6 +270,7 @@ class Atilla : public PlayerCharacter
         };
 };
 
+// Class for default zombie type
 class Zombie : public NonPlayerCharacter
 {
     public:
@@ -270,9 +278,8 @@ class Zombie : public NonPlayerCharacter
             : NonPlayerCharacter("Zombie", attributes, defense, combat, vital, statusEffects)
         {
             wep.meleeWeapon = 3;
-            wep.rangeWeapon = 2; //default
-        }
-
+            wep.rangeWeapon = 2; // default value, may not be used
+        };
 };
 
 std::ifstream* openStartingStatsCSV();
