@@ -1,4 +1,6 @@
 /*WIP combat state machine*/
+
+/* NOTE: COMBAT IS NOT IMPLEMENTED HERE YET, TO TEST COMBAT SEE trialSebastian.cpp
 #include "combat.h"
 
 using namespace std;
@@ -248,3 +250,4 @@ void runCombat(Student& stnt,NonPlayerCharacter& zombie)
     cout << "\nThanks for playing\n";
     
 }
+*/
