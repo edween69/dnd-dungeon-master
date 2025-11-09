@@ -1,4 +1,6 @@
-// File that will control random utility based functions
+/*  Author: Andrew
+    File that will control random utility based stucts and declarations. (some stuff was removed)
+*/
 #include <limits>
 #include <random>
 #include <algorithm>

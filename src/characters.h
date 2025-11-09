@@ -119,7 +119,7 @@ class Character
             }
         }
 
-        // @Author: Andrew
+        // @author: Andrew
         // @brief: calculates and applies melee damage
         // @param enemy - target that will take damage
         void dealMeleeDamage (Character& enemy)
@@ -134,7 +134,7 @@ class Character
             // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
-        // @Author: Andrew
+        // @author: Andrew
         // @brief: calculates and applies range damage
         // @param enemy - target that will take damage
         void dealRangeDamage (Character& enemy)
@@ -149,7 +149,7 @@ class Character
             // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
-        // @Author: Andrew
+        // @author: Andrew
         // @brief: adds defense bonus
         void startDefense() 
         {
@@ -157,7 +157,7 @@ class Character
             this->def.armor += 5;
         }
 
-        // @Author: Andrew
+        // @author: Andrew
         // @brief: removes defense bonus
         void endDefense() 
         {
