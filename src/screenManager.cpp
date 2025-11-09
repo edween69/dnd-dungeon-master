@@ -81,188 +81,279 @@
 
 
 */
+/*  =================================== screenManager.cpp ====================================
+    Project: TTRPG Game ??? Idk what this game is anymore lol
+    Subsystem: Screen Manager
+    Primary Author: Edwin Baiden
+*/
+
 #include "screenManager.h"
 
-// Definining macros for constants to save runtime memory
-#define MAX_CHAR_CARDS 4
+//--------------------------------------------------------------------------------------
+// Basic macros / constants
+//--------------------------------------------------------------------------------------
 
-#define MAIN_BTN_WIDTH 600.0f
-#define MAIN_BTN_HEIGHT 70.0f
-#define MAIN_BTN_OFFSET_Y 100.0f
-#define MAIN_BTN_SPACING 100.0f
+#define SCREEN_W            (GetScreenWidth())
+#define SCREEN_H            (GetScreenHeight())
 
-#define CARD_WIDTH 300.0f
-#define CARD_HEIGHT 400.0f
-#define CARD_SPACING 50.0f
+// Character select
+#define MAX_CHAR_CARDS      4
+#define MAIN_BTN_WIDTH      600.0f
+#define MAIN_BTN_HEIGHT     70.0f
+#define MAIN_BTN_OFFSET_Y   100.0f
+#define MAIN_BTN_SPACING    100.0f
 
-#define DOCK_SPACING 90.0f
-#define PLAY_BTN_WIDTH 400.0f
-#define PLAY_BTN_HEIGHT 60.0f
-#define PLAY_BTN_OFFSET_Y 36.0f
+#define CARD_WIDTH          300.0f
+#define CARD_HEIGHT         400.0f
+#define CARD_SPACING        50.0f
+#define DOCK_SPACING        90.0f
+
+#define PLAY_BTN_WIDTH      400.0f
+#define PLAY_BTN_HEIGHT     60.0f
+#define PLAY_BTN_OFFSET_Y   36.0f
+
+// Combat UI: rectangle indices
+#define R_PLAYER_NAME       0
+#define R_ENEMY_NAME        1
+#define R_PLAYER_PANEL      2
+#define R_ENEMY_PANEL       3
+#define R_PLAYER_HP_BG      4
+#define R_PLAYER_HP_FG      5
+#define R_ENEMY_HP_BG       6
+#define R_ENEMY_HP_FG       7
+#define R_PLAYER_STATUS     8
+#define R_ENEMY_STATUS      9
+#define R_BOTTOM_PANEL      10
+#define R_BTN_ATTACK        11
+#define R_BTN_DEFEND        12
+#define R_BTN_USE_ITEM      13
+#define R_LOG_BOX           14
+
+// Text sizes
+#define FONT_SIZE_NAME      30
+#define FONT_SIZE_HP        20
+#define FONT_SIZE_BTN       30
+
+// Centered text helpers (no extra variables)
+#define CENTER_TEXT_X(rect, txt, size) \
+    (int)((rect).x + (rect).width / 2.0f - MeasureText((txt), (size)) / 2.0f)
+
+#define CENTER_TEXT_Y(rect, size) \
+    (int)((rect).y + (rect).height / 2.0f - (size) / 2.0f)
+
+// Health bar width helper
+#define HEALTH_BAR_WIDTH(rectBg, cur, max) \
+    ((float)(rectBg).width * ((float)(cur) / (float)(max)))
+
+#ifndef CLITERAL
+    #define CLITERAL(type) (type)
+#endif
+
+// Combat UI colors
+#define COL_NAME_BAR        CLITERAL(Color){  8,  8, 12, 255}
+#define COL_BOTTOM_PANEL    CLITERAL(Color){112,120,128,255}
+#define COL_STATUS_PANEL    CLITERAL(Color){ 55, 61, 57, 220}
+#define COL_STATUS_INNER    CLITERAL(Color){ 91, 94, 92, 255}
+#define COL_LOG_BOX         CLITERAL(Color){167,171,170,255}
+#define COL_BUTTON          CLITERAL(Color){ 68, 74, 72, 255}
+#define COL_HP_BG           CLITERAL(Color){ 60, 15, 20, 255}
+#define COL_HP_FG           CLITERAL(Color){190, 50, 60, 255}
+
+//--------------------------------------------------------------------------------------
+// Global / static state
+//--------------------------------------------------------------------------------------
 
 std::istringstream *allStatLines = nullptr;
 
-// Creating dynamic GUI items Textures and Rectangles
 static Texture2D *ScreenTextures = nullptr;
-static int numScreenTextures = 0;
+static int        numScreenTextures = 0;
 
 static Rectangle *ScreenRects = nullptr;
-static int numScreenRects = 0;
+static int        numScreenRects = 0;
 
 static charCard *characterCards = nullptr;
+static int       counter = 1;
 
 // extra state for character select (dynamic int array)
 // [0] = selection index (-1 = none)
-// [1] = hovered index   (-1 = none)  (used in render)
+// [1] = hovered index   (-1 = none)
 // [2] = layoutInitFlag  (0 = false, 1 = true)
 static int *CharSelectionStuff = nullptr;
 
-//@brief: Sets default GUI styles for buttons and text (will be used for resetting styles, if needed).
-//@version: 1.0
-//@author: Edwin Baiden
+static Student           *Steve  = nullptr;
+static NonPlayerCharacter*Zombie = nullptr;
+
+static GameManager *gameManager = nullptr;
+
+//--------------------------------------------------------------------------------------
+// GUI style helpers
+//--------------------------------------------------------------------------------------
+
 void defaultStyles()
 {
-    GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL, 0x828282FF);  // default gray border in hex
-    GuiSetStyle(BUTTON, BORDER_COLOR_FOCUSED, 0xB6B6B6FF); // lighter gray border in hex
-    GuiSetStyle(BUTTON, BORDER_COLOR_PRESSED, 0xDADADAFF); // lightest gray border in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, 0xE0E0E0FF);    // light gray in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, 0xC4C4C4FF);   // medium gray in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_PRESSED, 0xA8A8A8FF);   // darker gray in hex
-    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, 0x000000FF);    // black text
-    GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, 0x000000FF);   // black text
-    GuiSetStyle(BUTTON, TEXT_COLOR_PRESSED, 0x000000FF);   // black text
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);                   // default text size
+    GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL, 0x828282FF);
+    GuiSetStyle(BUTTON, BORDER_COLOR_FOCUSED, 0xB6B6B6FF);
+    GuiSetStyle(BUTTON, BORDER_COLOR_PRESSED, 0xDADADAFF);
+    GuiSetStyle(BUTTON, BASE_COLOR_NORMAL,   0xE0E0E0FF);
+    GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED,  0xC4C4C4FF);
+    GuiSetStyle(BUTTON, BASE_COLOR_PRESSED,  0xA8A8A8FF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL,   0x000000FF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED,  0x000000FF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_PRESSED,  0x000000FF);
+    GuiSetStyle(DEFAULT, TEXT_SIZE,          20);
 }
 
-//@brief: Sets GUI styles for the main menu screen (customizes button appearance and text size).
-//@version: 1.0//@author: Edwin Baiden
 void startMenuStyles()
 {
-    // Set button styles for the main menu
-    GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL, 0x646464FF);  // dark gray border in hex
-    GuiSetStyle(BUTTON, BORDER_COLOR_FOCUSED, 0x969696FF); // medium gray border in hex
-    GuiSetStyle(BUTTON, BORDER_COLOR_PRESSED, 0xC8C8C8FF); // light gray border in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, 0x000000B4);    // semi-transparent black in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, 0x323232C8);   // darker gray in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_PRESSED, 0x646464DC);   // lighter gray in hex
-    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, 0xFFFFFFFF);
-    GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, 0xFFFFFFFF);
-    GuiSetStyle(BUTTON, TEXT_COLOR_PRESSED, 0xFFFFFFFF);
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 56); // larger text size
+    GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL,  0x646464FF);
+    GuiSetStyle(BUTTON, BORDER_COLOR_FOCUSED, 0x969696FF);
+    GuiSetStyle(BUTTON, BORDER_COLOR_PRESSED, 0xC8C8C8FF);
+    GuiSetStyle(BUTTON, BASE_COLOR_NORMAL,    0x000000B4);
+    GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED,   0x323232C8);
+    GuiSetStyle(BUTTON, BASE_COLOR_PRESSED,   0x646464DC);
+    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL,    0xFFFFFFFF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED,   0xFFFFFFFF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_PRESSED,   0xFFFFFFFF);
+    GuiSetStyle(DEFAULT, TEXT_SIZE,           56);
 }
 
-//@brief: Sets GUI styles for the character selection screen (customizes button appearance and text size).
-//@version: 1.0//@author: Edwin Baiden
 void playerSelectStyles()
 {
-    // Set button styles for the character select screen
-    GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL, 0x006600FF);  // dark green border in hex
-    GuiSetStyle(BUTTON, BORDER_COLOR_FOCUSED, 0x008800FF); // medium green border in hex
-    GuiSetStyle(BUTTON, BORDER_COLOR_PRESSED, 0x00CC00FF); // light green border in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_NORMAL, 0x00000000);    // very transparent so the texture shows through
-    GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED, 0x003300C8);   // somewhat transparent green to indicate focus
-    GuiSetStyle(BUTTON, BASE_COLOR_PRESSED, 0x006600DC);   // more opaque green to indicate pressed
-    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL, 0xFFFFFFFF);
-    GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED, 0xFFFFFFFF);
-    GuiSetStyle(BUTTON, TEXT_COLOR_PRESSED, 0xFFFFFFFF);
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 36); // medium text size
-    // beveled rectangle style for character portraits
-    GuiSetStyle(BUTTON, BORDER_WIDTH, 6); // thicker border
+    GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL,    0x006600FF);
+    GuiSetStyle(BUTTON, BORDER_COLOR_FOCUSED,   0x008800FF);
+    GuiSetStyle(BUTTON, BORDER_COLOR_PRESSED,   0x00CC00FF);
+    GuiSetStyle(BUTTON, BASE_COLOR_NORMAL,      0x00000000);
+    GuiSetStyle(BUTTON, BASE_COLOR_FOCUSED,     0x003300C8);
+    GuiSetStyle(BUTTON, BASE_COLOR_PRESSED,     0x006600DC);
+    GuiSetStyle(BUTTON, TEXT_COLOR_NORMAL,      0xFFFFFFFF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_FOCUSED,     0xFFFFFFFF);
+    GuiSetStyle(BUTTON, TEXT_COLOR_PRESSED,     0xFFFFFFFF);
+    GuiSetStyle(DEFAULT, TEXT_SIZE,             36);
+    GuiSetStyle(BUTTON, BORDER_WIDTH,           6);
 
-    // Clear “disabled” look defined once (used by Play button when locked)
-    GuiSetStyle(BUTTON, BORDER_COLOR_DISABLED, 0x555555FF); // gray border in hex
-    GuiSetStyle(BUTTON, BASE_COLOR_DISABLED, 0x222222B4);   // dark semi-transparent gray in hex
-    GuiSetStyle(BUTTON, TEXT_COLOR_DISABLED, 0x888888FF);   // light gray text
+    GuiSetStyle(BUTTON, BORDER_COLOR_DISABLED,  0x555555FF);
+    GuiSetStyle(BUTTON, BASE_COLOR_DISABLED,    0x222222B4);
+    GuiSetStyle(BUTTON, TEXT_COLOR_DISABLED,    0x888888FF);
 }
 
-//@brief: Constructor to initialize the ScreenManager with an initial screen state.
-//@version: 1.0//@author: Edwin Baiden
-ScreenManager::ScreenManager(ScreenState initial)
-    : currentScreen(initial) {}
+//--------------------------------------------------------------------------------------
+// Character creation helper (CSV -> objects)
+//--------------------------------------------------------------------------------------
 
-//@brief: Destructor to clean up resources when the ScreenManager is destroyed.
-//@version: 1.0//@author: Edwin Baiden
+void CreateCharacter(std::string ID)
+{
+    Attributes     CharAttrs;
+    DefenseStats   CharDef;
+    CombatStats    CharCbt;
+    VitalStats     CharVit;
+    StatusEffects  CharStatus;
+
+    CharAttrs = {
+        getStatForCharacterID(allStatLines, ID, CSVStats::STR),
+        getStatForCharacterID(allStatLines, ID, CSVStats::DEX),
+        getStatForCharacterID(allStatLines, ID, CSVStats::CON),
+        getStatForCharacterID(allStatLines, ID, CSVStats::WIS),
+        getStatForCharacterID(allStatLines, ID, CSVStats::CHA),
+        getStatForCharacterID(allStatLines, ID, CSVStats::INT)
+    };
+
+    CharDef = {
+        getStatForCharacterID(allStatLines, ID, CSVStats::ARMOR),
+        0 // magic resist unused
+    };
+
+    CharCbt = {
+        5,
+        3,
+        getStatForCharacterID(allStatLines, ID, CSVStats::INITIATIVE)
+    };
+
+    CharVit = {
+        getStatForCharacterID(allStatLines, ID, CSVStats::MAX_HEALTH),
+        getStatForCharacterID(allStatLines, ID, CSVStats::MAX_HEALTH)
+    };
+
+    CharStatus = {};
+
+    if (ID == "Student")
+    {
+        Steve = new Student("Steve", CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    }
+    else if (ID == "Zombie_Standard")
+    {
+        Zombie = new NonPlayerCharacter("Chad", CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    }
+}
+
+//--------------------------------------------------------------------------------------
+// ScreenManager
+//--------------------------------------------------------------------------------------
+
+ScreenManager::ScreenManager(ScreenState initial) : currentScreen(initial) {}
+
 ScreenManager::~ScreenManager()
 {
-    // Ensure current screen is cleaned up
     exitScreen(currentScreen);
 }
 
-//@brief: Initializes the ScreenManager by loading resources for the initial screen (The Start Menu Screen).
-//@version: 1.0//@author: Edwin Baiden
 void ScreenManager::init()
 {
-    // Load the initial screen resources
     enterScreen(currentScreen);
 }
 
-//@brief: Changes the current screen to a new screen state, handling resource cleanup and loading.
-//@version: 1.0//@author: Edwin Baiden
 void ScreenManager::changeScreen(ScreenState newScreen)
 {
-    if (newScreen == currentScreen)
-        return;
+    if (newScreen == currentScreen) return;
     exitScreen(currentScreen);
     currentScreen = newScreen;
     enterScreen(currentScreen);
 }
 
-//@brief: Retrieves the current screen state.
-//@version: 1.0//@author: Edwin Baiden
 ScreenState ScreenManager::getCurrentScreen() const
 {
     return currentScreen;
 }
 
-//@brief: Updates the current screen based on the elapsed time (delta time), not used currently. All done in render().
-/*@version: 1.0
-  @author: Edwin Baiden*/
 void ScreenManager::update(float dt)
 {
     switch (currentScreen)
     {
     case ScreenState::MAIN_MENU:
-        // handle menu input (e.g., raygui buttons) if needed
         break;
 
     case ScreenState::CHARACTER_SELECT:
     {
-        if (!characterCards || !CharSelectionStuff)
-            break;
+        if (!characterCards || !CharSelectionStuff) break;
 
-        // animation + layout logic
-        float t = animation::easeInQuad(1.0f - expf(-10.0f * dt)); // Animation time factor
+        float t = animation::easeInQuad(1.0f - expf(-10.0f * dt));
 
-        // assign textures to cards (textures are already loaded in enterScreen)
         for (int i = 0; i < MAX_CHAR_CARDS; ++i)
         {
             characterCards[i].texture = ScreenTextures[i + 1];
         }
 
-        // layout init flag = CharSelectionStuff[2] (0 or 1)
         if (!CharSelectionStuff[2])
         {
-            float startX = (GetScreenWidth() - (MAX_CHAR_CARDS * CARD_WIDTH + (MAX_CHAR_CARDS - 1) * CARD_SPACING)) / 2.0f;
-            float targetY = (GetScreenHeight() - CARD_HEIGHT) / 2.0f;
+            float startX = (SCREEN_W - (MAX_CHAR_CARDS * CARD_WIDTH +
+                             (MAX_CHAR_CARDS - 1) * CARD_SPACING)) / 2.0f;
+            float targetY = (SCREEN_H - CARD_HEIGHT) / 2.0f;
 
             for (int i = 0; i < MAX_CHAR_CARDS; ++i)
             {
                 float targetX = startX + i * (CARD_WIDTH + CARD_SPACING);
-                characterCards[i].defaultRow.x = targetX;
-                characterCards[i].defaultRow.y = targetY;
-                characterCards[i].defaultRow.width = CARD_WIDTH;
+                characterCards[i].defaultRow.x      = targetX;
+                characterCards[i].defaultRow.y      = targetY;
+                characterCards[i].defaultRow.width  = CARD_WIDTH;
                 characterCards[i].defaultRow.height = CARD_HEIGHT;
 
                 characterCards[i].currentAnimationPos = characterCards[i].defaultRow;
-                characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
+                characterCards[i].targetAnimationPos  = characterCards[i].defaultRow;
             }
-            CharSelectionStuff[2] = 1; // layout initialized
+            CharSelectionStuff[2] = 1;
         }
 
-        // selection index is CharSelectionStuff[0]
         if (CharSelectionStuff[0] == -1)
         {
-            // no selection: all cards go back to default row
             for (int i = 0; i < MAX_CHAR_CARDS; i++)
             {
                 characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
@@ -270,29 +361,27 @@ void ScreenManager::update(float dt)
         }
         else
         {
-            // selected card centers, others dock
-            characterCards[CharSelectionStuff[0]].targetAnimationPos.x = (GetScreenWidth() - CARD_WIDTH) / 2.0f;
-            characterCards[CharSelectionStuff[0]].targetAnimationPos.y = characterCards[CharSelectionStuff[0]].defaultRow.y;
-            characterCards[CharSelectionStuff[0]].targetAnimationPos.width = CARD_WIDTH;
+            characterCards[CharSelectionStuff[0]].targetAnimationPos.x      = (SCREEN_W - CARD_WIDTH) / 2.0f;
+            characterCards[CharSelectionStuff[0]].targetAnimationPos.y      = characterCards[CharSelectionStuff[0]].defaultRow.y;
+            characterCards[CharSelectionStuff[0]].targetAnimationPos.width  = CARD_WIDTH;
             characterCards[CharSelectionStuff[0]].targetAnimationPos.height = CARD_HEIGHT;
 
-            float dockX = GetScreenWidth() - CARD_WIDTH - 40.0f;
-            float dockY = GetScreenHeight() - CARD_HEIGHT - 300.0f;
+            float dockX = SCREEN_W - CARD_WIDTH - 40.0f;
+            float dockY = SCREEN_H - CARD_HEIGHT - 300.0f;
 
             int dockIndex = 0;
             for (int i = 0; i < MAX_CHAR_CARDS; ++i)
             {
                 if (i != CharSelectionStuff[0])
                 {
-                    characterCards[i].targetAnimationPos.x = dockX;
-                    characterCards[i].targetAnimationPos.y = dockY + DOCK_SPACING * dockIndex++;
-                    characterCards[i].targetAnimationPos.width = CARD_WIDTH;
+                    characterCards[i].targetAnimationPos.x      = dockX;
+                    characterCards[i].targetAnimationPos.y      = dockY + DOCK_SPACING * dockIndex++;
+                    characterCards[i].targetAnimationPos.width  = CARD_WIDTH;
                     characterCards[i].targetAnimationPos.height = CARD_HEIGHT;
                 }
             }
         }
 
-        // animate cards towards their targets
         for (int i = 0; i < MAX_CHAR_CARDS; i++)
         {
             characterCards[i].currentAnimationPos.x =
@@ -303,18 +392,10 @@ void ScreenManager::update(float dt)
                                     characterCards[i].targetAnimationPos.y, t);
         }
 
-        // ScreenRects layout for this screen:
-        // [0] = Play button (set here)
-        // [1] = Stats box (set in render, when we know which card is hovered)
-        // [2] = Selection outline r1
-        // [3] = Selection outline r2
-
-        // Play button rect based on selected or default card
-        ScreenRects[0].x = (GetScreenWidth() - PLAY_BTN_WIDTH) / 2.0f;
-        ScreenRects[0].width = PLAY_BTN_WIDTH;
+        ScreenRects[0].x      = (SCREEN_W - PLAY_BTN_WIDTH) / 2.0f;
+        ScreenRects[0].width  = PLAY_BTN_WIDTH;
         ScreenRects[0].height = PLAY_BTN_HEIGHT;
 
-        // y uses selected card if any, otherwise card 0
         if (CharSelectionStuff[0] == -1)
         {
             ScreenRects[0].y = characterCards[0].currentAnimationPos.y +
@@ -332,166 +413,180 @@ void ScreenManager::update(float dt)
     }
 
     case ScreenState::GAMEPLAY:
-        // movement, circle hotspots, etc.
         break;
+
     case ScreenState::SAVE_QUIT:
-        // confirm/save flow
         break;
     }
 }
 
-//@brief: Renders the current screen based on the active screen state.
-//@version: 1.0//@author: Edwin Baiden
 void ScreenManager::render()
 {
-    BeginDrawing();         // Start the drawing phase
-    ClearBackground(BLACK); // Clear the background to black
+    BeginDrawing();
+    ClearBackground(BLACK);
 
     switch (currentScreen)
     {
+    //--------------------------------------------------------------------------
+    // MAIN MENU
+    //--------------------------------------------------------------------------
     case ScreenState::MAIN_MENU:
     {
-
-        // Draw the main menu background
         DrawTexture(ScreenTextures[0], 0, 0, WHITE);
+        DrawTexture(ScreenTextures[1],
+                    (SCREEN_W - ScreenTextures[1].width) / 2,
+                    -150,
+                    WHITE);
 
-        // draw program title in the top center using getScreenWidth and getScreenHeight
-        DrawTexture(ScreenTextures[1], (GetScreenWidth() - ScreenTextures[1].width) / 2, -150, WHITE);
-
-        startMenuStyles(); // Apply main menu styles
+        startMenuStyles();
 
         if (GuiButton(ScreenRects[0], "Start Game"))
-            changeScreen(ScreenState::CHARACTER_SELECT); // If start button is clicked, go to character select screen
+            changeScreen(ScreenState::CHARACTER_SELECT);
 
         if (GuiButton(ScreenRects[1], "Exit Game"))
-            CloseWindow(); // Close the window and exit
+            CloseWindow();
         break;
     }
+
+    //--------------------------------------------------------------------------
+    // CHARACTER SELECT
+    //--------------------------------------------------------------------------
     case ScreenState::CHARACTER_SELECT:
     {
-        // Draw the character selection background
         DrawTexture(ScreenTextures[0], 0, 0, WHITE);
-        playerSelectStyles(); // Apply character select styles
+        playerSelectStyles();
 
-        // hovered index lives in CharSelectionStuff[1]
         CharSelectionStuff[1] = -1;
 
-        // draw cards (positions already updated in update())
         for (int i = 0; i < MAX_CHAR_CARDS; i++)
         {
             DrawTexturePro(
                 characterCards[i].texture,
-                {0.0f, 0.0f, (float)characterCards[i].texture.width, (float)characterCards[i].texture.height},
+                {0.0f, 0.0f,
+                 (float)characterCards[i].texture.width,
+                 (float)characterCards[i].texture.height},
                 characterCards[i].currentAnimationPos,
                 {0.0f, 0.0f},
                 0.0f,
                 WHITE);
 
-            DrawRectangleLinesEx(characterCards[i].currentAnimationPos, 4.0f, Color{0, 68, 0, 255});
+            DrawRectangleLinesEx(characterCards[i].currentAnimationPos, 4.0f,(Color){0, 68, 0, 255});
 
-            if (CheckCollisionPointRec(GetMousePosition(), characterCards[i].currentAnimationPos))
-                CharSelectionStuff[1] = i;
+            if (CheckCollisionPointRec(GetMousePosition(),characterCards[i].currentAnimationPos)) CharSelectionStuff[1] = i;
 
-            if (GuiButton(characterCards[i].currentAnimationPos, ""))
+            if (i==0 && GuiButton(characterCards[i].currentAnimationPos, ""))
             {
-                if (CharSelectionStuff[0] == i)
-                    CharSelectionStuff[0] = -1;
-                else
-                    CharSelectionStuff[0] = i;
+                if (CharSelectionStuff[0] == i) CharSelectionStuff[0] = -1;
+                else CharSelectionStuff[0] = i;
             }
 
             if (CharSelectionStuff[0] == i)
             {
-                // selection outline r1 -> ScreenRects[2]
-                ScreenRects[2].x = characterCards[i].currentAnimationPos.x - 6.0f;
-                ScreenRects[2].y = characterCards[i].currentAnimationPos.y - 6.0f;
-                ScreenRects[2].width = characterCards[i].currentAnimationPos.width + 12.0f;
+                ScreenRects[2].x      = characterCards[i].currentAnimationPos.x - 6.0f;
+                ScreenRects[2].y      = characterCards[i].currentAnimationPos.y - 6.0f;
+                ScreenRects[2].width  = characterCards[i].currentAnimationPos.width + 12.0f;
                 ScreenRects[2].height = characterCards[i].currentAnimationPos.height + 12.0f;
 
-                // selection outline r2 -> ScreenRects[3]
-                ScreenRects[3].x = characterCards[i].currentAnimationPos.x - 12.0f;
-                ScreenRects[3].y = characterCards[i].currentAnimationPos.y - 12.0f;
-                ScreenRects[3].width = characterCards[i].currentAnimationPos.width + 24.0f;
+                ScreenRects[3].x      = characterCards[i].currentAnimationPos.x - 12.0f;
+                ScreenRects[3].y      = characterCards[i].currentAnimationPos.y - 12.0f;
+                ScreenRects[3].width  = characterCards[i].currentAnimationPos.width + 24.0f;
                 ScreenRects[3].height = characterCards[i].currentAnimationPos.height + 24.0f;
 
                 DrawRectangleLinesEx(ScreenRects[2], 4, YELLOW);
                 DrawRectangleLinesEx(ScreenRects[3], 2, YELLOW);
+
+                
+
+
             }
         }
 
-        // ScreenRects[1] = stats box rect (updated dynamically)
         if (CharSelectionStuff[1] != -1 && CharSelectionStuff[1] != CharSelectionStuff[0])
         {
             ScreenRects[4] = characterCards[CharSelectionStuff[1]].currentAnimationPos;
 
-            bool placeRight = (ScreenRects[4].x + CARD_WIDTH + 260.0f) < GetScreenWidth();
-            ScreenRects[1].x = placeRight ? (ScreenRects[4].x + CARD_WIDTH + 5.0f) : (ScreenRects[4].x - 5.0f - 260.0f);
-            ScreenRects[1].y = ScreenRects[4].y - 250.0f;
-            ScreenRects[1].width = 260.0f;
+            bool placeRight = (ScreenRects[4].x + CARD_WIDTH + 260.0f) < SCREEN_W;
+            ScreenRects[1].x = placeRight
+                               ? (ScreenRects[4].x + CARD_WIDTH + 5.0f)
+                               : (ScreenRects[4].x - 5.0f - 260.0f);
+            ScreenRects[1].y      = ScreenRects[4].y - 250.0f;
+            ScreenRects[1].width  = 260.0f;
             ScreenRects[1].height = 240.0f;
 
-            DrawRectangleRec(ScreenRects[1], Color{0, 40, 0, 200});
-            DrawRectangleLinesEx(ScreenRects[1], 3.0f, Color{40, 255, 80, 255});
+            DrawRectangleRec(ScreenRects[1],(Color){0, 40, 0, 200});
+            DrawRectangleLinesEx(ScreenRects[1], 3.0f,(Color){40, 255, 80, 255});
 
             switch (CharSelectionStuff[1])
             {
             case 0:
-                DrawText("Caste: Student", ScreenRects[1].x + 20, ScreenRects[1].y + 20, 24, WHITE);
-                DrawText(("Health: " + std::to_string(getStatForCharacterID(allStatLines, "Student", CSVStats::MAX_HEALTH))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 50, 20, WHITE);
-                DrawText(("Armor: " + std::to_string(getStatForCharacterID(allStatLines, "Student", CSVStats::ARMOR))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 80, 20, WHITE);
-                DrawText(("Strength: " + std::to_string(getStatForCharacterID(allStatLines, "Student", CSVStats::STR))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 110, 20, WHITE);
-                DrawText(("Dexterity: " + std::to_string(getStatForCharacterID(allStatLines, "Student", CSVStats::DEX))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 140, 20, WHITE);
-                DrawText(("Constitution: " + std::to_string(getStatForCharacterID(allStatLines, "Student", CSVStats::CON))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 170, 20, WHITE);
-                DrawText(("Initiative: " + std::to_string(getStatForCharacterID(allStatLines, "Student", CSVStats::INITIATIVE))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 200, 20, WHITE);
+                DrawText("Caste: Student", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 20),24, WHITE);
+                DrawText(("Health: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::MAX_HEALTH))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 50), 20, WHITE);
+                DrawText(("Armor: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::ARMOR))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 80), 20, WHITE);
+                DrawText(("Dexterity: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::DEX))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 110), 20, WHITE);
+                DrawText(("Constitution: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::CON))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 140), 20, WHITE);
+                DrawText(("Initiative: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::INITIATIVE))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 170), 20, WHITE);
                 break;
+
             case 1:
-                DrawText("Caste: Rat", ScreenRects[1].x + 20, ScreenRects[1].y + 20, 24, WHITE);
-                DrawText(("Health: " + std::to_string(getStatForCharacterID(allStatLines, "Rat", CSVStats::MAX_HEALTH))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 50, 20, WHITE);
-                DrawText(("Armor: " + std::to_string(getStatForCharacterID(allStatLines, "Rat", CSVStats::ARMOR))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 80, 20, WHITE);
-                DrawText(("Dexterity: " + std::to_string(getStatForCharacterID(allStatLines, "Rat", CSVStats::DEX))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 110, 20, WHITE);
-                DrawText(("Constitution: " + std::to_string(getStatForCharacterID(allStatLines, "Rat", CSVStats::CON))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 140, 20, WHITE);
-                DrawText(("Initiative: " + std::to_string(getStatForCharacterID(allStatLines, "Rat", CSVStats::INITIATIVE))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 170, 20, WHITE);
+                DrawText("Caste: Rat", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 20),24, WHITE);
+                DrawText("Not Available", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 50), 20, WHITE);
                 break;
+
             case 2:
-                DrawText("Caste: Professor", ScreenRects[1].x + 20, ScreenRects[1].y + 20, 24, WHITE);
-                DrawText(("Health: " + std::to_string(getStatForCharacterID(allStatLines, "Professor", CSVStats::MAX_HEALTH))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 50, 20, WHITE);
-                DrawText(("Armor: " + std::to_string(getStatForCharacterID(allStatLines, "Professor", CSVStats::ARMOR))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 80, 20, WHITE);
-                DrawText(("Dexterity: " + std::to_string(getStatForCharacterID(allStatLines, "Professor", CSVStats::DEX))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 110, 20, WHITE);
-                DrawText(("Constitution: " + std::to_string(getStatForCharacterID(allStatLines, "Professor", CSVStats::CON))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 140, 20, WHITE);
-                DrawText(("Initiative: " + std::to_string(getStatForCharacterID(allStatLines, "Professor", CSVStats::INITIATIVE))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 170, 20, WHITE);
+                DrawText("Caste: Professor", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 20),24, WHITE);
+                DrawText("Not Available", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 50), 20, WHITE);
+                
                 break;
+
             case 3:
-                DrawText("Caste: Atilla", ScreenRects[1].x + 20, ScreenRects[1].y + 20, 24, WHITE);
-                DrawText(("Health: " + std::to_string(getStatForCharacterID(allStatLines, "Atilla", CSVStats::MAX_HEALTH))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 50, 20, WHITE);
-                DrawText(("Armor: " + std::to_string(getStatForCharacterID(allStatLines, "Atilla", CSVStats::ARMOR))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 80, 20, WHITE);
-                DrawText(("Dexterity: " + std::to_string(getStatForCharacterID(allStatLines, "Atilla", CSVStats::DEX))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 110, 20, WHITE);
-                DrawText(("Constitution: " + std::to_string(getStatForCharacterID(allStatLines, "Atilla", CSVStats::CON))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 140, 20, WHITE);
-                DrawText(("Initiative: " + std::to_string(getStatForCharacterID(allStatLines, "Atilla", CSVStats::INITIATIVE))).c_str(), ScreenRects[1].x + 20, ScreenRects[1].y + 170, 20, WHITE);
+                DrawText("Caste: Atilla", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 20),24, WHITE);
+                DrawText("Not Available", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 50), 20, WHITE);
                 break;
             }
         }
 
         int prevState = GuiGetState();
-        if (CharSelectionStuff[0] == -1)
-            GuiDisable();
-        if (GuiButton(ScreenRects[0], "Play Game") && CharSelectionStuff[0] != -1)
+        if (CharSelectionStuff[0] == -1) GuiDisable();
+
+        if (GuiButton(ScreenRects[0], "Play Game") &&
+            CharSelectionStuff[0] != -1)
         {
+            CreateCharacter("Student");
+            CreateCharacter("Zombie_Standard");
             changeScreen(ScreenState::GAMEPLAY);
         }
         GuiSetState(prevState);
 
         break;
     }
+
+    //--------------------------------------------------------------------------
+    // GAMEPLAY (high-level)
+    //--------------------------------------------------------------------------
     case ScreenState::GAMEPLAY:
-        // draw gameplay here later
+        if (counter % 50 == 0)
+        {
+            Steve->dealMeleeDamage(*Zombie);
+        }
+        else if (counter % 20 == 0)
+        {
+            Zombie->dealMeleeDamage(*Steve);
+        }
+        counter++;
+        gameManager->update(GetFrameTime());
+        gameManager->render();
         break;
+
     case ScreenState::SAVE_QUIT:
-        // simple overlay/text
         break;
     }
 
     EndDrawing();
 }
+
+//--------------------------------------------------------------------------------------
+// ScreenManager: enter / exit screen
+//--------------------------------------------------------------------------------------
 
 void ScreenManager::enterScreen(ScreenState s)
 {
@@ -500,65 +595,60 @@ void ScreenManager::enterScreen(ScreenState s)
     case ScreenState::MAIN_MENU:
         numScreenTextures = 2;
         ScreenTextures = new Texture2D[numScreenTextures];
-        ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png");  // Main menu background
-        ScreenTextures[1] = LoadTexture("../assets/images/UI/programTitle.png"); // Program title
+        ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png");
+        ScreenTextures[1] = LoadTexture("../assets/images/UI/gameTitle.png");
 
         numScreenRects = 2;
         ScreenRects = new Rectangle[numScreenRects];
-        ScreenRects[0].x = (GetScreenWidth() - MAIN_BTN_WIDTH) / 2.0f;
-        ScreenRects[0].y = (GetScreenHeight() - MAIN_BTN_HEIGHT) / 2.0f + MAIN_BTN_OFFSET_Y;
+        ScreenRects[0].x = (SCREEN_W - MAIN_BTN_WIDTH) / 2.0f;
+        ScreenRects[0].y = (SCREEN_H - MAIN_BTN_HEIGHT) / 2.0f + MAIN_BTN_OFFSET_Y;
         ScreenRects[0].width = MAIN_BTN_WIDTH;
-        ScreenRects[0].height = MAIN_BTN_HEIGHT; // Start Game button
+        ScreenRects[0].height = MAIN_BTN_HEIGHT;
 
-        ScreenRects[1].x = (GetScreenWidth() - MAIN_BTN_WIDTH) / 2.0f;
-        ScreenRects[1].y = (GetScreenHeight() - MAIN_BTN_HEIGHT) / 2.0f + MAIN_BTN_OFFSET_Y + MAIN_BTN_SPACING;
+        ScreenRects[1].x = (SCREEN_W - MAIN_BTN_WIDTH) / 2.0f;
+        ScreenRects[1].y = (SCREEN_H - MAIN_BTN_HEIGHT) / 2.0f + MAIN_BTN_OFFSET_Y + MAIN_BTN_SPACING;
         ScreenRects[1].width = MAIN_BTN_WIDTH;
-        ScreenRects[1].height = MAIN_BTN_HEIGHT; // Exit Game button
+        ScreenRects[1].height = MAIN_BTN_HEIGHT;
         break;
 
     case ScreenState::CHARACTER_SELECT:
         allStatLines = storeAllStatLines(openStartingStatsCSV());
         characterCards = new charCard[MAX_CHAR_CARDS];
 
-        // CharSelectionStuff holds [selection, hovered, layoutInitFlag]
         CharSelectionStuff = new int[3];
-        CharSelectionStuff[0] = -1; // selection
-        CharSelectionStuff[1] = -1; // hovered
-        CharSelectionStuff[2] = 0;  // layout not initialized yet
+        CharSelectionStuff[0] = -1;
+        CharSelectionStuff[1] = -1;
+        CharSelectionStuff[2] = 0;
 
         numScreenTextures = 5;
         ScreenTextures = new Texture2D[numScreenTextures];
-        ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png");                                // Character select background
-        ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/south.png"); // Student Fighter
-        ScreenTextures[2] = LoadTexture("../assets/images/characters/pc/Rat-Assassin/rotations/south.png");    // Rat Assassin
-        ScreenTextures[3] = LoadTexture("../assets/images/characters/pc/Professor-Mage/rotations/south.png");  // Professor Mage
-        ScreenTextures[4] = LoadTexture("../assets/images/characters/pc/Attila-Brawler/rotations/south.png");  // Attila Brawler
+        ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png");
+        ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/south.png");
+        ScreenTextures[2] = LoadTexture("../assets/images/characters/pc/Rat-Assassin/rotations/south.png");
+        ScreenTextures[3] = LoadTexture("../assets/images/characters/pc/Professor-Mage/rotations/south.png");
+        ScreenTextures[4] = LoadTexture("../assets/images/characters/pc/Attila-Brawler/rotations/south.png");
 
-        // set filtering once here instead of every frame
         for (int i = 1; i < numScreenTextures; ++i)
         {
             SetTextureFilter(ScreenTextures[i], TEXTURE_FILTER_POINT);
         }
 
-        // Rects:
-        // [0] = Play button (set in update)
-        // [1] = Stats box   (set in render)
-        // [2] = r1 selection outline
-        // [3] = r2 selection outline
         numScreenRects = 5;
         ScreenRects = new Rectangle[numScreenRects];
         for (int i = 0; i < numScreenRects - 1; ++i)
         {
-            ScreenRects[i].x = ScreenRects[i].y = ScreenRects[i].width = ScreenRects[i].height = 0.0f;
+            ScreenRects[i].x = ScreenRects[i].y =
+            ScreenRects[i].width = ScreenRects[i].height = 0.0f;
         }
-        ScreenRects[4] = {0, 0, 0, 0}; // used for center card rectangle
+        ScreenRects[4] = {0, 0, 0, 0};
         break;
 
     case ScreenState::GAMEPLAY:
-        // later: load gameplay textures
+        gameManager = new GameManager;
+        gameManager->enterGameState(gameManager->getCurrentGameState());
         break;
+
     case ScreenState::SAVE_QUIT:
-        // nothing special to load
         break;
     }
 }
@@ -608,7 +698,225 @@ void ScreenManager::exitScreen(ScreenState s)
             allStatLines = nullptr;
         }
 
+        if (s == ScreenState::GAMEPLAY && gameManager)
+        {
+            gameManager->exitGameState(gameManager->getCurrentGameState());
+            delete gameManager;
+            gameManager = nullptr;
+        }
         break;
     }
+    }
+}
+
+//--------------------------------------------------------------------------------------
+// GameManager
+//--------------------------------------------------------------------------------------
+
+GameManager::GameManager(GameState initial) : currentGameState(initial) {}
+GameManager::~GameManager() {}
+
+void GameManager::changeGameState(GameState newState)
+{
+    if (newState == currentGameState) return;
+    exitGameState(currentGameState);
+    currentGameState = newState;
+    enterGameState(currentGameState);
+}
+
+GameState GameManager::getCurrentGameState() const
+{
+    return currentGameState;
+}
+
+void GameManager::enterGameState(GameState state)
+{
+    switch (state)
+    {
+    case GameState::EXPLORATION:
+        break;
+
+    case GameState::COMBAT:
+        numScreenTextures = 3;
+        ScreenTextures = new Texture2D[numScreenTextures];
+        ScreenTextures[0] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
+        ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/north-west.png");
+        ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
+
+        numScreenRects = 15;
+        ScreenRects = new Rectangle[numScreenRects];
+
+        ScreenRects[R_PLAYER_NAME] = {0,0, 450, 50};
+        ScreenRects[R_ENEMY_NAME] = {SCREEN_W - ScreenRects[R_PLAYER_NAME].width, 0, ScreenRects[R_PLAYER_NAME].width, ScreenRects[R_PLAYER_NAME].height};
+        ScreenRects[R_PLAYER_PANEL]= {0, ScreenRects[R_PLAYER_NAME].height, ScreenRects[R_PLAYER_NAME].width, 832};
+        ScreenRects[R_ENEMY_PANEL] = {ScreenRects[R_ENEMY_NAME].x,ScreenRects[R_ENEMY_NAME].y + ScreenRects[R_ENEMY_NAME].height, ScreenRects[R_ENEMY_NAME].width, 832};
+        ScreenRects[R_PLAYER_HP_BG] = {ScreenRects[R_PLAYER_PANEL].x + 20, ScreenRects[R_PLAYER_PANEL].y + 100, ScreenRects[R_PLAYER_PANEL].width - 40, 30};
+        ScreenRects[R_PLAYER_HP_FG] = ScreenRects[R_PLAYER_HP_BG];
+        ScreenRects[R_ENEMY_HP_BG] = {ScreenRects[R_ENEMY_PANEL].x + 20, ScreenRects[R_ENEMY_PANEL].y + 100,ScreenRects[R_ENEMY_PANEL].width - 40,30};
+        ScreenRects[R_ENEMY_HP_FG] = ScreenRects[R_ENEMY_HP_BG];
+        ScreenRects[R_PLAYER_STATUS] = {ScreenRects[R_PLAYER_PANEL].x + 20,ScreenRects[R_PLAYER_PANEL].y + 200, ScreenRects[R_PLAYER_PANEL].width - 40,500};
+        ScreenRects[R_ENEMY_STATUS] = {ScreenRects[R_ENEMY_PANEL].x + 20,ScreenRects[R_ENEMY_PANEL].y + 200,ScreenRects[R_ENEMY_PANEL].width - 40,500};
+        ScreenRects[R_BOTTOM_PANEL] = {0,SCREEN_H - 200,SCREEN_W,215};
+        ScreenRects[R_BTN_ATTACK] = {ScreenRects[R_BOTTOM_PANEL].x + 20,ScreenRects[R_BOTTOM_PANEL].y + 20,400,80};
+        ScreenRects[R_BTN_DEFEND] = {ScreenRects[R_BOTTOM_PANEL].x + 20,ScreenRects[R_BTN_ATTACK].y + 100,400,80};
+        ScreenRects[R_BTN_USE_ITEM] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 150,ScreenRects[R_BTN_ATTACK].y,400,80};
+        ScreenRects[R_LOG_BOX] = {SCREEN_W - 800, ScreenRects[R_BTN_ATTACK].y, 780, 175};
+        break;
+
+    case GameState::DIALOGUE:
+        break;
+
+    case GameState::PAUSE_MENU:
+        break;
+    }
+}
+
+void GameManager::exitGameState(GameState state)
+{
+    switch (state)
+    {
+    case GameState::EXPLORATION:
+        break;
+    case GameState::COMBAT:
+        break;
+    case GameState::DIALOGUE:
+        break;
+    case GameState::PAUSE_MENU:
+        break;
+    }
+}
+
+void GameManager::update(float dt)
+{
+    switch (currentGameState)
+    {
+    case GameState::EXPLORATION:
+        break;
+
+    case GameState::COMBAT:
+        ScreenRects[R_PLAYER_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_PLAYER_HP_BG],Steve->vit.health, Steve->vit.maxHealth);
+        ScreenRects[R_ENEMY_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_ENEMY_HP_BG], Zombie->vit.health, Zombie->vit.maxHealth);
+        break;
+
+    case GameState::DIALOGUE:
+        break;
+
+    case GameState::PAUSE_MENU:
+        break;
+    }
+}
+
+void GameManager::render()
+{
+    switch (currentGameState)
+    {
+    case GameState::EXPLORATION:
+        break;
+
+    case GameState::COMBAT:
+        // Centered background
+        DrawTexture(ScreenTextures[0],(int)(SCREEN_W / 2.0f - ScreenTextures[0].width  / 2.0f), (int)(SCREEN_H / 2.0f - ScreenTextures[0].height / 2.0f - 175.f), WHITE);
+
+        // Player
+        DrawTexturePro(ScreenTextures[1], 
+            {0.0f, 0.0f,(float)ScreenTextures[1].width,
+             (float)ScreenTextures[1].height},
+            {SCREEN_W / 2.0f + ScreenTextures[0].width / 2.0f - 500.f,
+             SCREEN_H / 2.0f + ScreenTextures[0].height / 2.0f - 650.f,
+             500.0f,
+             500.0f},
+            {0.0f, 0.0f},
+            0.0f,
+            WHITE);
+
+        // Enemy
+        DrawTexturePro(
+            ScreenTextures[2],
+            {0.0f, 0.0f,
+             (float)ScreenTextures[2].width,
+             (float)ScreenTextures[2].height},
+            {SCREEN_W / 2.0f + ScreenTextures[0].width / 2.0f - 600.f,
+             SCREEN_H / 2.0f + ScreenTextures[0].height / 2.0f - 725.f,
+             200.f,
+             300.f},
+            {0.0f, 0.0f},
+            0.0f,
+            WHITE);
+
+        // Panels
+        DrawRectangleRec(ScreenRects[R_PLAYER_NAME],COL_NAME_BAR);
+        DrawRectangleRec(ScreenRects[R_ENEMY_NAME], COL_NAME_BAR);
+        DrawRectangleRec(ScreenRects[R_BOTTOM_PANEL], COL_BOTTOM_PANEL);
+        DrawRectangleRec(ScreenRects[R_PLAYER_PANEL], COL_STATUS_PANEL);
+        DrawRectangleRec(ScreenRects[R_ENEMY_PANEL], COL_STATUS_PANEL);
+
+        // HP bars
+        DrawRectangleRec(ScreenRects[R_PLAYER_HP_BG],COL_HP_BG);
+        DrawRectangleRec(ScreenRects[R_PLAYER_HP_FG],COL_HP_FG);
+        DrawRectangleRec(ScreenRects[R_ENEMY_HP_BG], COL_HP_BG);
+        DrawRectangleRec(ScreenRects[R_ENEMY_HP_FG],COL_HP_FG);
+
+        // Status / log
+        DrawRectangleRec(ScreenRects[R_PLAYER_STATUS],COL_STATUS_INNER);
+        DrawRectangleRec(ScreenRects[R_ENEMY_STATUS],COL_STATUS_INNER);
+        DrawRectangleRec(ScreenRects[R_LOG_BOX],COL_LOG_BOX);
+
+        // Buttons
+        DrawRectangleRec(ScreenRects[R_BTN_ATTACK],COL_BUTTON);
+        DrawRectangleRec(ScreenRects[R_BTN_DEFEND], COL_BUTTON);
+        DrawRectangleRec(ScreenRects[R_BTN_USE_ITEM], COL_BUTTON);
+
+        // Borders (skip HP overlays)
+        for (int i = 0; i < 15; ++i)
+        {
+            if (i == R_PLAYER_HP_FG || i == R_ENEMY_HP_FG) continue;
+            DrawRectangleLinesEx(ScreenRects[i], 3.0f, BLACK);
+        }
+
+        // Text: names + HP
+        DrawText(("Player: " + Steve->getName()).c_str(), (int)(ScreenRects[R_PLAYER_NAME].x + 20),(int)(ScreenRects[R_PLAYER_NAME].y + 10), FONT_SIZE_NAME, WHITE);
+
+        DrawText(("Enemy: " + Zombie->getName()).c_str(), (int)(ScreenRects[R_ENEMY_NAME].x + 20), (int)(ScreenRects[R_ENEMY_NAME].y + 10), FONT_SIZE_NAME, WHITE);
+
+        DrawText(("HP: " + std::to_string(Steve->vit.health) + " / " +
+                  std::to_string(Steve->vit.maxHealth)).c_str(),
+                 (int)(ScreenRects[R_PLAYER_PANEL].x + 30),
+                 (int)(ScreenRects[R_PLAYER_PANEL].y + 130),
+                 FONT_SIZE_HP,
+                 WHITE);
+
+        DrawText(("HP: " + std::to_string(Zombie->vit.health) + " / " +
+                  std::to_string(Zombie->vit.maxHealth)).c_str(),
+                 (int)(ScreenRects[R_ENEMY_PANEL].x + 30),
+                 (int)(ScreenRects[R_ENEMY_PANEL].y + 130),
+                 FONT_SIZE_HP,
+                 WHITE);
+
+        // Button labels (centered, same logic as before)
+        DrawText("ATTACK",
+                 CENTER_TEXT_X(ScreenRects[R_BTN_ATTACK], "ATTACK", FONT_SIZE_BTN),
+                 CENTER_TEXT_Y(ScreenRects[R_BTN_ATTACK], FONT_SIZE_BTN),
+                 FONT_SIZE_BTN,
+                 WHITE);
+
+        DrawText("DEFEND",
+                 CENTER_TEXT_X(ScreenRects[R_BTN_DEFEND], "DEFEND", FONT_SIZE_BTN),
+                 CENTER_TEXT_Y(ScreenRects[R_BTN_DEFEND], FONT_SIZE_BTN),
+                 FONT_SIZE_BTN,
+                 WHITE);
+
+        DrawText("USE ITEM",
+                 CENTER_TEXT_X(ScreenRects[R_BTN_USE_ITEM], "USE ITEM", FONT_SIZE_BTN),
+                 CENTER_TEXT_Y(ScreenRects[R_BTN_USE_ITEM], FONT_SIZE_BTN),
+                 FONT_SIZE_BTN,
+                 WHITE);
+
+        break;
+
+    case GameState::DIALOGUE:
+        break;
+
+    case GameState::PAUSE_MENU:
+        break;
     }
 }

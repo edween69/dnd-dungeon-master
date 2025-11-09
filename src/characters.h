@@ -154,7 +154,7 @@ class Character
 
         void endDefense() 
         {
-            if(statEff.defending) { this->def.armor -+ 5; }
+            if(statEff.defending) { this->def.armor -= 5; }
             statEff.defending = false;
         }
 
@@ -261,6 +261,18 @@ class Atilla : public PlayerCharacter
             wep.meleeWeapon = 1; // Feathers of Fury(fists)
             wep.rangeWeapon = 2; // Rubber Duckies
         };
+};
+
+class Zombie : public NonPlayerCharacter
+{
+    public:
+        Zombie(Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
+            : NonPlayerCharacter("Zombie", attributes, defense, combat, vital, statusEffects)
+        {
+            wep.meleeWeapon = 3;
+            wep.rangeWeapon = 2; //default
+        }
+
 };
 
 std::ifstream* openStartingStatsCSV();

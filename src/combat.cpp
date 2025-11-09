@@ -170,8 +170,6 @@ void startStats ()
 // Game state machine
 void runCombat(Student& stnt,NonPlayerCharacter& zombie) 
 {
-
-
     bool playerTurn = true;
     Action currentAction;
     stringstream combatLog;

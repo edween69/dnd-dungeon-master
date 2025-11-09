@@ -1,11 +1,13 @@
 /*  File hold functions related to character creation and status.
+
+    ***Add unique points -From Andrew - To Andrew
 */
 
 #include "characters.h"
 
 std::ifstream* openStartingStatsCSV()
 {
-    std::ifstream* StartingStatFile = new std::ifstream("../dat/Character_Starting_Stats.csv");
+    std::ifstream* StartingStatFile = new std::ifstream("dat/Character_Starting_Stats.csv");
     //std::ifstream* StartingStatFile = new std::ifstream("dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
     if (!StartingStatFile->is_open()) 
     {

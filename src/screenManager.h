@@ -4,6 +4,7 @@
 #include <sstream>
 #include "characters.h"
 #include "raygui.h"
+#include "rng.h"
 #ifndef SCREENMANAGER_H
 #define SCREENMANAGER_H
 
@@ -25,8 +26,7 @@ enum class GameState { EXPLORATION, COMBAT, DIALOGUE, PAUSE_MENU };
 class ScreenManager 
 {
     private:
-        ScreenState currentScreen; // Current active screen
-        //bool pendingScreenChange = false; // Flag to indicate if a screen change is pending
+        ScreenState currentScreen; // Current active screen state
         void enterScreen(ScreenState screen); // Handle entering a new screen loading resources
         void exitScreen(ScreenState screen); // Handle exiting a screen unloading resources
 
@@ -43,19 +43,24 @@ class ScreenManager
 };
 
 //@author: Edwin Baiden
-//@brief: Class to manage game states and transitions
-
-class GameManager
-{
+//@brief: Class to manage game states and transitions.Helper for screenManager once gameplay is started.
+//@version: 1.0
+class GameManager {
     private:
         GameState currentGameState; // Current active game state
-
+        
+    
     public:
-        explicit GameManager(GameState initial = GameState::EXPLORATION); // Constructor with default initial game state
+        explicit GameManager(GameState initial = GameState::COMBAT); // REMEMBER TO CHANGE TO EXPLORATION LATER
         ~GameManager(); // Destructor
-        void changeGameState(GameState newState); // Change the current game state
+        void changeGameState(GameState newState); // Request a game state change
         [[nodiscard]] GameState getCurrentGameState() const; // Get the current game state
+        void update(float deltaTime); // Update the current game state with delta time
+        void render(); // Render the current game state
+        void enterGameState(GameState state); // Handle entering a new game state loading resources
+        void exitGameState(GameState state); // Handle exiting a game state unloading resources
 };
+
 
 
 
