@@ -6,6 +6,10 @@
 #include <random>
 #include "characters.h"    
 
+/*Note: Combat and GUI are separate currently. 
+g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall -Wextra -g
+*/
+
 //Helpers
 static inline const std::string& nameOf(const Character& c) { return c.getName(); }
 static inline int clampi(int v, int lo, int hi) { return std::max(lo, std::min(v, hi)); }
