@@ -84,7 +84,7 @@ static Action player_choose()
         std::cout << "\nChoose action:\n"
                      "1) Attack\n"
                      "2) Defend\n"
-                     "3) Use Range\n"
+                     "3) Use Range (Need to implement\n"
                      "4) Use Item  (Need to implement)\n> ";
         std::string in;
         std::getline(std::cin, in);
@@ -94,7 +94,7 @@ static Action player_choose()
         {
             case '1': return {ActionType::Attack, "Attack"};
             case '2': return {ActionType::Defend, "Defend"};
-            case '3': return {ActionType::UseRange, "UseRange"};
+            case '3': return {ActionType::None, "UseRange"}; //Need to fix
             case '4': std::cout << "Inventory not implemented yet\n"; return {ActionType::UseItem, "UseItem"};
             default:  std::cout << "Invalid choice\n";
         }
