@@ -7,6 +7,7 @@
 #include "characters.h"    
 
 /*Note: Combat and GUI are separate currently. 
+Before compilation directory must be in src
 g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall -Wextra -g
 */
 
