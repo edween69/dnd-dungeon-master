@@ -2,7 +2,7 @@
     Project: TTRPG Game ??? Idk what this game is anymore lol
     Subsystem: Screen Manager
     Primary Author: Edwin Baiden
-    Description: This file implements the ScreenManager class from screenManager.h  to manage
+    Description: This file implements the ScreenManager class and GameManager class and their functions from screenManager.h  to manage
                  different game screens using raylib and raygui for rendering and GUI
                  elements.
 
@@ -22,6 +22,16 @@
                 (textures and rectangles, which are dynamically allocated and deallocated
                 when entering and exiting screens).
 
+                Game States:
+                    - EXPLORATION: Exploration mode (not implemented here).
+
+                    - COMBAT: Combat mode where players and enemies take turns attacking
+                    each other.
+
+                    - DIALOGUE: Dialogue mode for conversations (not implemented here).
+
+                    - PAUSE_MENU: Pause menu mode (not implemented here).
+
                 Dynamically allocated resources(more on these in enterScreen and exitScreen):
                     - Textures (ScreenTextures + numScreenTextures): Array of textures used
                     in the current screen.
@@ -38,19 +48,60 @@
                     - All Stat Lines (allStatLines): String stream holding all character stats
                     from CSV file(function from characters.h/characters.cpp).
 
+                    - Game Manager (gameManager): Pointer to the GameManager instance managing game states (Defined in screenManager.h).
+
+                    - Characters (Steve, Chad): Pointers to the player character and NPC instances (Classes are in characters.h).
+
                 Screen Styles:
                     - defaultStyles(): Sets default GUI styles for buttons and text.
                     - startMenuStyles(): Sets GUI styles for the main menu screen.
                     - playerSelectStyles(): Sets GUI styles for the character selection screen.
+                    - gamePlayStyles(): Not done yet, will set GUI styles for the gameplay screen.
+                    - pauseMenuStyles(): Not done yet, will set GUI styles for the pause menu screen.
 
-                Screen Manager Functions:
+                Screen Manager Functions: uses a state machine approach
                     - ScreenManager::ScreenManager(ScreenState initial): Constructor to initialize
                       the ScreenManager with an initial screen state.
 
                     - ScreenManager::~ScreenManager(): Destructor to clean up resources when the
                       ScreenManager is destroyed.
 
-                    - void ScreenManager::init():
+                    - void ScreenManager::init(): Initialize the screen manager by entering the initial screen.
+
+                    - void ScreenManager::changeScreen(ScreenState newScreen): Request a screen change to a new screen state.
+
+                    - ScreenState ScreenManager::getCurrentScreen() const: Get the current screen state.
+
+                    - void ScreenManager::update(float dt): Update the current screen with delta time.
+
+                    - void ScreenManager::render(): Render the current screen.
+
+                    - void ScreenManager::enterScreen(ScreenState screen): Handle entering a new screen by loading
+                      resources and setting styles. (This is where most of the dynamic memory allocation happens).
+
+                    - void ScreenManager::exitScreen(ScreenState screen): Handle exiting a screen by unloading
+                      resources and cleaning up. (This is where most of the dynamic memory deallocation happens).
+
+                Game Manager Functions: not fully implemented yet (only COMBAT state is somewhat test functional) uses a state machine approach
+                    - GameManager::GameManager(GameState initial): Constructor to initialize the
+                      GameManager with an initial game state.
+
+                    - GameManager::~GameManager(): Destructor to clean up remainingresources when the
+                      GameManager is destroyed.
+
+                    - void GameManager::changeGameState(GameState newState): Request a game state change.
+
+                    - GameState GameManager::getCurrentGameState() const: Get the current game state.
+
+                    - void GameManager::update(float dt): Update the current game state with delta time.
+
+                    - void GameManager::render(): Render the current game state.
+
+                    - void GameManager::enterGameState(GameState state): Handle entering a new game
+                      state by loading resources.
+
+                    - void GameManager::exitGameState(GameState state): Handle exiting a game state
+                      by unloading resources.
 
                 Macros for constants(used to save runtime memory):
                     - MAX_CHAR_CARDS: Number of character cards shown on the CHARACTER_SELECT
@@ -77,109 +128,113 @@
                     PLAY_BTN_OFFSET_Y: Vertical offset of the "Play Game" button from the character card
                     its under.
 
-
-
+                    - R_<NAME>: Indices for rectangles in the combat UI (e.g., R_PLAYER_NAME, R_ENEMY_NAME...) Used to improve readability
+                    when accessing ScreenRects array.
 
 */
 
+
+#define RAYGUI_IMPLEMENTATION // Ensures raygui implementation is included here (needs to be defined in one cpp file)
 #include "screenManager.h"
-#define RAYGUI_IMPLEMENTATION
-#include "raygui.h"
 
 
 //================= MACROS TO IMPROVE READABILITY WHILE SAVING RUNTIME MEMORY ===================
 
-#define SCREEN_WIDTH            (float)(GetScreenWidth())
-#define SCREEN_HEIGHT            (float)(GetScreenHeight())
+#define SCREEN_WIDTH (float)(GetScreenWidth()) // Get current screen width
+#define SCREEN_HEIGHT (float)(GetScreenHeight()) // Get current screen height
 
 // Character select
-#define MAX_CHAR_CARDS 4
-#define MAIN_BUTTON_WIDTH 600.0f
-#define MAIN_BUTTON_HEIGHT 70.0f
-#define MAIN_BUTTON_OFFSET_Y 100.0f
-#define MAIN_BUTTON_SPACING 100.0f
+#define MAX_CHAR_CARDS 4 // Maximum number of character cards shown (for now, we only have 4 characters)
+#define MAIN_BUTTON_WIDTH 600.0f // Width of main menu buttons
+#define MAIN_BUTTON_HEIGHT 70.0f // Height of main menu buttons
+#define MAIN_BUTTON_OFFSET_Y 100.0f // Vertical offset of the first main menu button from screen center
+#define MAIN_BUTTON_SPACING 100.0f // Vertical spacing between main menu buttons
 
-#define CHARACTER_CARD_WIDTH 300.0f
-#define CHARACTER_CARD_HEIGHT 400.0f
-#define CHARACTER_CARD_SPACING 50.0f
-#define CHARACTER_DOCK_SPACING 90.0f
+#define CHARACTER_CARD_WIDTH 300.0f // Width of each character selection card
+#define CHARACTER_CARD_HEIGHT 400.0f // Height of each character selection card
+#define CHARACTER_CARD_SPACING 50.0f // Horizontal spacing between character cards in the default row
+#define CHARACTER_DOCK_SPACING 90.0f // Vertical spacing between docked (i.e nonselected) character cards when one card is centered
 
-#define PLAY_BTN_WIDTH 400.0f
-#define PLAY_BTN_HEIGHT 60.0f
-#define PLAY_BTN_OFFSET_Y 36.0f
+#define PLAY_BTN_WIDTH 400.0f // Width of the "Play Game" button on the CHARACTER_SELECT screen
+#define PLAY_BTN_HEIGHT 60.0f // Height of the "Play Game" button on the CHARACTER_SELECT screen
+#define PLAY_BTN_OFFSET_Y 36.0f // Vertical offset of the "Play Game" button from the character card its under
 
-// Combat UI: rectangle indices
-#define R_PLAYER_NAME 0
-#define R_ENEMY_NAME 1
-#define R_PLAYER_PANEL 2
-#define R_ENEMY_PANEL 3
-#define R_PLAYER_HP_BG 4
-#define R_PLAYER_HP_FG 5
-#define R_ENEMY_HP_BG 6
-#define R_ENEMY_HP_FG 7
-#define R_PLAYER_STATUS 8
-#define R_ENEMY_STATUS 9
-#define R_BOTTOM_PANEL 10
-#define R_BTN_ATTACK 11
-#define R_BTN_DEFEND 12
-#define R_BTN_USE_ITEM 13
-#define R_LOG_BOX 14
+// Combat UI rectangle indices will be used in conjunction with ScreenRects array to improve readability
+#define R_PLAYER_NAME 0 // Index for player name rectangle
+#define R_ENEMY_NAME 1 // Index for enemy name rectangle
+#define R_PLAYER_PANEL 2 // Index for player panel rectangle
+#define R_ENEMY_PANEL 3 // Index for enemy panel rectangle
+#define R_PLAYER_HP_BG 4 // Index for player HP background rectangle
+#define R_PLAYER_HP_FG 5 // Index for player HP foreground rectangle
+#define R_ENEMY_HP_BG 6 // Index for enemy HP background rectangle
+#define R_ENEMY_HP_FG 7 // Index for enemy HP foreground rectangle
+#define R_PLAYER_STATUS 8 // Index for player status rectangle
+#define R_ENEMY_STATUS 9 // Index for enemy status rectangle
+#define R_BOTTOM_PANEL 10 // Index for bottom panel rectangle
+#define R_BTN_ATTACK 11 // Index for attack button rectangle
+#define R_BTN_DEFEND 12 // Index for defend button rectangle
+#define R_BTN_USE_ITEM 13 // Index for use item button rectangle
+#define R_LOG_BOX 14 // Index for log box rectangle
 
 // Text sizes
-#define FONT_SIZE_NAME 30
-#define FONT_SIZE_HP 20
-#define FONT_SIZE_BTN 30
-#define FONT_SIZE_LOG 20
+#define FONT_SIZE_NAME 30 // Font size for names
+#define FONT_SIZE_HP 20 // Font size for health points
+#define FONT_SIZE_BTN 30 // Font size for buttons
+#define FONT_SIZE_LOG 20 // Font size for log
 
-// Centered text helpers (no extra variables)
+// Centered text helpers (for readability while saving runtime memory)
+// used this as reference: https://stackoverflow.com/questions/163365/how-do-i-make-a-c-macro-behave-like-a-function
 #define CENTER_TEXT_X(rect, txt, size) \
     (int)((rect).x + (rect).width / 2.0f - MeasureText((txt), (size)) / 2.0f)
 
 #define CENTER_TEXT_Y(rect, size) \
     (int)((rect).y + (rect).height / 2.0f - (size) / 2.0f)
 
-// Health bar width helper
+// Health bar width helper (for readability while saving runtime memory)
 #define HEALTH_BAR_WIDTH(rectBg, cur, max) \
     ((float)(rectBg).width * ((float)(cur) / (float)(max)))
 
 
 
 // Combat UI colors
-#define COL_NAME_BAR Color{8,8,12,255}
-#define COL_BOTTOM_PANEL Color{112,120,128,255}
-#define COL_STATUS_PANEL Color{55,61,57,220}
-#define COL_STATUS_INNER Color{91,94,92,255}
-#define COL_LOG_BOX Color{167,171,170,255}
-#define COL_BUTTON Color{68,74,72,255}
-#define COL_HP_BG Color{60,15,20,255}
-#define COL_HP_FG Color{190,50,60,255}
+#define COL_NAME_BAR Color{8,8,12,255} // Dark color for name bars
+#define COL_BOTTOM_PANEL Color{112,120,128,255} // Gray color for bottom panel
+#define COL_STATUS_PANEL Color{55,61,57,220} // Dark translucent color for status panels
+#define COL_STATUS_INNER Color{91,94,92,255} // Lighter color for inner status panel
+#define COL_LOG_BOX Color{167,171,170,255} // Color for log box
+#define COL_BUTTON Color{68,74,72,255} // Color for buttons (at least when creating them they will change after they turn into GuiButtons)
+#define COL_HP_BG Color{60,15,20,255} // Color for health bar background
+#define COL_HP_FG Color{190,50,60,255} // Color for health bar foreground
 
 //======================= GLOBAL STATIC POINTERS + VARIABLES =======================
+//I had an issue where the program was using too much runtime memory so i decided to make shared items across screens static pointers
+// This way they are only allocated when needed and deallocated when not needed to save memory and the variables can be reused across screens and functions
+//When not used the pointers are only using 8 bytes of memory each (on a 64 bit system)
+
+std::istringstream *allStatLines = nullptr; // Holds all character stats from CSV file used in character select screen and creating characters (CreateCharacter(String))
+
+static Texture2D *ScreenTextures = nullptr; // Array of textures used in the current screen
+static int numScreenTextures = 0; // Number of textures in the current screen
+
+static Rectangle *ScreenRects = nullptr; // Array of rectangles defining GUI element positions and sizes
+static int numScreenRects = 0; // Number of rectangles in the current screen
+
+static charCard *characterCards = nullptr; // Array of character card structures used in the character selection screen
 
 
-std::istringstream *allStatLines = nullptr;
-
-static Texture2D *ScreenTextures = nullptr;
-static int numScreenTextures = 0;
-
-static Rectangle *ScreenRects = nullptr;
-static int numScreenRects = 0;
-
-static charCard *characterCards = nullptr;
-
-
-// extra state for character select (dynamic int array)
+// Only used in character selection screen to manage character selection state
 // [0] = selection index (-1 = none)
 // [1] = hovered index   (-1 = none)
 // [2] = layoutInitFlag  (0 = false, 1 = true)
 static int *CharSelectionStuff = nullptr;
 
-static Student* Steve  = nullptr;
-static NonPlayerCharacter* Chad = nullptr;
+static Student* Steve  = nullptr; // Player character instance
+static NonPlayerCharacter* Chad = nullptr; // NPC instance
 
-static GameManager *gameManager = nullptr;
+static GameManager *gameManager = nullptr; // Pointer to the GameManager instance managing game states
 
 //======================= GUI BUTTON AND TEXT STYLE FUNCTIONS =======================
+//Setting styles for buttons and text to improve GUI appearance and user experience
 
 //@brief: Sets the default styles for buttons and text (not yet called anywhere)
 //@version: 1.0
@@ -591,14 +646,14 @@ void ScreenManager::render()
                 // If this card is the selected one, draw yellow outlines around it for emphasis (just for more visual feedback)
                 if (CharSelectionStuff[0] == i)
                 {
-                    ScreenRects[2].x      = characterCards[i].currentAnimationPos.x - 6.0f; // Inner outline slightly offset from card position
-                    ScreenRects[2].y      = characterCards[i].currentAnimationPos.y - 6.0f;
-                    ScreenRects[2].width  = characterCards[i].currentAnimationPos.width + 12.0f; // Inner outline slightly larger than card size
+                    ScreenRects[2].x = characterCards[i].currentAnimationPos.x - 6.0f; // Inner outline slightly offset from card position
+                    ScreenRects[2].y = characterCards[i].currentAnimationPos.y - 6.0f;
+                    ScreenRects[2].width = characterCards[i].currentAnimationPos.width + 12.0f; // Inner outline slightly larger than card size
                     ScreenRects[2].height = characterCards[i].currentAnimationPos.height + 12.0f;
 
-                    ScreenRects[3].x      = characterCards[i].currentAnimationPos.x - 12.0f; // Outer outline further offset from card position
-                    ScreenRects[3].y      = characterCards[i].currentAnimationPos.y - 12.0f; 
-                    ScreenRects[3].width  = characterCards[i].currentAnimationPos.width + 24.0f; // Outer outline further larger than card size
+                    ScreenRects[3].x = characterCards[i].currentAnimationPos.x - 12.0f; // Outer outline further offset from card position
+                    ScreenRects[3].y = characterCards[i].currentAnimationPos.y - 12.0f;
+                    ScreenRects[3].width = characterCards[i].currentAnimationPos.width + 24.0f; // Outer outline further larger than card size
                     ScreenRects[3].height = characterCards[i].currentAnimationPos.height + 24.0f;
 
                     DrawRectangleLinesEx(ScreenRects[2], 4, YELLOW); // Draw inner yellow outline
@@ -795,6 +850,7 @@ void ScreenManager::enterScreen(ScreenState s)
 //@brief: Exit a specific screen state and clean up resources(since we are really only using dynamic memory allocation for resources, this is mainly just deleting those pointers)
 //@param s - The screen state to exit
 //@version: 1.0
+//@author: Edwin Baiden
 void ScreenManager::exitScreen(ScreenState s)
 {
     switch (s) //Most of the stuff is reused so we just write the cleanup code once in the SAVE_QUIT case
@@ -1049,27 +1105,32 @@ void GameManager::render()
 
         case GameState::COMBAT:
         {
-        
+            //TODO: Make rendering for combatmore dynamic later on but for now just hardcoding stuff for testing/milestone purposes
+
+            //This pportion is mostly hardcoded for testing purposes. Its definitely going to become more dynamic and have structs for positioning later on
+            // Drawing the Combat background, horizontally centered (SCREEN_WIDTH - ScreenTextures[0].width)/2, making it slightly shifted up to make room for UI elements at the bottom
             DrawTexture(ScreenTextures[0],(int)(SCREEN_WIDTH / 2.0f - ScreenTextures[0].width  / 2.0f), (int)(SCREEN_HEIGHT / 2.0f - ScreenTextures[0].height / 2.0f - 175.f), WHITE);
 
-        
+            // Drawing the Player character texture, positioned to the right side of the screen within the combat background (this is where a struct for character positions will come in handy later)
             DrawTexturePro(ScreenTextures[1], {0.0f, 0.0f,(float)ScreenTextures[1].width, (float)ScreenTextures[1].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 500.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 650.f, 500.0f, 500.0f}, {0.0f, 0.0f}, 0.0f, WHITE);
 
+            // Drawing the Enemy character texture, positioned to the left side of the screen within the combat background (this is where a struct for character positions will come in handy later)
             DrawTexturePro(ScreenTextures[2], {0.0f, 0.0f, (float)ScreenTextures[2].width, (float)ScreenTextures[2].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 600.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 725.f, 200.f, 300.f}, {0.0f, 0.0f}, 0.0f, WHITE);
 
+            // Drawing UI elements using predefined rectangles(defined in the enterGameState for combat) and colors
             DrawRectangleRec(ScreenRects[R_PLAYER_NAME],COL_NAME_BAR);
             DrawRectangleRec(ScreenRects[R_ENEMY_NAME], COL_NAME_BAR);
             DrawRectangleRec(ScreenRects[R_BOTTOM_PANEL], COL_BOTTOM_PANEL);
             DrawRectangleRec(ScreenRects[R_PLAYER_PANEL], COL_STATUS_PANEL);
             DrawRectangleRec(ScreenRects[R_ENEMY_PANEL], COL_STATUS_PANEL);
 
-            // HP bars
+            // Drawing the HP bars (background and foreground)
             DrawRectangleRec(ScreenRects[R_PLAYER_HP_BG],COL_HP_BG);
             DrawRectangleRec(ScreenRects[R_PLAYER_HP_FG],COL_HP_FG);
             DrawRectangleRec(ScreenRects[R_ENEMY_HP_BG], COL_HP_BG);
             DrawRectangleRec(ScreenRects[R_ENEMY_HP_FG],COL_HP_FG);
 
-            // Status / log
+            // Status boxes and log box
             DrawRectangleRec(ScreenRects[R_PLAYER_STATUS],COL_STATUS_INNER);
             DrawRectangleRec(ScreenRects[R_ENEMY_STATUS],COL_STATUS_INNER);
             DrawRectangleRec(ScreenRects[R_LOG_BOX],COL_LOG_BOX);
@@ -1079,50 +1140,41 @@ void GameManager::render()
             DrawRectangleRec(ScreenRects[R_BTN_DEFEND], COL_BUTTON);
             DrawRectangleRec(ScreenRects[R_BTN_USE_ITEM], COL_BUTTON);
 
-            // Borders (skip HP overlays)
+            // Drawing the outlines for each rectangle except for the HP foreground bars (to make the hp bars look like they are depleating)
             for (int i = 0; i < 15; ++i)
             {
-                if (i == R_PLAYER_HP_FG || i == R_ENEMY_HP_FG) continue;
-                DrawRectangleLinesEx(ScreenRects[i], 3.0f, BLACK);
+                if (i == R_PLAYER_HP_FG || i == R_ENEMY_HP_FG) continue; // Skip HP foreground bars
+                DrawRectangleLinesEx(ScreenRects[i], 3.0f, BLACK); // Draw outline with thickness 3 and black color
             }
 
-            // Text: names + HP
+            // Drawing text information (names, HP values)
+            // Once again need to convert numbers to strings using std::to_string since DrawText requires cstrings
             DrawText(("Player: " + Steve->getName()).c_str(), (int)(ScreenRects[R_PLAYER_NAME].x + 20),(int)(ScreenRects[R_PLAYER_NAME].y + 10), FONT_SIZE_NAME, WHITE);
 
             DrawText(("Enemy: " + Chad->getName()).c_str(), (int)(ScreenRects[R_ENEMY_NAME].x + 20), (int)(ScreenRects[R_ENEMY_NAME].y + 10), FONT_SIZE_NAME, WHITE);
 
-            DrawText(("HP: " + std::to_string(Steve->vit.health) + " / " +
-                      std::to_string(Steve->vit.maxHealth)).c_str(),
-                     (int)(ScreenRects[R_PLAYER_PANEL].x + 30),
-                     (int)(ScreenRects[R_PLAYER_PANEL].y + 130),
-                     FONT_SIZE_HP,
-                     WHITE);
+            DrawText(("HP: " + std::to_string(Steve->vit.health) + " / " + std::to_string(Steve->vit.maxHealth)).c_str(), (int)(ScreenRects[R_PLAYER_PANEL].x + 30),(int)(ScreenRects[R_PLAYER_PANEL].y + 130),FONT_SIZE_HP,WHITE);
 
-            DrawText(("HP: " + std::to_string(Chad->vit.health) + " / " +
-                      std::to_string(Chad->vit.maxHealth)).c_str(),
-                     (int)(ScreenRects[R_ENEMY_PANEL].x + 30),
-                     (int)(ScreenRects[R_ENEMY_PANEL].y + 130),
-                     FONT_SIZE_HP,
-                     WHITE);
+            DrawText(("HP: " + std::to_string(Chad->vit.health) + " / " + std::to_string(Chad->vit.maxHealth)).c_str(), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
 
-
-            static bool actionTaken = false;
-            static int previousEnemyHealth = Chad->vit.health;
-            if (GuiButton(ScreenRects[R_BTN_ATTACK], "Attack"))
+            // This is just a simple implementation for test/milestone purposes
+            // In the future this will be replaced with a more robust turn-based combat system (from trialSebastian.cpp)
+            static bool actionTaken = false; // Flag to track if an action was taken this frame (for now making it static so the message persists for for all frames until next action)
+            static int previousEnemyHealth = Chad->vit.health; // Variable to store previous enemy health for damage calculation
+            if (GuiButton(ScreenRects[R_BTN_ATTACK], "Attack")) // If Attack button is pressed
             {
-                previousEnemyHealth = Chad->vit.health;
-                Steve->dealMeleeDamage(*Chad);
-                actionTaken = true;
+                previousEnemyHealth = Chad->vit.health; // Store current enemy health before attack
+                Steve->dealMeleeDamage(*Chad); // Player attacks enemy (simple melee attack for now, used dealMeleeDamage function defined in characters.h)
+                actionTaken = true; // Set action taken flag to true
             }
-            if (actionTaken)
+            if (actionTaken) // If an action was taken, display the attack log message
             {
-                DrawText(("Steve attacks Chad for " + std::to_string(previousEnemyHealth - Chad->vit.health) + " damage!").c_str(),
-                         (int)(ScreenRects[R_LOG_BOX].x + 10),
-                         (int)(ScreenRects[R_LOG_BOX].y + 10),
-                         FONT_SIZE_LOG,
-                         WHITE);
+                // This has hard coded "Steve" and "Chad" for now since we only have one player and one enemy implemented for testing
+                // This will be made dynamic later when we have a full turn-based system with multiple characters
+                DrawText(("Steve attacks Chad for " + std::to_string(previousEnemyHealth - Chad->vit.health) + " damage!").c_str(),(int)(ScreenRects[R_LOG_BOX].x + 10),(int)(ScreenRects[R_LOG_BOX].y + 10),FONT_SIZE_LOG,WHITE);
             }
 
+            // Same trick as before in rendering character select screen to disable GUI right before rendering buttons we want to disable and enabling it right after
             int prevState = GuiGetState();
             GuiDisable();
             if (GuiButton(ScreenRects[R_BTN_DEFEND], "Defend"))
@@ -1137,10 +1189,17 @@ void GameManager::render()
             GuiSetState(prevState);
             break;
         }
+        
         case GameState::DIALOGUE:
+        {
+            //TODO: Add dialogue rendering
             break;
-
+        }
+        
         case GameState::PAUSE_MENU:
+        {
+            //TODO: Add pause menu rendering
             break;
+        }
     }
 }
