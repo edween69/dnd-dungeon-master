@@ -131,7 +131,7 @@ class Character
             {
                 enemy.takeDamage(d6(gen) + this->cbt.meleeDamage);
             }
-            // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
+            //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
         // @author: Andrew
@@ -146,7 +146,7 @@ class Character
             {
                 enemy.takeDamage(d4(gen) + this->cbt.rangeDamage);
             }
-            // NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
+            //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
         // @author: Andrew
@@ -176,7 +176,7 @@ class Character
                 vit.health = vit.maxHealth;
             }
         }
-        virtual const std::string& getName() const = 0;
+        virtual const std::string& getName() const = 0; // Pure virtual function to get character name must be implemented by derived classes
 };
 
 
@@ -189,14 +189,14 @@ class PlayerCharacter : public Character
     public:
         std::string name;
         std::string characterClass; // e.g., Student, Rat, Professor, Atilla
-        const std::string& getName() const override { return name; }
+        const std::string& getName() const override { return name; } // Override to return player character's name
 
         // Constructor to initialize player character attributes
         PlayerCharacter(const std::string& playerName, const std::string& charClass, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
             : Character(true, attributes, defense, combat, vital, statusEffects), name(playerName), characterClass(charClass) {}
 
-        // Additional player-specific methods can be added here
-        virtual ~PlayerCharacter() = default; // Virtual destructor
+        
+        virtual ~PlayerCharacter() = default; // Virtual destructor can be overridden if needed
 };
 
 
@@ -208,12 +208,12 @@ class NonPlayerCharacter : public Character
     // NPC-specific attributes
     public:
         std::string npcType; // e.g., Zombie, Civilian, Security
-        const std::string& getName() const override { return npcType; }
+        const std::string& getName() const override { return npcType; } // Override to return NPC type as name
         // Constructor to initialize NPC attributes
         NonPlayerCharacter(const std::string& type, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
             : Character(false, attributes, defense, combat, vital, statusEffects), npcType(type) {}
 
-        // Additional NPC-specific methods can be added here
+
         virtual ~NonPlayerCharacter() = default; // Virtual destructor
 };
 
