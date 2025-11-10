@@ -20,14 +20,13 @@ CXXFLAGS ?= -std=c++17 -Wall -I./src
 
 TARGET_NAME  := TheLastLift
 SRC_DIR := src
-TARGET:= $(SRC_DIR)/$(TARGET_NAME) # The final executable we want to create
+TARGET:= $(TARGET_NAME) # The final executable we want to create
 
 # Defining all the source files we want to compile and link togeter in our final executable
 # May grow or shrink as we add more features and polish stuff up
 SRCS := \
 	$(SRC_DIR)/main.cpp \
 	$(SRC_DIR)/screenManager.cpp \
-	$(SRC_DIR)/gui_impl.cpp \
 	$(SRC_DIR)/characters.cpp \
 	$(SRC_DIR)/rng.cpp 
 
