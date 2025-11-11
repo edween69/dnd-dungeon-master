@@ -1,11 +1,12 @@
-# TTRPG Game  _(formerly **dnd-dungeon-master**)_
+# TTRPG Game 
+ _(formerly **dnd-dungeon-master**)_
 
-A small turn-based TTRPG prototype built with C++, raylib, and raygui. For this **milestone**, the project is split into two separate prototypes: **a GUI prototype (main menu + character select + basic combat screen)** and a **console combat engine prototype** that runs entirely in the terminal and focuses on turn-based logic and damage resolution. Both prototypes load character stats from a CSV file and use the same character/stat system; once they are each finalized, the combat engine will be fully integrated into the GUI version so that all combat logic is driven by the same underlying system.
+A small turn based TTRPG prototype built with C++, raylib, and raygui. For this **milestone**, the project is split into two separate prototypes: **a GUI prototype (main menu + character select + basic combat screen)** and a **console combat engine prototype** that runs entirely in the terminal and focuses on turn-based logic and damage resolution. Both prototypes load character stats from a CSV file and use the same character, once they are each finalized, the combat engine will be fully integrated into the GUI version so that all combat logic is driven by the same underlying system.
 
 ---
 ## How to Build and Run (Very Important)
 
-As aforesaid, there are two separate prototype submissions for this milestone. To run either one, you must first have **raylib** installed on your system. Please refer to the [raylib installation guide](https://raylib.com/) for your specific device if you are having issues with following these steps.
+As aforesaid, there are two separate prototype submissions for this milestone. To run either one, you must first have **raylib** installed on your system. Please refer to the [raylib installation guide](https://raylib.com/) for your specific device if you are having issues with following these steps. **Also please feel free to reach out to us if you have any questions or run into any issues!**
 
 On Windows, go to raylib's [Windows installation instructions](https://raylib.com/) and download the windows installer. Follow the steps in the installer to set up raylib on your system
 
@@ -142,8 +143,9 @@ Separate, text-only combat prototype that uses the same character/stat system:
 - Logs each turn’s result with a `std::stringstream`
 - Ends on death of either side with a simple win/lose message
 
-This engine is used to test combat logic by itself
-*Note: combat.cpp and combat.h are not used for the purposes of this demonstration. All necessary code was allocated to trialSebastian.cpp for the milestone.
+This engine is used to test combat logic by itself.
+
+**Note: combat.cpp and combat.h are not used for the purposes of this demonstration. All necessary code was allocated to trialSebastian.cpp for the milestone.**
 
 ---
 
@@ -167,8 +169,8 @@ This engine is used to test combat logic by itself
   - Stat structs: `Attributes`, `DefenseStats`, `CombatStats`, `VitalStats`, `StatusEffects`
   - CSV helpers:
     - `openStartingStatsCSV()`
-    - `storeAllStatLines(...)`
-    - `getStatForCharacterID(...)`
+    - `storeAllStatLines()`
+    - `getStatForCharacterID()`
 
 - `rng.cpp / rng.h`
   - RNG utilities for damage rolls, AI decisions, etc.
@@ -189,9 +191,9 @@ This engine is used to test combat logic by itself
 ## Status / Notes
 
 - Only **Student** is somewhat playable and selectable.
-- Rat, Professor, and Attila exist visually in the character select screen but have no real implementation yet.
-- GUI combat only fully supports **Attack** right now.
-- Console combat has more complete logic than the GUI flow.
+- Rat, Professor, and Attila exist visually in the character select screen but have no real implementation yet
+- GUI combat only partially supports **Attack** right now.
+- TUI combat has more complete logic than the GUI combat
 - Resources use manual `new[]` / `delete[]` in `enterScreen` / `exitScreen`, so ordering and cleanup matter.
 
 ---
