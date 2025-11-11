@@ -83,11 +83,11 @@ After installing raylib, follow the instructions below to build and run each por
 
 
 ## Screen Flow / GUI
-
+Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
 - **Main Menu**
   - Background + title textures
-  - `Start Game` → goes to character select  
-  - `Exit Game` → closes the game  
+  - `Start Game` = goes to character select  
+  - `Exit Game` = closes the game  
 
 - **Character Select**
   - 4 character cards: Student, Rat, Professor, Attila  
@@ -115,6 +115,8 @@ After installing raylib, follow the instructions below to build and run each por
   - `Attack` button calls `dealMeleeDamage` on the enemy and updates the log text  
   - `Defend` / `Use Item` are placeholders in the GUI (no functionality yet)
 
+  This GUI flow is used to test screen management and basic combat UI layout
+
 ---
 
 ## Console Combat Engine
@@ -134,13 +136,13 @@ Separate, text-only combat prototype that uses the same character/stat system:
     - 25% chance to **Defend**
     - Otherwise **Attack**
 - Uses:
-  - `resolve_melee(...)`
-  - `resolve_ranged(...)`
-  - Temporary defend bonus from `defend_bonus_armor(...)`
+  - `resolve_melee()`
+  - `resolve_ranged()`
+  - Temporary defend bonus from `defend_bonus_armor()`
 - Logs each turn’s result with a `std::stringstream`
 - Ends on death of either side with a simple win/lose message
 
-This engine does not depend on raylib and is used to test combat logic by itself
+This engine is used to test combat logic by itself
 
 ---
 
