@@ -6,9 +6,27 @@ A small turn-based TTRPG prototype built with C++, raylib, and raygui. For this 
 ---
 ## How to Run (Very Important)
 
-As aforesaid, there are two separate prototype submissions for this milestone:
+As aforesaid, there are two separate prototype submissions for this milestone. To run either one, you must first have **raylib** installed on your system. Please refer to the [raylib installation guide](https://raylib.com/) for your specific device if you are having issues with following these steps. 
 
-1. ** Combat Engine Prototype ** 
+On Windows, go to raylib's [Windows installation instructions](https://raylib.com/) and download the windows installer. Follow the steps in the installer to set up raylib on your system.
+
+On Linux, you can install raylib using your package manager. For example, on Ubuntu, you can run:
+
+```
+sudo apt-get install libraylib-dev
+```
+
+On MacOS, you can install raylib using Homebrew. Run the following command in your terminal:
+
+```
+brew install raylib
+```
+
+After installing raylib, follow the instructions below to build and run each portion of the project.
+### 0. Download the Project ###
+- Clone the repository or download the ZIP file from GitHub and extract it to your desired location.
+
+### 1. Combat Engine Prototype ###
 - To run this portion of the project, navigate to the `src` directory in your terminal and enter the following command: 
 
 On Windows:
@@ -24,6 +42,30 @@ On MacOS:
 g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian $(pkg-config --cflags --libs raylib) -std=c++17 -Wall -Wextra -g
 ```
 Then run the compiled executable:
+
+On Windows:
+```
+.\trialSebastian
+```
+
+On Linux or MacOS:
+```
+./trialSebastian
+```
+### 2. GUI Prototype ###
+- To run this portion of the project, you will also need `make` installed on your system.
+
+    - On Windows, you can install `mingw32-make` using MSYS2 URCT or download it from [here](http://gnuwin32.sourceforge.net/packages/make.htm).
+
+    - On Linux, `make` is usually pre-installed. If not, you can install it using your package manager. For example, on Ubuntu, you can run:
+    ```
+    sudo apt-get install build-essential
+    ```
+    - On MacOS, you can install `make` using Homebrew. Run the following command in your terminal:
+    ```
+    brew install make
+    ```
+
 
 ## Screen Flow / GUI
 
