@@ -25,6 +25,10 @@ brew install raylib
 After installing raylib, follow the instructions below to build and run each portion of the project.
 ### 0. Download the Project ###
 - Clone the repository or download the ZIP file from GitHub and extract it to your desired location
+                                           
+                                           or 
+
+- Download the ZIP file from Canvas and extract it to your desired location
 
 
 ### 1. Combat Engine Prototype ###
