@@ -194,7 +194,7 @@ This engine is used to test combat logic by itself.
 - Rat, Professor, and Attila exist visually in the character select screen but have no real implementation yet
 - GUI combat only partially supports **Attack** right now.
 - TUI combat has more complete logic than the GUI combat
-- Resources use manual `new[]` / `delete[]` in `enterScreen` / `exitScreen`, so ordering and cleanup matter.
+- Resources in the screen manager are manually managed using pointers, beware about memory leaks.
 
 ---
 
