@@ -1,20 +1,18 @@
 # TTRPG Game  
 _(formerly **dnd-dungeon-master**)_
 
-A small turn-based TTRPG prototype built with **C++**, **raylib**, and **raygui**.
-
-Current focus:
-- Simple screen system (main menu → character select → combat)
-- Basic character + stat system loaded from CSV
-- Two combat flows:
-  - GUI combat layout (raylib + raygui)
-  - Console-only combat engine for testing
+A small turn-based TTRPG prototype built with C++, raylib, and raygui. For this **milestone**, the project is split into two separate prototypes: **a GUI prototype (main menu + character select + basic combat screen)** and a **console combat engine prototype** that runs entirely in the terminal and focuses on turn-based logic and damage resolution. Both prototypes load character stats from a CSV file and use the same character/stat system; once they are each finalized, the combat engine will be fully integrated into the GUI version so that all combat logic is driven by the same underlying system.
 
 ---
+## How to Run (Very Important)
 
-## Features
+As aforesaid, there are two separate prototype submissions for this milestone:
 
-### Screens
+1. ** Combat Engine Prototype ** 
+- To run this portion of the project, navigate to the `src` directory in your terminal and enter the following command: 
+```g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall -Wextra -g```
+
+## Screen Flow / GUI
 
 - **Main Menu**
   - Background + title textures
