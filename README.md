@@ -10,9 +10,20 @@ As aforesaid, there are two separate prototype submissions for this milestone:
 
 1. ** Combat Engine Prototype ** 
 - To run this portion of the project, navigate to the `src` directory in your terminal and enter the following command: 
+
+On Windows:
 ```
 g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall -Wextra -g
 ```
+On Linux:
+```
+g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian -I "/usr/local/include/raylib" -std=c++17 -Wall -Wextra -g
+```
+On MacOS:
+```
+g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian $(pkg-config --cflags --libs raylib) -std=c++17 -Wall -Wextra -g
+```
+Then run the compiled executable:
 
 ## Screen Flow / GUI
 
