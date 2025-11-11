@@ -143,6 +143,7 @@ Separate, text-only combat prototype that uses the same character/stat system:
 - Ends on death of either side with a simple win/lose message
 
 This engine is used to test combat logic by itself
+*Note: combat.cpp and combat.h are not used for the purposes of this demonstration. All necessary code was allocated to trialSebastian.cpp for the milestone.
 
 ---
 
@@ -169,7 +170,7 @@ This engine is used to test combat logic by itself
     - `storeAllStatLines(...)`
     - `getStatForCharacterID(...)`
 
-- `rng.cpp`
+- `rng.cpp / rng.h`
   - RNG utilities for damage rolls, AI decisions, etc.
 
 - `trialSebastian.cpp`
