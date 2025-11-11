@@ -26,36 +26,45 @@ After installing raylib, follow the instructions below to build and run each por
 ### 0. Download the Project ###
 - Clone the repository or download the ZIP file from GitHub and extract it to your desired location.
 
+
 ### 1. Combat Engine Prototype ###
 - To run this portion of the project, navigate to the `src` directory in your terminal and enter the following command: 
 
-On Windows:
-```
-g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall -Wextra -g
-```
-On Linux:
-```
-g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian -I "/usr/local/include/raylib" -std=c++17 -Wall -Wextra -g
-```
-On MacOS:
-```
-g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian $(pkg-config --cflags --libs raylib) -std=c++17 -Wall -Wextra -g
-```
-Then run the compiled executable:
+    On Windows:
+    ```
+    g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall  -Wextra -g
+    ```
 
-On Windows:
-```
-.\trialSebastian
-```
+    On Linux:
+    ```
+    g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian -I "/usr/local/include/raylib" -std=c++17 -Wall -Wextra -g
+    ```
 
-On Linux or MacOS:
-```
-./trialSebastian
-```
+    On MacOS:
+    ```
+    g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian $(pkg-config --cflags --libs raylib) -std=c++17 -Wall -Wextra -g
+    ```
+    Then run the compiled executable in the terminal with the following command:
+
+    On Windows:
+    ```
+    .\trialSebastian
+    ```
+
+    On Linux or MacOS:
+    ```
+    ./trialSebastian
+    ```
+
+
 ### 2. GUI Prototype ###
 - To run this portion of the project, you will also need `make` installed on your system.
 
-    - On Windows, you can install `mingw32-make` using MSYS2 URCT or download it from [here](http://gnuwin32.sourceforge.net/packages/make.htm).
+    - On Windows, you can install `mingw32-make` using MSYS2 URCT with the command 
+    ```
+    pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make
+    ```
+
 
     - On Linux, `make` is usually pre-installed. If not, you can install it using your package manager. For example, on Ubuntu, you can run:
     ```
@@ -65,6 +74,13 @@ On Linux or MacOS:
     ```
     brew install make
     ```
+
+    - Once you have `make` installed, navigate to the root directory of the project in your terminal and run the following command:
+    ```
+    make
+    ```
+
+    - This will compile the source files and create an executable named `TheLastLift` (or `TheLastLift.exe` on Windows) in the `src` directory.
 
 
 ## Screen Flow / GUI
