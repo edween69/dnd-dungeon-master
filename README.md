@@ -98,8 +98,8 @@ After installing raylib, follow the instructions below to build and run each por
 Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
 - **Main Menu**
   - Background + title textures
-  - `Start Game` = goes to character select  
-  - `Exit Game` = closes the game  
+    - `Start Game` = goes to character select  
+    - `Exit Game` = closes the game  
 
 - **Character Select**
   - 4 character cards: Student, Rat, Professor, Attila  
