@@ -79,7 +79,13 @@ After installing raylib, follow the instructions below to build and run each por
     brew install make
     ```
 
-- Once you have `make` installed, navigate to the root directory of the project in your terminal and run the following command:
+- Once you have `make`  or `mingw32-make` installed, navigate to the root directory of the project in your terminal and run the following command:
+    On Windows:
+    ```
+    mingw32-make
+    ```
+
+    On Linux or MacOS:
     ```
     make
     ```
@@ -128,7 +134,7 @@ Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
 
 File: `trialSebastian.cpp`  
 
-Separate, text-only combat prototype that uses the same character/stat system:
+This is a separate, text-only combat prototype that uses the same character/stat system:
 
 - Builds a **Student** and a **Zombie_Standard** from `Character_Starting_Stats.csv`
 - Turn-based loop in the console:
