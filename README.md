@@ -209,6 +209,19 @@ This engine is used to test combat logic by itself.
 
 ---
 
+## What's next?
+
+After milestone one, priorities will include:
+- Introduce std::unique_ptr and other RAII principles to ensure safe, automatic deallocation, and prevent memory leaks.
+- Expand combat logic with ranged attacks, item interactions, and improved AI decision-making.
+- Transition the current TUI-based combat logic into a fully interactive GUI layer for a more intuitive player experience.
+- Flesh out the overall interface design, refining layouts, feedback cues, and visual hierarchy.
+- Begin implementing player movement and map navigation, establishing the foundation for exploration.
+- Streamline data storage and reduce redundant file loading by introducing persistent in-memory data structures.
+- Audit and optimize data types for efficiency and consistency to improving performance and maintainability.
+
+---
+
 
 
 
