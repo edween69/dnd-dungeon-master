@@ -80,6 +80,7 @@ After installing raylib, follow the instructions below to build and run each por
     ```
 
 - Once you have `make`  or `mingw32-make` installed, navigate to the root directory of the project in your terminal and run the following command:
+    
     On Windows:
     ```
     mingw32-make
