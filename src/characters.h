@@ -124,12 +124,10 @@ class Character
         // @param enemy - target that will take damage
         void dealMeleeDamage (Character& enemy)
         {
-            auto& gen = rng();
-            std::uniform_int_distribution<int> d20(1,20), d6(1,6);
             this->cbt.meleeDamage = std::max(this->att.dexterity,this->att.strength) + this->wep.meleeWeapon;
-            if (enemy.def.armor < d20(gen) + this->cbt.meleeDamage)
+            if (enemy.def.armor < roll_d(20) + this->cbt.meleeDamage)
             {
-                enemy.takeDamage(d6(gen) + this->cbt.meleeDamage);
+                enemy.takeDamage(roll_d(6) + this->cbt.meleeDamage);
             }
             //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
@@ -139,12 +137,10 @@ class Character
         // @param enemy - target that will take damage
         void dealRangeDamage (Character& enemy)
         {
-            auto& gen = rng();
-            std::uniform_int_distribution<int> d20(1,20), d4(1,4);
             this->cbt.rangeDamage = std::max(this->att.dexterity,this->att.wisdom) + this->wep.rangeWeapon;
-            if (enemy.def.armor < d20(gen) + this->cbt.rangeDamage)
+            if (enemy.def.armor < roll_d(20) + this->cbt.rangeDamage)
             {
-                enemy.takeDamage(d4(gen) + this->cbt.rangeDamage);
+                enemy.takeDamage(roll_d(4) + this->cbt.rangeDamage);
             }
             //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }

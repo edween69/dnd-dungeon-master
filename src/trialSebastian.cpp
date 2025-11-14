@@ -105,8 +105,7 @@ static Action player_choose()
 // AI for combat, defends 25% of the time
 static Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*foe*/) 
 {
-    std::uniform_int_distribution<int> dist(1, 4);
-    int roll = dist(rng());           
+    int roll = roll_d(4);           
     if (roll == 1) return {ActionType::Defend, "Defend"};
     else
         return {ActionType::Attack, "Attack"};

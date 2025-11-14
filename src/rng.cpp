@@ -1,15 +1,24 @@
 /*  Author: Andrew
-    This file stores the rng() generator. to use:
-    std::uniform_int_distribution<int> d20(1,20), d6(1,6);
-    randomvalue = d20(rng());
-
-    any functions that are dependent on randomness should be put here.
+    Any functions that are dependent on randomness should be put here.
+    To use random rolls just run call roll_d() with whatever die face you want.
 */
 #include "rng.h"
 
-// @author Andrew
-// @brief seeds the random generator using random_device{} this is to limit the amount of imported libraries
-std::mt19937& rng() {
-    static std::mt19937 gen(std::random_device{}());
-    return gen;
+
+namespace {
+    // This function returns a reference to a single global-ish engine,
+    // but it's hidden inside this file only.
+    std::mt19937& engine() {
+        static std::mt19937 eng{ std::random_device{}() };
+        return eng;
+    }
+}
+
+// @author: Andrew
+// @brief: the function rolls a random number in the range 1 to a number specified
+// @param: int sides - is effectively the number of sides of a dice so a 6 would be like rolling a 6 sided die
+// @return: int dist(engine) -  is a random number in range 1 to specified number
+int roll_d(int sides) {
+    std::uniform_int_distribution<int> dist(1, sides);
+    return dist(engine());
 }

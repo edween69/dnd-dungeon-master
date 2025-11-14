@@ -2,6 +2,7 @@
 
 /* NOTE: COMBAT IS NOT IMPLEMENTED HERE YET, TO TEST COMBAT SEE trialSebastian.cpp
 #include "combat.h"
+#include "rng.h"
 
 using namespace std;
 
@@ -47,10 +48,8 @@ void apply_defend(Character& a, std::stringstream& log)
 // AI engine
 Action ai_choose(const Character& self, const Character& foe) 
 {
-    auto& gen = rng();
-    std::uniform_int_distribution<int> perc(1,100);
     //Edit ai actions 25% chance do nothing
-    if (perc(gen) <= 25)
+    if (roll_d(4) == 1)
         return {ActionType::None, -1, "Did Nothing"};
     else
         return {ActionType::Attack, -1, "Attack"};

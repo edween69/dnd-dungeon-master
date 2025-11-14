@@ -7,6 +7,7 @@
 #ifndef RNG_H
 #define RNG_H
 
-std::mt19937& rng();
+// Roll a die with N sides
+int roll_d(int sides);
 
 #endif
