@@ -75,6 +75,11 @@ struct StatusEffects
     bool isFast = false;
     bool defending = false;
 };
+// Structure to hold character inventories, WIP
+struct Inventory
+{
+    int healthPotions;
+};
 
 
 // @author: Edwin Baiden
@@ -91,6 +96,7 @@ class Character
         VitalStats vit;
         StatusEffects statEff;
         Weapons wep;
+        Inventory inv; //Need to implement for all characters (zombies/player)
         
         
         // Constructor to initialize all attributes
@@ -224,6 +230,7 @@ class Student : public PlayerCharacter
             // Default attributes for Student character
             wep.meleeWeapon = 2; // ruler
             wep.rangeWeapon = 2; // textbooks
+            inv.healthPotions = 1;
         };
 };
 
@@ -275,6 +282,7 @@ class Zombie : public NonPlayerCharacter
         {
             wep.meleeWeapon = 3;
             wep.rangeWeapon = 2; // default value, may not be used
+            inv.healthPotions = 0;
         };
 };
 

@@ -55,9 +55,8 @@ static void resolve_ranged(Character& attacker, Character& defender, bool defend
     int originalAR = defender.def.armor;
 
     if (defenderIsDefending)
-    {
-        defender.def.armor = originalAR + defend_bonus_armor(defender);
-    }
+        defender.def.armor = originalAR + defend_bonus_armor(defender);//
+    
 
     attacker.dealRangeDamage(defender);
     defender.def.armor = originalAR;
@@ -73,6 +72,17 @@ static void resolve_ranged(Character& attacker, Character& defender, bool defend
         log << nameOf(attacker) << " misses.\n";
     }
 }
+/*
+//Use inventory to be implemented
+static void resolve_inventory(Character& attacker, std::stringstream& log) 
+{
+    int healVal; // make using function
+    log << nameOf(attacker) << " heals " << healVal << " HP " << attacker.vit.health << "/" << attacker.vit.maxHealth << "\n";
+
+    
+    
+}
+*/
 
 // Menu
 enum class ActionType { Attack, Defend, UseRange, UseItem, None };
@@ -95,7 +105,7 @@ static Action player_choose()
         {
             case '1': return {ActionType::Attack, "Attack"};
             case '2': return {ActionType::Defend, "Defend"};
-            case '3': return {ActionType::None, "UseRange"}; //Need to fix
+            case '3': return {ActionType::UseRange, "UseRange"}; //Need to fix
             case '4': std::cout << "Inventory not implemented yet\n"; return {ActionType::UseItem, "UseItem"};
             default:  std::cout << "Invalid choice\n";
         }
@@ -111,10 +121,9 @@ static Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacte
         return {ActionType::Attack, "Attack"};
 }
 
-// Main combat engine
 void runCombat(Student& player, NonPlayerCharacter& enemy) 
 {
-    bool playerTurn = true; //will change to base on intiative
+    bool playerTurn = true; // later: base on initiative
     bool playerDef  = false;  
     bool enemyDef   = false;
 
@@ -136,54 +145,62 @@ void runCombat(Student& player, NonPlayerCharacter& enemy)
 
     while (player.isAlive() && enemy.isAlive()) 
     {
-        log.str(""); log.clear();
+        log.str("");
+        log.clear();
 
-        //Reset Defense
-        if (playerTurn) playerDef = false; 
-        else enemyDef = false;
-
-        Action act = playerTurn ? player_choose(): ai_choose(enemy, player);
-        if (!playerTurn) std::cout << nameOf(enemy) << " chose: " << act.desc << "\n";
-
-        if (playerTurn) 
+        if (playerTurn)
         {
+            
+            playerDef = false;
+
+            Action act = player_choose();
+
             if (act.type == ActionType::Attack) 
             {
                 resolve_melee(player, enemy, enemyDef, log);
             } 
-
             else if (act.type == ActionType::Defend) 
             {
                 playerDef = true;
                 log << nameOf(player) << " Defends.\n";
             } 
-
             else if (act.type == ActionType::UseRange) 
             {
                 resolve_ranged(player, enemy, enemyDef, log);
             } 
+            /*
+            else if (act.type == ActionType::UseItem) 
+            {
+                to be added
 
+            } 
+            */
             else 
             {
                 log << nameOf(player) << " hesitates.\n";
             }
+        }
+        else
+        {
+            // Enemies turn now separate
+            enemyDef = false;
+
+            Action act = ai_choose(enemy, player);
+            std::cout << nameOf(enemy) << " chose: " << act.desc << "\n";
 
             if (act.type == ActionType::Attack) 
             {
                 resolve_melee(enemy, player, playerDef, log);
             } 
-
             else if (act.type == ActionType::Defend) 
             {
                 enemyDef = true;
                 log << nameOf(enemy) << " Defends.\n";
             } 
-
             else if (act.type == ActionType::UseRange) 
             {
                 resolve_ranged(enemy, player, playerDef, log);
             } 
-
             else 
             {
                 log << nameOf(enemy) << " does nothing.\n";
@@ -199,16 +216,15 @@ void runCombat(Student& player, NonPlayerCharacter& enemy)
         }
         if (!enemy.isAlive())  
         { 
-            std::cout << "\n>>> You killed: " << nameOf(enemy);
+            std::cout << "\n>>> You killed: " << nameOf(enemy) << "\n";
             break; 
         }
 
-        playerTurn = !playerTurn;
+        playerTurn = !playerTurn;// changing turns
         print_status();
     }
-
-    
 }
+
 
 // Temporary main function for debugging
 int main() {

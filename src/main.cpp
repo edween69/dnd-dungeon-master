@@ -8,7 +8,8 @@
 #include "raylib.h"
 #include "screenManager.h"
 
-int main() {
+int main() 
+{
     InitWindow(1920, 1080, "The Last Lift"); // Windowed mode for development
     //Allowed to be resized for testing layout
     SetWindowState(FLAG_WINDOW_RESIZABLE);
