@@ -15,6 +15,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <sstream>
 #include "rng.h"
 #include "raylib.h"

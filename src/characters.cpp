@@ -7,7 +7,8 @@
 
 std::ifstream* openStartingStatsCSV()
 {
-    std::ifstream* StartingStatFile = new std::ifstream("../dat/Character_Starting_Stats.csv");
+    //Using filesystem to get path of the CSV relative to the executable
+    std::ifstream* StartingStatFile = new std::ifstream(std::filesystem::path("..") / "dat" / "Character_Starting_Stats.csv");
     //std::ifstream* StartingStatFile = new std::ifstream("dat/Character_Starting_Stats.csv"); // In the form: ID,Strength,Dexterity,Constitution,Wisdom,Charisma,Intelligence,Max_Health,Armor,Initiative
     if (!StartingStatFile->is_open()) 
     {
