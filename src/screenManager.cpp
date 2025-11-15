@@ -977,9 +977,9 @@ void GameManager::enterGameState(GameState state)
             */
             numScreenTextures = 3;
             ScreenTextures = new Texture2D[numScreenTextures];
-            ScreenTextures[0] = LoadTexture((std::filesystem::path("..") / "assets" / "images" / "environments" / "Building1" / "Hallway" / "Hallway[1-2].png").string().c_str());
-            ScreenTextures[1] = LoadTexture((std::filesystem::path("..") / "assets" / "images" / "characters" / "pc" / "Student-Fighter" / "rotations" / "north-west.png").string().c_str());
-            ScreenTextures[2] = LoadTexture((std::filesystem::path("..") / "assets" / "images" / "characters" / "npc" / "Enemies" / "FratBro1.png").string().c_str());
+            ScreenTextures[0] = LoadTexture((std::filesystem::path(GetApplicationDirectory()) / "assets" / "images" / "environments" / "Building1" / "Hallway" / "Hallway[1-2].png").string().c_str());
+            ScreenTextures[1] = LoadTexture((std::filesystem::path(GetApplicationDirectory()) / "assets" / "images" / "characters" / "pc" / "Student-Fighter" / "rotations" / "north-west.png").string().c_str());
+            ScreenTextures[2] = LoadTexture((std::filesystem::path(GetApplicationDirectory()) / "assets" / "images" / "characters" / "npc" / "Enemies" / "FratBro1.png").string().c_str());
 
             numScreenRects = 15;
             ScreenRects = new Rectangle[numScreenRects]; // Dynamically allocate array for screen rectangles
