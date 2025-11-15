@@ -10,9 +10,13 @@
 
 int main() 
 {
+    #if defined(__APPLE__) ||  defined (__MACH__) ||defined(__linux__)
+        SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE);
+    #else
+        SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    #endif
+
     InitWindow(1920, 1080, "The Last Lift"); // Windowed mode for development
-    //Allowed to be resized for testing layout
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
     
     SetTargetFPS(30); // Set desired frame rate
 

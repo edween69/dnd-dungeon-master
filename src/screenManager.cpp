@@ -394,6 +394,7 @@ ScreenManager::~ScreenManager()
 //@author: Edwin Baiden
 void ScreenManager::init()
 {
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     enterScreen(currentScreen); // Enter the initial screen to set up resources
 }
 
