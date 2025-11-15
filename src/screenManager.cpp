@@ -772,8 +772,8 @@ void ScreenManager::enterScreen(ScreenState s)
             */
             numScreenTextures = 2;
             ScreenTextures = new Texture2D[numScreenTextures]; // Dynamically allocate array for screen textures
-            ScreenTextures[0] = LoadTexture((std::filesystem::path("..") / "assets" / "images" / "UI" / "startMenuBg.png").string().c_str()); // Background texture
-            ScreenTextures[1] = LoadTexture((std::filesystem::path("..") / "assets" / "images" / "UI" / "gameTitle.png").string().c_str()); // Logo texture
+            ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png"); // Background texture
+            ScreenTextures[1] = LoadTexture("../assets/images/UI/gameTitle.png"); // Logo texture
 
             numScreenRects = 2;
             ScreenRects = new Rectangle[numScreenRects];  // Dynamically allocate array for screen rectangles
@@ -808,11 +808,11 @@ void ScreenManager::enterScreen(ScreenState s)
 
             numScreenTextures = 5;
             ScreenTextures = new Texture2D[numScreenTextures]; // Dynamically allocate array for screen textures
-            ScreenTextures[0] = LoadTexture(((std::filesystem::path("..") / "assets" / "images" / "UI" / "startMenuBg.png").string().c_str())); // Background texture
-            ScreenTextures[1] = LoadTexture(((std::filesystem::path("..") / "assets" / "images" / "characters" / "pc" / "Student-Fighter" / "rotations" / "south.png").string().c_str())); // Character card texture
-            ScreenTextures[2] = LoadTexture(((std::filesystem::path("..") / "assets" / "images" / "characters" / "pc" / "Rat-Assassin" / "rotations" / "south.png").string().c_str())); // Character card texture
-            ScreenTextures[3] = LoadTexture(((std::filesystem::path("..") / "assets" / "images" / "characters" / "pc" / "Professor-Mage" / "rotations" / "south.png").string().c_str())); // Character card texture
-            ScreenTextures[4] = LoadTexture(((std::filesystem::path("..") / "assets" / "images" / "characters" / "pc" / "Attila-Brawler" / "rotations" / "south.png").string().c_str())); // Character card texture
+            ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png"); // Background texture
+            ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/south.png"); // Character card texture
+            ScreenTextures[2] = LoadTexture("../assets/images/characters/pc/Rat-Assassin/rotations/south.png"); // Character card texture
+            ScreenTextures[3] = LoadTexture("../assets/images/characters/pc/Professor-Mage/rotations/south.png"); // Character card texture
+            ScreenTextures[4] = LoadTexture("../assets/images/characters/pc/Attila-Brawler/rotations/south.png"); // Character card texture
         
             /*
                 -ScreenRects[0]: Rectangle for the "Play Game" button
@@ -920,6 +920,7 @@ void ScreenManager::exitScreen(ScreenState s)
 //@author: Edwin Baiden
 GameManager::GameManager(GameState initial)
 {
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     currentGameState = initial;
 }
 
@@ -977,9 +978,9 @@ void GameManager::enterGameState(GameState state)
             */
             numScreenTextures = 3;
             ScreenTextures = new Texture2D[numScreenTextures];
-            ScreenTextures[0] = LoadTexture((std::filesystem::path(GetApplicationDirectory()) / "assets" / "images" / "environments" / "Building1" / "Hallway" / "Hallway[1-2].png").string().c_str());
-            ScreenTextures[1] = LoadTexture((std::filesystem::path(GetApplicationDirectory()) / "assets" / "images" / "characters" / "pc" / "Student-Fighter" / "rotations" / "north-west.png").string().c_str());
-            ScreenTextures[2] = LoadTexture((std::filesystem::path(GetApplicationDirectory()) / "assets" / "images" / "characters" / "npc" / "Enemies" / "FratBro1.png").string().c_str());
+            ScreenTextures[0] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
+            ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/north-west.png");
+            ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
 
             numScreenRects = 15;
             ScreenRects = new Rectangle[numScreenRects]; // Dynamically allocate array for screen rectangles

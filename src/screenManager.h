@@ -106,7 +106,6 @@
 #include "characters.h"
 #include "raygui.h"
 #include "rng.h"
-#include <filesystem>
 #ifndef SCREENMANAGER_H
 #define SCREENMANAGER_H
 
