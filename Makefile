@@ -52,7 +52,6 @@ else
 	ifeq ($(strip $(UNAME_S)),Darwin) # because apparently MacOS is detected as "Darwin   "
 		CXXFLAGS += $(shell pkg-config --cflags raylib)
 		LDFLAGS  += $(shell pkg-config --libs raylib)
-		LDLIBS += -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
 	else
 		# Linux
 		LDLIBS += -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
