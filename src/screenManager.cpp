@@ -139,8 +139,8 @@
 
 
 //================= MACROS TO IMPROVE READABILITY WHILE SAVING RUNTIME MEMORY ===================
-#define SCREEN_WIDTH (float)(GetScreenWidth()) // Get current screen width
-#define SCREEN_HEIGHT (float)(GetScreenHeight()) // Get current screen height
+#define SCREEN_WIDTH (float)(GetRenderWidth()) // Get current screen width
+#define SCREEN_HEIGHT (float)(GetRenderHeight()) // Get current screen height
 
 // Character select
 #define MAX_CHAR_CARDS 4 // Maximum number of character cards shown (for now, we only have 4 characters)

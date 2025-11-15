@@ -11,9 +11,9 @@
 int main() 
 {
     #if defined(__APPLE__) ||  defined (__MACH__) ||defined(__linux__)
-        SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE);
+        SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     #else
-        SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+        SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     #endif
 
     InitWindow(1920, 1080, "The Last Lift"); // Windowed mode for development
