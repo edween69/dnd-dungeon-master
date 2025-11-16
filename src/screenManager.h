@@ -104,6 +104,7 @@
 #include "raylib.h"
 #include <cmath>
 #include "characters.h"
+#include "combat.h"
 #include "raygui.h"
 #include "rng.h"
 #ifndef SCREENMANAGER_H
@@ -155,6 +156,7 @@ class ScreenManager
 class GameManager {
     private:
         GameState currentGameState; // Current active game state
+        CombatHandler combatHandler; // Combat handler to manage combat state
         
     
     public:

@@ -1118,6 +1118,16 @@ void GameManager::enterGameState(GameState state)
             ScreenRects[R_BTN_DEFEND] = {ScreenRects[R_BOTTOM_PANEL].x + 20,ScreenRects[R_BTN_ATTACK].y + 100,400,80};
             ScreenRects[R_BTN_USE_ITEM] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 150,ScreenRects[R_BTN_ATTACK].y,400,80};
             ScreenRects[R_LOG_BOX] = {SCREEN_WIDTH - 800, ScreenRects[R_BTN_ATTACK].y, 780, 175};
+
+            combatHandler.playerTurn = Steve->cbt.initiative >= Chad->cbt.initiative; // Determine who goes first based on initiative (simple comparison for now)
+            combatHandler.playerIsDefending = false;
+            combatHandler.enemyIsDefending = false;
+
+            combatHandler.log.str(""); // Clear the combat log
+            combatHandler.log.clear(); // Clear any error flags
+            combatHandler.log << "A wild " << Chad->getName() << " appears!" << std::endl; // Initial log entry
+
+            combatHandler.enemyActionDelay = 1.0f; // Reset enemy action delay timer
             break;
         }
 
@@ -1189,6 +1199,37 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
             // Update health bar widths based on current health
             ScreenRects[R_PLAYER_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_PLAYER_HP_BG],Steve->vit.health, Steve->vit.maxHealth);
             ScreenRects[R_ENEMY_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_ENEMY_HP_BG], Chad->vit.health, Chad->vit.maxHealth);
+
+            if(!combatHandler.playerTurn)
+            {
+                combatHandler.enemyActionDelay -= dt;
+                if (combatHandler.enemyActionDelay <= 0.0f)
+                {
+                    Action enemyAction = ai_choose(*Chad, *Steve); // AI chooses an action
+
+                    if (enemyAction.type == ActionType::Attack)
+                    {
+                        resolve_melee(*Chad, *Steve, combatHandler.playerIsDefending, combatHandler.log);
+                    }
+                    else if (enemyAction.type == ActionType::Defend)
+                    {
+                        combatHandler.enemyIsDefending = true;
+                        combatHandler.log << Chad->getName() << " is defending!" << std::endl;
+                    }
+                    combatHandler.playerTurn = true;
+                    combatHandler.playerIsDefending  = false;
+                    combatHandler.enemyIsDefending   = false;
+                    
+                }
+            }
+            if (!Steve->isAlive())
+            {
+                combatHandler.log << "You died." << std::endl;
+            }
+            else if (!Chad->isAlive())
+            {
+                combatHandler.log << "You have defeated " << Chad->getName() << "!" << std::endl;
+            }
             break;
         }
 
@@ -1274,36 +1315,40 @@ void GameManager::render()
 
             DrawText(("HP: " + std::to_string(Chad->vit.health) + " / " + std::to_string(Chad->vit.maxHealth)).c_str(), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
 
-            // This is just a simple implementation for test/milestone purposes
-            // In the future this will be replaced with a more robust turn-based combat system (from trialSebastian.cpp)
-            static bool actionTaken = false; // Flag to track if an action was taken this frame (for now making it static so the message persists for for all frames until next action)
-            static int previousEnemyHealth = Chad->vit.health; // Variable to store previous enemy health for damage calculation
-            if (GuiButton(ScreenRects[R_BTN_ATTACK], "Attack")) // If Attack button is pressed
+            if (combatHandler.playerTurn)
             {
-                previousEnemyHealth = Chad->vit.health; // Store current enemy health before attack
-                Steve->dealMeleeDamage(*Chad); // Player attacks enemy (simple melee attack for now, used dealMeleeDamage function defined in characters.h)
-                actionTaken = true; // Set action taken flag to true
+                if (GuiButton(ScreenRects[R_BTN_ATTACK], "Attack"))
+                {
+                    combatHandler.playerIsDefending = false;
+                    resolve_melee(*Steve, *Chad, combatHandler.enemyIsDefending, combatHandler.log);
+                    combatHandler.playerTurn = false;
+                    combatHandler.enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+                }
+
+                if (GuiButton(ScreenRects[R_BTN_DEFEND], "Defend"))
+                {
+                    combatHandler.playerIsDefending = true;
+                    combatHandler.log << Steve->getName() << " is defending!" << std::endl;
+                    combatHandler.playerTurn = false;
+                    combatHandler.enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+                }
+                if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "Use Item"))
+                {
+                    // TODO: Implement use item functionality
+                }
+              
             }
-            if (actionTaken) // If an action was taken, display the attack log message
+            else
             {
-                // This has hard coded "Steve" and "Chad" for now since we only have one player and one enemy implemented for testing
-                // This will be made dynamic later when we have a full turn-based system with multiple characters
-                DrawText(("Steve attacks Chad for " + std::to_string(previousEnemyHealth - Chad->vit.health) + " damage!").c_str(),(int)(ScreenRects[R_LOG_BOX].x + 10),(int)(ScreenRects[R_LOG_BOX].y + 10),FONT_SIZE_LOG,WHITE);
+                int prevState = GuiGetState();
+                GuiDisable();
+                GuiButton(ScreenRects[R_BTN_ATTACK], "Attack");
+                GuiButton(ScreenRects[R_BTN_DEFEND], "Defend");
+                GuiButton(ScreenRects[R_BTN_USE_ITEM], "Use Item");
+                GuiSetState(prevState);
             }
 
-            // Same trick as before in rendering character select screen to disable GUI right before rendering buttons we want to disable and enabling it right after
-            int prevState = GuiGetState();
-            GuiDisable();
-            if (GuiButton(ScreenRects[R_BTN_DEFEND], "Defend"))
-            {
-                //TODO: Add defend logic
-            }
-
-            if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "Use Item"))
-            {
-                //TODO: Add use item logic
-            }
-            GuiSetState(prevState);
+            DrawText(combatHandler.log.str().c_str(), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)(ScreenRects[R_LOG_BOX].y + 10),FONT_SIZE_LOG, WHITE);
             break;
         }
         
