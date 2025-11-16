@@ -210,6 +210,24 @@ class GameScene
 
 };
 
+class CombatScene : public GameScene
+{
+    public:
+        std::vector<SceneCharacter> charactersInScene;
+        std::vector<SceneArrow> sceneArrows;
+        std::vector<SceneObject> sceneObjects;
+};
+
+class ExplorationScene : public GameScene
+{
+    public:
+        std::vector<SceneCharacter> charactersInScene;
+        std::vector<SceneArrow> sceneArrows;
+        std::vector<SceneObject> sceneObjects;
+};
+
+// ========================= ANIMATION NAMESPACE DEFINITION =========================
+
 //@brief: Namespace containing simple animation interpolation functions for GUI elements
 //@version: 1.0
 //@author: Edwin Baiden
