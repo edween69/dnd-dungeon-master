@@ -114,7 +114,7 @@
 //@author: Edwin Baiden
 //@brief: Enum representing different screen states (main menu, character select, gameplay, save & quit).
 //@version: 1.0
-enum class ScreenState {MAIN_MENU, CHARACTER_SELECT, GAMEPLAY, SAVE_QUIT};
+enum class ScreenState {MAIN_MENU, CHARACTER_SELECT,INTRO_CRAWL, GAMEPLAY, SAVE_QUIT};
 
 //author: Edwin Baiden
 //@brief: Enum representing different game states (exploration, combat, dialogue, pause menu).
@@ -168,7 +168,47 @@ class GameManager {
         void exitGameState(GameState state); // Handle exiting a game state unloading resources
 };
 
+enum ArrowDirection {NONE=-1, UP, DOWN, LEFT, RIGHT};
 
+struct SceneCharacter
+{
+    std::string id;
+    Texture2D texture{};
+    Rectangle pos {};
+    bool isPlayerCharacter = false;
+};
+
+struct SceneArrow
+{
+    Rectangle pos {};
+    ArrowDirection direction;
+    int targetSceneIndex = -1;
+    bool isEnabled;
+
+};
+
+struct SceneObject
+{
+    Texture2D texture{};
+    Rectangle pos {};
+    bool isInteractable = false;
+    bool isItem = false;
+};
+// ========================= GAMESCENE CLASS DEFINITION =========================
+//@author: Edwin Baiden
+//@brief: Class to represent a game scene (contains game objects, environments, type of scene, positioning, etc.)
+//@version: 1.0
+class GameScene 
+{
+    public:
+        GameState sceneType;
+        std::string sceneName;
+    
+    private:
+        std::string envPath;
+
+
+};
 
 //@brief: Namespace containing simple animation interpolation functions for GUI elements
 //@version: 1.0
@@ -269,4 +309,4 @@ namespace animation {
 
 }
 
-#endif // SCREENMANAGER_H
+#endif //SCREENMANAGER_H
