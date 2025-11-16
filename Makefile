@@ -49,10 +49,9 @@ else
 	UNAME_S := $(shell uname -s)  # Detecting the OS (Linux, MacOS (Darwin))
 	RM	   := rm -f 
 	OBJSTOCLEAN := $(OBJS)
-	ifeq ($(UNAME_S),Darwin)
-		CXXFLAGS += -I/opt/homebrew/include -I/usr/local/include
-		LDFLAGS  += -L/opt/homebrew/lib -L/usr/local/lib
-		LDLIBS += -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
+	ifeq ($(strip $(UNAME_S)),Darwin) # because apparently MacOS is detected as "Darwin   "
+		CXXFLAGS += $(shell pkg-config --cflags raylib)
+		LDFLAGS  += $(shell pkg-config --libs raylib)
 	else
 		# Linux
 		LDLIBS += -lraylib -lGL -lm -lpthread -ldl -lrt -lX11

@@ -139,9 +139,8 @@
 
 
 //================= MACROS TO IMPROVE READABILITY WHILE SAVING RUNTIME MEMORY ===================
-
-#define SCREEN_WIDTH (float)(GetScreenWidth()) // Get current screen width
-#define SCREEN_HEIGHT (float)(GetScreenHeight()) // Get current screen height
+#define SCREEN_WIDTH (float)(GetRenderWidth()) // Get current screen width
+#define SCREEN_HEIGHT (float)(GetRenderHeight()) // Get current screen height
 
 // Character select
 #define MAX_CHAR_CARDS 4 // Maximum number of character cards shown (for now, we only have 4 characters)
@@ -158,6 +157,13 @@
 #define PLAY_BTN_WIDTH 400.0f // Width of the "Play Game" button on the CHARACTER_SELECT screen
 #define PLAY_BTN_HEIGHT 60.0f // Height of the "Play Game" button on the CHARACTER_SELECT screen
 #define PLAY_BTN_OFFSET_Y 36.0f // Vertical offset of the "Play Game" button from the character card its under
+
+// Intro crawl
+#define INTRO_CRAWL_SPEED 30.0f // Speed of the intro crawl text (pixels per second)
+#define INTRO_CRAWL_START_Y (float)(GetRenderHeight()) // Starting Y position of the intro crawl text (just off the bottom of the screen)
+#define INTRO_CRAWL_END_Y -1400 // Ending Y position of the intro crawl text (just off the top of the screen)
+#define INTRO_CRAWL_FONT_SIZE 28// Font size for the intro crawl text
+#define INTRO_CRAWL_LINE_HEIGHT 34 // Line spacing for the intro crawl text
 
 // Combat UI rectangle indices will be used in conjunction with ScreenRects array to improve readability
 #define R_PLAYER_NAME 0 // Index for player name rectangle
@@ -221,6 +227,8 @@ static int numScreenRects = 0; // Number of rectangles in the current screen
 
 static charCard *characterCards = nullptr; // Array of character card structures used in the character selection screen
 
+static std::stringstream *scrollIntroCrawl = nullptr; // Holds the intro crawl text used in the intro crawl screen
+static float introCrawlYPos = 0.0f; // Y position of the intro crawl text
 
 // Only used in character selection screen to manage character selection state
 // [0] = selection index (-1 = none)
@@ -370,6 +378,66 @@ void CreateCharacter(std::string ID) // This function will probably move later t
     }
 }
 
+void getIntroCrawlText(std::stringstream *ss, int chosenCharacterIdx)
+{
+    if(ss == nullptr) return; // Safety check
+    ss->str(""); // Clear the stringstream content
+    ss->clear(); // Clear any error flags
+
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
+    std::ifstream file("../dat/general_Intro.txt"); // Open the intro crawl text file
+    if (!file.is_open())
+    {
+        (*ss) << "Error: Unable to open intro crawl text file."; // Error handling if file cannot be opened
+        return;
+    }
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        (*ss) << line << "\n\n"; // Read each line from the file and append it to the stringstream
+    }
+    file.close(); // Close the file after reading
+    (*ss) << "\n\n\n"; // Add some spacing before character-specific intro
+
+    // Append character-specific intro text based on the chosen character index
+    switch (chosenCharacterIdx)
+    {
+        case 0: //Student
+        {
+            file.open("../dat/Student_Intro.txt"); // Open the student intro text file
+            break;
+        }
+        case 1: //Rat
+        {
+            file.open("../dat/Rat_Intro.txt"); // Open the rat intro text file
+            break;
+        }
+        case 2: //Professor
+        {
+            file.open("../dat/Professor_Intro.txt"); // Open the professor intro text file
+            break;
+        }
+        case 3: //Attila
+        {
+            file.open("../dat/Attila_Intro.txt"); // Open the Attila intro text file
+            break;
+        }
+        default:
+            return; // No character-specific intro text   
+    }
+    if (!file.is_open())
+    {
+        (*ss) << "Error: Unable to open character-specific intro text file."; // Error handling if file cannot be opened
+        return;
+    }
+    while (std::getline(file, line))
+    {
+        (*ss) << line << "\n\n"; // Read each line from the file and append it to the stringstream
+    }
+    file.close(); // Close the file after reading
+
+}
 
 // =================== SCREENMANAGER CLASS FUNCTION DEFINITIONS ===================
 
@@ -395,6 +463,7 @@ ScreenManager::~ScreenManager()
 //@author: Edwin Baiden
 void ScreenManager::init()
 {
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     enterScreen(currentScreen); // Enter the initial screen to set up resources
 }
 
@@ -538,6 +607,16 @@ void ScreenManager::update(float dt)
             ScreenRects[0].y = characterCards[CharSelectionStuff[0]].currentAnimationPos.y + characterCards[CharSelectionStuff[0]].currentAnimationPos.height +PLAY_BTN_OFFSET_Y;
         }
 
+        break;
+    }
+    case ScreenState::INTRO_CRAWL:
+    {
+        if (!scrollIntroCrawl)  break; // If intro crawl text is not initialized, exit early (safety check)
+        introCrawlYPos -= INTRO_CRAWL_SPEED * dt; // Move the intro crawl text upwards based on speed and delta time
+        if (introCrawlYPos <= INTRO_CRAWL_END_Y || IsKeyPressed(KEY_ENTER)) // If the intro crawl text has moved off the top of the screen
+        {
+            changeScreen(ScreenState::GAMEPLAY); // Transition to gameplay screen after intro crawl ends
+        }
         break;
     }
 
@@ -728,12 +807,45 @@ void ScreenManager::render()
             {
                 CreateCharacter("Student"); // For now only the student character is implemented
                 CreateCharacter("Zombie_Standard"); // Creating a standard zombie NPC for testing purposes
-                changeScreen(ScreenState::GAMEPLAY); // Change to gameplay screen
+                scrollIntroCrawl = new std::stringstream(); // Dynamically allocate stringstream for intro crawl text
+                getIntroCrawlText(scrollIntroCrawl, 1); // Populate the intro crawl text based on selected character
+                introCrawlYPos = INTRO_CRAWL_START_Y;
+                EndDrawing(); // End drawing before changing screens
+                changeScreen(ScreenState::INTRO_CRAWL); // Change to gameplay screen
+                return; // Exit render function early to avoid drawing the rest of the character select screen
             }
             GuiSetState(prevState); //If a character is not selected re-enable the GUI to restore previous state
 
         break;
-    }
+        }
+        case ScreenState::INTRO_CRAWL:
+        {
+            if (!scrollIntroCrawl) break;
+
+            // Pull text out of the stringstream
+            const std::string text = scrollIntroCrawl->str();
+            std::istringstream reader(text);
+            std::string line;
+
+            float y = introCrawlYPos;
+
+            while (std::getline(reader, line))
+            {
+                if (!line.empty())
+                {
+                    int textWidth = MeasureText(line.c_str(), INTRO_CRAWL_FONT_SIZE);
+                    float x = (SCREEN_WIDTH - (float)textWidth) / 2.0f;
+
+                    DrawText(line.c_str(), (int)x, (int)y,INTRO_CRAWL_FONT_SIZE, GOLD);
+                }
+
+                y += INTRO_CRAWL_LINE_HEIGHT;
+            }
+
+            DrawText("Press ENTER to skip", 20, (int)SCREEN_HEIGHT - 40, 20, GRAY);
+
+            break;
+        }       
         
         case ScreenState::GAMEPLAY:
         {
@@ -814,7 +926,6 @@ void ScreenManager::enterScreen(ScreenState s)
             ScreenTextures[2] = LoadTexture("../assets/images/characters/pc/Rat-Assassin/rotations/south.png"); // Character card texture
             ScreenTextures[3] = LoadTexture("../assets/images/characters/pc/Professor-Mage/rotations/south.png"); // Character card texture
             ScreenTextures[4] = LoadTexture("../assets/images/characters/pc/Attila-Brawler/rotations/south.png"); // Character card texture
-
         
             /*
                 -ScreenRects[0]: Rectangle for the "Play Game" button
@@ -830,6 +941,10 @@ void ScreenManager::enterScreen(ScreenState s)
                 ScreenRects[i] = {0, 0, 0, 0}; // Initialize rectangles to zero
             }
         
+            break;
+        }
+        case ScreenState::INTRO_CRAWL:
+        {
             break;
         }
         case ScreenState::GAMEPLAY:
@@ -857,6 +972,7 @@ void ScreenManager::exitScreen(ScreenState s)
     {
         case ScreenState::MAIN_MENU:
         case ScreenState::CHARACTER_SELECT:
+        case ScreenState::INTRO_CRAWL:
         case ScreenState::GAMEPLAY:
         {
             // The GAMPLAY case needs to clean up the gameManager object specifically before falling through to the SAVE_QUIT case
@@ -922,6 +1038,7 @@ void ScreenManager::exitScreen(ScreenState s)
 //@author: Edwin Baiden
 GameManager::GameManager(GameState initial)
 {
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     currentGameState = initial;
 }
 
