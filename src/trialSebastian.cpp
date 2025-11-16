@@ -14,26 +14,28 @@ g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\rayli
 //Helpers
 static inline const std::string& nameOf(const Character& c) { return c.getName(); }
 static inline int clampi(int v, int lo, int hi) { return std::max(lo, std::min(v, hi)); }
-
+/*
 //Temporary Armor
 static inline int defend_bonus_armor(const Character& target) 
 {
     return std::max(2, target.def.armor/5); //15/5 bonus armor
 }
-
+*/
 // Apply melee attack, using armor class.
 static void resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::stringstream& log) 
 {
     int beforeHP   = defender.vit.health;
-    int originalAR = defender.def.armor;
+    //int originalAR = defender.def.armor;
 
     if (defenderIsDefending)
-        defender.def.armor = originalAR + defend_bonus_armor(defender);
+        //defender.def.armor = originalAR + defend_bonus_armor(defender);
+        defender.startDefense();
 
     
     attacker.dealMeleeDamage(defender);
 
-    defender.def.armor = originalAR;
+    //defender.def.armor = originalAR;
+    defender.endDefense();
 
     int delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) 
@@ -52,14 +54,16 @@ static void resolve_melee(Character& attacker, Character& defender, bool defende
 static void resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::stringstream& log) 
 {
     int beforeHP   = defender.vit.health;
-    int originalAR = defender.def.armor;
+    //int originalAR = defender.def.armor;
 
     if (defenderIsDefending)
-        defender.def.armor = originalAR + defend_bonus_armor(defender);//
+        //defender.def.armor = originalAR + defend_bonus_armor(defender);//
+        defender.startDefense();
     
 
     attacker.dealRangeDamage(defender);
-    defender.def.armor = originalAR;
+    //defender.def.armor = originalAR;
+    defender.endDefense();
 
     int delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) 
@@ -95,7 +99,7 @@ static Action player_choose()
         std::cout << "\nChoose action:\n"
                      "1) Attack\n"
                      "2) Defend\n"
-                     "3) Use Range (Need to implement\n"
+                     "3) Use Range\n"
                      "4) Use Item  (Need to implement)\n> ";
         std::string in;
         std::getline(std::cin, in);

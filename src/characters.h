@@ -157,6 +157,7 @@ class Character
         {
             statEff.defending = true;
             this->def.armor += 5;
+           
         }
 
         // @author: Andrew
@@ -167,17 +168,9 @@ class Character
             statEff.defending = false;
         }
 
-        // Heal the character and ensure health doesn't exceed maxHealth
-        //@brief: Increases the character's health by the specified amount, up to their maximum health.
-        //@param amount - The amount of health to restore.
-        void heal(int amount) 
-        {
-            vit.health += amount;
-            if (vit.health > vit.maxHealth) 
-            {
-                vit.health = vit.maxHealth;
-            }
-        }
+        
+        
+        
         virtual const std::string& getName() const = 0; // Pure virtual function to get character name must be implemented by derived classes
 };
 
@@ -197,7 +190,22 @@ class PlayerCharacter : public Character
         PlayerCharacter(const std::string& playerName, const std::string& charClass, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
             : Character(true, attributes, defense, combat, vital, statusEffects), name(playerName), characterClass(charClass) {}
 
-        
+        // Heal the character and ensure health doesn't exceed maxHealth
+        //@brief: Increases the character's health by the specified amount, up to their maximum health.
+        //@param amount - The amount of health to restore.
+        void heal(int amount) 
+        {
+            vit.health += amount;
+            if (vit.health > vit.maxHealth) 
+            {
+                vit.health = vit.maxHealth;
+            }
+        }
+
+        void bandage() 
+        {
+            heal(15);
+        }
         virtual ~PlayerCharacter() = default; // Virtual destructor can be overridden if needed
 };
 
