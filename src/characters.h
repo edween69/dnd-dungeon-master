@@ -13,6 +13,7 @@
 */
 
 #include <string>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -75,12 +76,86 @@ struct StatusEffects
     bool isFast = false;
     bool defending = false;
 };
-// Structure to hold character inventories, WIP
-struct Inventory
+
+// Data Structure to hold character inventories, WIP
+struct Item
 {
-    int healthPotions;
+    std::string name;
+    std::string description;
+    int quantity = 1;
+    bool singleuse = false; 
+    int healAmount = 0;
+    bool consumed = false;
 };
 
+//Consumable based items
+struct Consumable: Item
+{
+    
+    //int attackboost = 0;
+    //int defenseboost = 0;
+    Consumable() {singleuse=true;}
+};
+
+//Health potion struct
+struct HealthPotion: Consumable
+{
+    HealthPotion(int amount = 15)
+    {
+        name = "Health Potion";
+        description = "A strange liquid, restores 15HP";
+        healAmount = amount;
+        quantity = 1;
+        
+
+    }
+};
+
+//Inventory class for storing the different items in a vector, currently only health potions are implemented.
+//Also allows for easier inventory management with add/remove item functions
+class inventory
+{
+    public: 
+        void additem(const Item& item)
+        {
+            for(auto& it : items)
+            {
+                if(it.name == item.name && it.healAmount == item.healAmount) 
+                {
+                it.quantity += item.quantity;
+                return;
+                }
+            }
+            items.push_back(item);
+        }
+
+        bool removeitem(const std::string& name, int qty = 1)
+        {
+            for (auto it = items.begin(); it != items.end(); ++it) 
+            {
+                if (it->name == name) 
+                {
+                    if (it->quantity < qty)
+                        return false;  
+
+                    it->quantity -= qty;
+
+                    if (it->quantity <= 0)
+                        items.erase(it);
+
+                    return true;        
+                }
+            }
+            return false; // item not found
+        }
+        const std::vector<Item>& getItems() const
+        {
+            return items;
+        }
+    private:
+        std::vector<Item> items;
+
+};
 
 // @author: Edwin Baiden
 // @brief: Base class for all characters in the game (including players and NPCs), containing common attributes and methods including health management and status effects.
@@ -96,7 +171,7 @@ class Character
         VitalStats vit;
         StatusEffects statEff;
         Weapons wep;
-        Inventory inv; //Need to implement for all characters (zombies/player)
+        
         
         
         // Constructor to initialize all attributes
@@ -193,6 +268,8 @@ class PlayerCharacter : public Character
         // Heal the character and ensure health doesn't exceed maxHealth
         //@brief: Increases the character's health by the specified amount, up to their maximum health.
         //@param amount - The amount of health to restore.
+        inventory inv;
+
         void heal(int amount) 
         {
             vit.health += amount;
@@ -202,10 +279,10 @@ class PlayerCharacter : public Character
             }
         }
 
-        void bandage() 
-        {
-            heal(15);
-        }
+        
+        inventory& getInventory() { return inv; }
+        const inventory& getInventory() const { return inv; }
+
         virtual ~PlayerCharacter() = default; // Virtual destructor can be overridden if needed
 };
 
@@ -238,7 +315,8 @@ class Student : public PlayerCharacter
             // Default attributes for Student character
             wep.meleeWeapon = 2; // ruler
             wep.rangeWeapon = 2; // textbooks
-            inv.healthPotions = 1;
+            HealthPotion Hpotion; //Adding potion to inventory for student for testing
+            inv.additem(Hpotion);
         };
 };
 
@@ -290,7 +368,7 @@ class Zombie : public NonPlayerCharacter
         {
             wep.meleeWeapon = 3;
             wep.rangeWeapon = 2; // default value, may not be used
-            inv.healthPotions = 0;
+            
         };
 };
 

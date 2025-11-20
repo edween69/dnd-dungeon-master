@@ -76,22 +76,75 @@ static void resolve_ranged(Character& attacker, Character& defender, bool defend
         log << nameOf(attacker) << " misses.\n";
     }
 }
-/*
-//Use inventory to be implemented
-static void resolve_inventory(Character& attacker, std::stringstream& log) 
-{
-    int healVal; // make using function
-    log << nameOf(attacker) << " heals " << healVal << " HP " << attacker.vit.health << "/" << attacker.vit.maxHealth << "\n";
 
-    
-    
+static void resolve_inventory(Student& player, std::stringstream& log)
+{
+    const auto& items = player.inv.getItems();
+
+    if (items.empty())
+    {
+        log << nameOf(player) << " checks their bag, but it's empty.\n";
+        return;
+    }
+
+    std::cout << "\n--- Inventory ---\n";
+    for (std::size_t i = 0; i < items.size(); ++i)
+    {
+        const auto& it = items[i];
+        std::cout << (i + 1) << ") "
+                  << it.name << " x" << it.quantity
+                  << " - " << it.description << "\n";
+    }
+    std::cout << "0) Cancel\n";
+    std::cout << "> ";
+
+    std::string in;
+    std::getline(std::cin, in);
+    if (in.empty() || in == "0")
+    {
+        log << nameOf(player) << " decides not to use an item.\n";
+        return;
+    }
+
+    int choice = 0;
+    try {
+        choice = std::stoi(in);
+    } catch (...) {
+        log << "Invalid item selection.\n";
+        return;
+    }
+
+    if (choice < 1 || choice > static_cast<int>(items.size()))
+    {
+        log << "Invalid item selection.\n";
+        return;
+    }
+
+    const Item& selected = items[choice - 1];
+
+    if (selected.healAmount > 0)
+    {
+        int before = player.vit.health;
+        player.heal(selected.healAmount);
+        int healed = player.vit.health - before;
+
+        log << nameOf(player) << " uses " << selected.name
+            << " and heals " << healed << " HP. "
+            << "HP " << player.vit.health << "/" << player.vit.maxHealth << "\n";
+
+        // remove 1 from inventory
+        player.inv.removeitem(selected.name, 1);
+    }
+    else
+    {
+        log << "That item can't be used right now.\n";
+    }
 }
-*/
+
 
 // Menu
 enum class ActionType { Attack, Defend, UseRange, UseItem, None };
 struct Action { ActionType type = ActionType::None; std::string desc; };
-
 static Action player_choose() 
 {
     while (true) 
@@ -100,7 +153,7 @@ static Action player_choose()
                      "1) Attack\n"
                      "2) Defend\n"
                      "3) Use Range\n"
-                     "4) Use Item  (Need to implement)\n> ";
+                     "4) Use Item\n> ";
         std::string in;
         std::getline(std::cin, in);
         if (in.empty()) continue;
@@ -109,8 +162,8 @@ static Action player_choose()
         {
             case '1': return {ActionType::Attack, "Attack"};
             case '2': return {ActionType::Defend, "Defend"};
-            case '3': return {ActionType::UseRange, "UseRange"}; //Need to fix
-            case '4': std::cout << "Inventory not implemented yet\n"; return {ActionType::UseItem, "UseItem"};
+            case '3': return {ActionType::UseRange, "UseRange"};
+            case '4': return {ActionType::UseItem, "UseItem"};
             default:  std::cout << "Invalid choice\n";
         }
     }
@@ -172,13 +225,10 @@ void runCombat(Student& player, NonPlayerCharacter& enemy)
             {
                 resolve_ranged(player, enemy, enemyDef, log);
             } 
-            /*
             else if (act.type == ActionType::UseItem) 
             {
-                to be added
-
-            } 
-            */
+                resolve_inventory(player, log);
+            }
             else 
             {
                 log << nameOf(player) << " hesitates.\n";
@@ -223,7 +273,7 @@ void runCombat(Student& player, NonPlayerCharacter& enemy)
             std::cout << "\n>>> You killed: " << nameOf(enemy) << "\n";
             break; 
         }
-
+        
         playerTurn = !playerTurn;// changing turns
         print_status();
     }
