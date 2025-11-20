@@ -14,10 +14,12 @@ namespace {
     }
 }
 
-// @author: Andrew
-// @brief: the function rolls a random number in the range 1 to a number specified
-// @param: int sides - is effectively the number of sides of a dice so a 6 would be like rolling a 6 sided die
-// @return: int dist(engine) -  is a random number in range 1 to specified number
+/**
+ * @author: Andrew
+ * @brief: the function rolls a random number in the range 1 to a number specified
+ * @param: int sides - is effectively the number of sides of a dice so a 6 would be like rolling a 6 sided die
+ * @return: int dist(engine) -  is a random number in range 1 to specified number
+ */
 int roll_d(int sides) {
     std::uniform_int_distribution<int> dist(1, sides);
     return dist(engine());

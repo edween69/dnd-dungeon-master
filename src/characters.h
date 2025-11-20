@@ -81,10 +81,11 @@ struct Inventory
     int healthPotions;
 };
 
-
-// @author: Edwin Baiden
-// @brief: Base class for all characters in the game (including players and NPCs), containing common attributes and methods including health management and status effects.
-// @version: 1.0
+/**
+ * @author: Edwin Baiden
+ * @brief: Base class for all characters in the game (including players and NPCs), containing common attributes and methods including health management and status effects.
+ * @version: 1.0
+ */
 class Character 
 {
     public:
@@ -105,17 +106,19 @@ class Character
 
         virtual ~Character() = default; // Virtual destructor for proper cleanup of derived classes
 
-        // Check if character is alive
-        //@brief: Returns true if the character's health is above zero, indicating they are alive.
-        //@return: bool - true if alive, false if dead.
+        /**
+         * @brief: Returns true if the character's health is above zero, indicating they are alive.
+         * @return: bool - true if alive, false if dead.
+         */
         bool isAlive() const 
         {
             return vit.health > 0;
         }
 
-        // Apply damage to the character and ensure health doesn't drop below zero
-        //@brief: Reduces the character's health by the specified damage amount.
-        //@param damage - The amount of damage to apply.
+        /**
+         * @brief: Reduces the character's health by the specified damage amount.
+         * @param damage - The amount of damage to apply.
+         */
         void takeDamage(int damage) 
         {
             vit.health -= damage;
@@ -125,9 +128,11 @@ class Character
             }
         }
 
-        // @author: Andrew
-        // @brief: calculates and applies melee damage
-        // @param enemy - target that will take damage
+        /**
+         * @author: Andrew
+         * @brief: calculates and applies melee damage
+         * @param enemy - target that will take damage
+         */
         void dealMeleeDamage (Character& enemy)
         {
             this->cbt.meleeDamage = std::max(this->att.dexterity,this->att.strength) + this->wep.meleeWeapon;
@@ -138,9 +143,11 @@ class Character
             //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
-        // @author: Andrew
-        // @brief: calculates and applies range damage
-        // @param enemy - target that will take damage
+        /**
+         * @author: Andrew
+         * @brief: calculates and applies range damage
+         * @param enemy - target that will take damage
+         */
         void dealRangeDamage (Character& enemy)
         {
             this->cbt.rangeDamage = std::max(this->att.dexterity,this->att.wisdom) + this->wep.rangeWeapon;
@@ -151,8 +158,10 @@ class Character
             //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
-        // @author: Andrew
-        // @brief: adds defense bonus
+        /**
+         * @author: Andrew
+         * @brief: adds defense bonus
+         */
         void startDefense() 
         {
             statEff.defending = true;
@@ -160,8 +169,10 @@ class Character
            
         }
 
-        // @author: Andrew
-        // @brief: removes defense bonus
+        /**
+         * @author: Andrew
+         * @brief: removes defense bonus
+         */
         void endDefense() 
         {
             if(statEff.defending) { this->def.armor -= 5; }
@@ -174,10 +185,11 @@ class Character
         virtual const std::string& getName() const = 0; // Pure virtual function to get character name must be implemented by derived classes
 };
 
-
-//@author: Edwin Baiden
-//@brief: Derived class representing player-controlled characters, with additional attributes such as name and character class.
-//@version: 1.0
+/**
+ * @author: Edwin Baiden
+ * @brief: Derived class representing player-controlled characters, with additional attributes such as name and character class.
+ * @version: 1.0
+ */
 class PlayerCharacter : public Character 
 {
     // Player-specific attributes
@@ -190,9 +202,10 @@ class PlayerCharacter : public Character
         PlayerCharacter(const std::string& playerName, const std::string& charClass, Attributes attributes, DefenseStats defense, CombatStats combat, VitalStats vital, StatusEffects statusEffects)
             : Character(true, attributes, defense, combat, vital, statusEffects), name(playerName), characterClass(charClass) {}
 
-        // Heal the character and ensure health doesn't exceed maxHealth
-        //@brief: Increases the character's health by the specified amount, up to their maximum health.
-        //@param amount - The amount of health to restore.
+        /**
+         * @brief: Increases the character's health by the specified amount, up to their maximum health.
+         * @param amount - The amount of health to restore.
+         */
         void heal(int amount) 
         {
             vit.health += amount;
@@ -209,10 +222,11 @@ class PlayerCharacter : public Character
         virtual ~PlayerCharacter() = default; // Virtual destructor can be overridden if needed
 };
 
-
-//@author: Edwin Baiden
-//@brief: Derived class representing non-player characters (NPCs), with additional attributes such as NPC type.
-//@version: 1.0
+/**
+ * @author: Edwin Baiden
+ * @brief: Derived class representing non-player characters (NPCs), with additional attributes such as NPC type.
+ * @version: 1.0
+ */
 class NonPlayerCharacter : public Character 
 {
     // NPC-specific attributes
