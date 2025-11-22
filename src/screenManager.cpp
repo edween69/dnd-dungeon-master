@@ -244,9 +244,11 @@ static GameManager *gameManager = nullptr; // Pointer to the GameManager instanc
 //======================= GUI BUTTON AND TEXT STYLE FUNCTIONS =======================
 //Setting styles for buttons and text to improve GUI appearance and user experience
 
-//@brief: Sets the default styles for buttons and text (not yet called anywhere)
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Sets the default styles for buttons and text (not yet called anywhere)
+ * @version 1.0
+ */
 void defaultStyles()
 {
     /* Keyword defs:
@@ -278,9 +280,11 @@ void defaultStyles()
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20); // Default text size
 }
 
-//@brief: Sets the styles for buttons and text in the main menu screen
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Sets the styles for buttons and text in the main menu screen
+ * @version 1.0
+ */
 void startMenuStyles()
 {
     //Note for Team: Review defaultStyles() for keyword definitions
@@ -297,9 +301,11 @@ void startMenuStyles()
     GuiSetStyle(DEFAULT, TEXT_SIZE, 56); // Large text size
 }
 
-//@brief: Sets the styles for buttons and text in the character selection screen
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Sets the styles for buttons and text in the character selection screen
+ * @version 1.0
+ */
 void playerSelectStyles()
 {
     GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL, 0x006600FF); // Dark green border for normal state
@@ -322,10 +328,12 @@ void playerSelectStyles()
 
 //=============== CHARACTER CREATION FUNCTION FOR CHARACTER SELECT SCREEN ===============
 
-//@brief: Creates a character based on the provided ID by reading stats from the ../dat/Character_Starting_Stats.csv file (made possible by the allStatLines pointer variable)
-//@param ID - The character ID used to look up stats in the CSV file (e.g., "Student", "Zombie_Standard").
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Creates a character based on the provided ID by reading stats from the ../dat/Character_Starting_Stats.csv file (made possible by the allStatLines pointer variable)
+ * @param ID - The character ID used to look up stats in the CSV file (e.g., "Student", "Zombie_Standard").
+ * @version 1.0
+ */
 void CreateCharacter(std::string ID) // This function will probably move later to characters.cpp/h
 {
     Attributes     CharAttrs; // Structs to hold character attributes {Strength, Dexterity, 
@@ -441,36 +449,44 @@ void getIntroCrawlText(std::stringstream *ss, int chosenCharacterIdx)
 
 // =================== SCREENMANAGER CLASS FUNCTION DEFINITIONS ===================
 
-//@brief: Constructor to initialize the ScreenManager with an initial screen state
-//@param initial - The initial screen state to set (default is MAIN_MENU)
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Constructor to initialize the ScreenManager with an initial screen state
+ * @param initial - The initial screen state to set (default is MAIN_MENU)
+ * @version 1.0
+ */
 ScreenManager::ScreenManager(ScreenState initial) //initial = ScreenState::MAIN_MENU
 {
     currentScreen = initial; // Set the current screen state to the provided initial state
 }
 
-// @brief: Destructor to clean up resources (on any screen) when the ScreenManager is destroyed in case its not already done
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Destructor to clean up resources (on any screen) when the ScreenManager is destroyed in case its not already done
+ * @version 1.0
+ */
 ScreenManager::~ScreenManager()
 {
     exitScreen(currentScreen); // Ensure resources for the current screen are cleaned up when the ScreenManager is destroyed
 }
 
-//@brief: Initialize the screen manager by entering the initial screen (could have used constructor or just called enterScreen directly, but this is cleaner, i think)
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Initialize the screen manager by entering the initial screen (could have used constructor or just called enterScreen directly, but this is cleaner, i think)
+ * @version 1.0
+ */
 void ScreenManager::init()
 {
     ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     enterScreen(currentScreen); // Enter the initial screen to set up resources
 }
 
-//@brief: Request a screen change to a new screen state
-//@param newScreen - The new screen state to change to
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Request a screen change to a new screen state
+ * @param newScreen - The new screen state to change to
+ * @version 1.0
+ */
 void ScreenManager::changeScreen(ScreenState newScreen)
 {
     if (newScreen == currentScreen) return; // No change needed if the new screen is the same as the current screen
@@ -479,19 +495,23 @@ void ScreenManager::changeScreen(ScreenState newScreen)
     enterScreen(currentScreen); // Set up resources for the new screen
 }
 
-//@brief: Get the current screen state
-//@return: The current screen state
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Get the current screen state
+ * @return The current screen state
+ * @version 1.0
+ */
 ScreenState ScreenManager::getCurrentScreen() const //used const to make sure it doesn't modify any member variables
 {
     return currentScreen; 
 }
 
-//@brief: Update the current screen with delta time
-//@param dt - The delta time since the last update (called every frame with GetFrameTime())
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Update the current screen with delta time
+ * @param dt - The delta time since the last update (called every frame with GetFrameTime())
+ * @version 1.0
+ */
 void ScreenManager::update(float dt)
 {
     // Update logic based on the current screen 
@@ -633,9 +653,11 @@ void ScreenManager::update(float dt)
     }
 }
 
-//@brief: Render the current screen
-//@version: 1.0
-//author: Eswin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Render the current screen
+ * @version 1.0
+ */
 void ScreenManager::render()
 {
     BeginDrawing(); // no matter the screen we always begin drawing first
@@ -866,10 +888,12 @@ void ScreenManager::render()
     EndDrawing(); // End drawing for the current frame
 }
 
-//@brief: Enter a specific screen state and set up resources
-//@param s - The screen state to enter
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Enter a specific screen state and set up resources
+ * @param s - The screen state to enter
+ * @version 1.0
+ */
 void ScreenManager::enterScreen(ScreenState s)
 {
     switch (s)
@@ -962,10 +986,12 @@ void ScreenManager::enterScreen(ScreenState s)
     }
 }
 
-//@brief: Exit a specific screen state and clean up resources(since we are really only using dynamic memory allocation for resources, this is mainly just deleting those pointers)
-//@param s - The screen state to exit
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Exit a specific screen state and clean up resources(since we are really only using dynamic memory allocation for resources, this is mainly just deleting those pointers)
+ * @param s - The screen state to exit
+ * @version 1.0
+ */
 void ScreenManager::exitScreen(ScreenState s)
 {
     switch (s) //Most of the stuff is reused so we just write the cleanup code once in the SAVE_QUIT case
@@ -1032,29 +1058,35 @@ void ScreenManager::exitScreen(ScreenState s)
 // =================== GAMEMANAGER CLASS FUNCTION DEFINITIONS ===================
 // Very similar to ScreenManager but handles different but uses a different enum for game states
 
-//@brief: Constructor for the GameManager class
-//@param initial - The initial game state to start with (default is COMBAT for testing and milestone purposes)
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Constructor for the GameManager class
+ * @param initial - The initial game state to start with (default is COMBAT for testing and milestone purposes)
+ * @version 1.0
+ */
 GameManager::GameManager(GameState initial)
 {
     ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     currentGameState = initial;
 }
 
-//@brief: Destructor for the GameManager class
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Destructor for the GameManager class
+ * @version 1.0
+ */
 GameManager::~GameManager()
 {
     // Clean up any resources used by the game manager if not already done
     exitGameState(currentGameState);
 }
 
-//@brief: Change the current game state to a new state
-//@param newState - The new game state to change to
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Change the current game state to a new state
+ * @param newState - The new game state to change to
+ * @version 1.0
+ */
 void GameManager::changeGameState(GameState newState)
 {
     if (newState == currentGameState) return; //Checking to see if we are already in the desired state (if so, do nothing)
@@ -1063,18 +1095,22 @@ void GameManager::changeGameState(GameState newState)
     enterGameState(currentGameState); // Set up new state resources
 }
 
-//@brief: Get the current game state
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Get the current game state
+ * @version 1.0
+ */
 GameState GameManager::getCurrentGameState() const // Const function since it does not modify any member variables
 {
     return currentGameState; // Return the current game state
 }
 
-//@brief: Enter a specific game state and set up resources
-//@param state - The game state to enter
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Enter a specific game state and set up resources
+ * @param state - The game state to enter
+ * @version 1.0
+ */
 void GameManager::enterGameState(GameState state)
 {
     switch (state)
@@ -1135,10 +1171,12 @@ void GameManager::enterGameState(GameState state)
     }
 }
 
-//@brief: Exit a specific game state and clean up resources
-//@param state - The game state to exit
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Exit a specific game state and clean up resources
+ * @param state - The game state to exit
+ * @version 1.0
+ */
 void GameManager::exitGameState(GameState state) //Not needed currently since we are only using the combat state(screenManager takes care of that) but may be useful later
 {
     switch (state)
@@ -1169,10 +1207,12 @@ void GameManager::exitGameState(GameState state) //Not needed currently since we
     }
 }
 
-//@brief: Update the current game state
-//@param dt - Delta time since the last update
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Update the current game state
+ * @param dt - Delta time since the last update
+ * @version 1.0
+ */
 void GameManager::update(float dt) //Currently only updating the health bars in combat state but will be expanded later
 {
     switch (currentGameState)
@@ -1207,9 +1247,11 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
     }
 }
 
-//@brief: Render the current game state
-//@version: 1.0
-//@author: Edwin Baiden
+/**
+ * @author Edwin Baiden
+ * @brief Render the current game state
+ * @version 1.0
+ */
 void GameManager::render()
 {
     switch (currentGameState)
