@@ -268,7 +268,7 @@ class PlayerCharacter : public Character
         // Heal the character and ensure health doesn't exceed maxHealth
         //@brief: Increases the character's health by the specified amount, up to their maximum health.
         //@param amount - The amount of health to restore.
-        inventory inv;
+        inventory inv; //All player characters now have access to an inventory
 
         void heal(int amount) 
         {
@@ -280,7 +280,7 @@ class PlayerCharacter : public Character
         }
 
         
-        inventory& getInventory() { return inv; }
+        inventory& getInventory() { return inv; } //getter for inventory
         const inventory& getInventory() const { return inv; }
 
         virtual ~PlayerCharacter() = default; // Virtual destructor can be overridden if needed
@@ -316,6 +316,7 @@ class Student : public PlayerCharacter
             wep.meleeWeapon = 2; // ruler
             wep.rangeWeapon = 2; // textbooks
             HealthPotion Hpotion; //Adding potion to inventory for student for testing
+            //Damageboost Dpotion
             inv.additem(Hpotion);
         };
 };
