@@ -41,14 +41,14 @@ struct Attributes
 struct DefenseStats
 {
     std::int8_t armor;
-    int magicResist; //not important, no longer DND game
+    std::int8_t magicResist; //not important, no longer DND game
 };
 
 // Structure to hold character combat stats
 struct CombatStats 
 {
-    int meleeDamage;
-    int rangeDamage;
+    std::uint8_t meleeDamage;
+    std::uint8_t rangeDamage;
     std::int8_t initiative;
 };
 
@@ -82,9 +82,9 @@ struct Item
 {
     std::string name;
     std::string description;
-    int quantity = 1;
+    std::uint8_t quantity = 1;
+    std::uint8_t healAmount = 0;
     bool singleuse = false; 
-    int healAmount = 0;
     bool consumed = false;
 };
 
@@ -106,8 +106,6 @@ struct HealthPotion: Consumable
         description = "A strange liquid, restores 15HP";
         healAmount = amount;
         quantity = 1;
-        
-
     }
 };
 
@@ -216,7 +214,6 @@ class Character
             {
                 enemy.takeDamage(roll_d(6) + this->cbt.meleeDamage);
             }
-            //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
         /**
@@ -231,7 +228,6 @@ class Character
             {
                 enemy.takeDamage(roll_d(4) + this->cbt.rangeDamage);
             }
-            //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
         /**
