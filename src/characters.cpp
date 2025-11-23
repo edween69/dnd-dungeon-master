@@ -57,9 +57,9 @@ std::istringstream* storeAllStatLines(std::ifstream* StartingStatFile)
  * @param characterID - name of the character ie student
  * @param stat - stat value index
  * @return stoi(cell) - is the value of the desired stat
- * @return -1024 - error value
+ * @return -128 - error value
  */
-int getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat)
+std::int8_t getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat)
 {
     std::string line;
     std::string currentID;
@@ -85,5 +85,5 @@ int getStatForCharacterID(std::istringstream* allLines, std::string characterID,
             }
         }
     }
-    return -1024; // Return -1024 if character ID or stat not found
+    return -128; // Return -128 if character ID or stat not found
 }

@@ -24,7 +24,7 @@ static inline int defend_bonus_armor(const Character& target)
 // Apply melee attack, using armor class.
 static void resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::stringstream& log) 
 {
-    int beforeHP   = defender.vit.health;
+    std::int8_t beforeHP   = defender.vit.health;
     //int originalAR = defender.def.armor;
 
     if (defenderIsDefending)
@@ -37,7 +37,7 @@ static void resolve_melee(Character& attacker, Character& defender, bool defende
     //defender.def.armor = originalAR;
     defender.endDefense();
 
-    int delta = std::max(0, beforeHP - defender.vit.health);
+    std::int8_t delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) 
     {
         log << nameOf(defender) << " takes " << delta

@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdint>
 #include "rng.h"
 #include "raylib.h"
 #ifndef CHARACTERS_H
@@ -26,21 +27,20 @@ enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 
 // For stats contained in the Character_Starting_Stats.csv file, do not initialize
 // Structure to hold character attributes
-// TODO - a lot of these can be optimized by using smaller int sizes, have to look at what works best
 struct Attributes 
 {
-    int strength;
-    int dexterity;
-    int constitution;
-    int wisdom; //not important, no longer DND game
-    int charisma; //not important, no longer DND game
-    int intelligence; //not important, no longer DND game
+    std::int8_t strength;
+    std::int8_t dexterity;
+    std::int8_t constitution;
+    std::int8_t wisdom; //not important, no longer DND game
+    std::int8_t charisma; //not important, no longer DND game
+    std::int8_t intelligence; //not important, no longer DND game
 };
 
 // Structure to hold character defense stats
 struct DefenseStats
 {
-    int armor;
+    std::int8_t armor;
     int magicResist; //not important, no longer DND game
 };
 
@@ -49,19 +49,19 @@ struct CombatStats
 {
     int meleeDamage;
     int rangeDamage;
-    int initiative;
+    std::int8_t initiative;
 };
 
 // Structure to hold weapon types
 struct Weapons {
-    int meleeWeapon;
-    int rangeWeapon;
+    std::uint8_t meleeWeapon;
+    std::uint8_t rangeWeapon;
 };
 
 // Structure to hold character vital stats
 struct VitalStats {
-    int health;
-    int maxHealth;
+    std::int8_t health;
+    std::int8_t maxHealth;
 };
 
 // Structure to hold character status effects
@@ -389,7 +389,7 @@ class Zombie : public NonPlayerCharacter
 
 std::ifstream* openStartingStatsCSV();
 std::istringstream* storeAllStatLines(std::ifstream* statsFile);
-int getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);
+std::int8_t getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);
 
 struct charCard 
 {
