@@ -1,4 +1,4 @@
-/*  =================================== screenManager.cpp ====================================
+/* =================================== screenManager.cpp ====================================
     Project: TTRPG Game ??? Idk what this game is anymore lol
     Subsystem: Screen Manager
     Primary Author: Edwin Baiden
@@ -136,11 +136,12 @@
 
 #define RAYGUI_IMPLEMENTATION // Ensures raygui implementation is included here (needs to be defined in one cpp file)
 #include "screenManager.h"
-
+#include <algorithm> // For std::min, std::max, std::clamp
 
 //================= MACROS TO IMPROVE READABILITY WHILE SAVING RUNTIME MEMORY ===================
-#define SCREEN_WIDTH (float)(GetRenderWidth()) // Get current screen width
-#define SCREEN_HEIGHT (float)(GetRenderHeight()) // Get current screen height
+// UPDATED: Lock to virtual resolution
+#define SCREEN_WIDTH (float)GAME_SCREEN_WIDTH
+#define SCREEN_HEIGHT (float)GAME_SCREEN_HEIGHT
 
 // Character select
 #define MAX_CHAR_CARDS 4 // Maximum number of character cards shown (for now, we only have 4 characters)
@@ -160,7 +161,7 @@
 
 // Intro crawl
 #define INTRO_CRAWL_SPEED 30.0f // Speed of the intro crawl text (pixels per second)
-#define INTRO_CRAWL_START_Y (float)(GetRenderHeight()) // Starting Y position of the intro crawl text (just off the bottom of the screen)
+#define INTRO_CRAWL_START_Y (float)GAME_SCREEN_HEIGHT // Starting Y position of the intro crawl text (just off the bottom of the screen)
 #define INTRO_CRAWL_END_Y -1400 // Ending Y position of the intro crawl text (just off the top of the screen)
 #define INTRO_CRAWL_FONT_SIZE 28// Font size for the intro crawl text
 #define INTRO_CRAWL_LINE_HEIGHT 34 // Line spacing for the intro crawl text
@@ -187,6 +188,7 @@
 #define FONT_SIZE_HP 20 // Font size for health points
 #define FONT_SIZE_BTN 30 // Font size for buttons
 #define FONT_SIZE_LOG 20 // Font size for log
+#define LOG_LINE_HEIGHT 24 // Line height for log text
 
 // Centered text helpers (for readability while saving runtime memory)
 // used this as reference: https://stackoverflow.com/questions/163365/how-do-i-make-a-c-macro-behave-like-a-function
@@ -448,6 +450,8 @@ void getIntroCrawlText(std::stringstream *ss, int chosenCharacterIdx)
 ScreenManager::ScreenManager(ScreenState initial) //initial = ScreenState::MAIN_MENU
 {
     currentScreen = initial; // Set the current screen state to the provided initial state
+    scale = 1.0f;
+    offset = { 0.0f, 0.0f };
 }
 
 // @brief: Destructor to clean up resources (on any screen) when the ScreenManager is destroyed in case its not already done
@@ -455,6 +459,7 @@ ScreenManager::ScreenManager(ScreenState initial) //initial = ScreenState::MAIN_
 //@author: Edwin Baiden
 ScreenManager::~ScreenManager()
 {
+    UnloadRenderTexture(target); // Clean up V-Res texture
     exitScreen(currentScreen); // Ensure resources for the current screen are cleaned up when the ScreenManager is destroyed
 }
 
@@ -463,6 +468,10 @@ ScreenManager::~ScreenManager()
 //@author: Edwin Baiden
 void ScreenManager::init()
 {
+    // Initialize Virtual Resolution Render Texture
+    target = LoadRenderTexture(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+    SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR); // Smooth scaling
+
     ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     enterScreen(currentScreen); // Enter the initial screen to set up resources
 }
@@ -488,12 +497,39 @@ ScreenState ScreenManager::getCurrentScreen() const //used const to make sure it
     return currentScreen; 
 }
 
+// Helper to get mouse position in virtual coordinates
+Vector2 ScreenManager::GetVirtualMousePosition()
+{
+    Vector2 mouse = GetMousePosition();
+    Vector2 virtualMouse = { 0 };
+    
+    // Reverse the scaling and offset applied in render()
+    virtualMouse.x = (mouse.x - offset.x) / scale;
+    virtualMouse.y = (mouse.y - offset.y) / scale;
+
+    // Clamp to game screen to avoid out of bounds
+    if (virtualMouse.x < 0) virtualMouse.x = 0;
+    if (virtualMouse.y < 0) virtualMouse.y = 0;
+    if (virtualMouse.x > GAME_SCREEN_WIDTH) virtualMouse.x = GAME_SCREEN_WIDTH;
+    if (virtualMouse.y > GAME_SCREEN_HEIGHT) virtualMouse.y = GAME_SCREEN_HEIGHT;
+
+    return virtualMouse;
+}
+
 //@brief: Update the current screen with delta time
 //@param dt - The delta time since the last update (called every frame with GetFrameTime())
 //@version: 1.0
 //@author: Edwin Baiden
 void ScreenManager::update(float dt)
 {
+    // Recalculate scale/offset each frame for input calculations
+    // (Also done in render, but we need it here for GetVirtualMousePosition)
+    float screenWidth = (float)GetScreenWidth();
+    float screenHeight = (float)GetScreenHeight();
+    scale = std::min(screenWidth / GAME_SCREEN_WIDTH, screenHeight / GAME_SCREEN_HEIGHT);
+    offset.x = (screenWidth - (GAME_SCREEN_WIDTH * scale)) * 0.5f;
+    offset.y = (screenHeight - (GAME_SCREEN_HEIGHT * scale)) * 0.5f;
+
     // Update logic based on the current screen 
     switch (currentScreen)
     {
@@ -543,7 +579,7 @@ void ScreenManager::update(float dt)
             CharSelectionStuff[2] = 1; // Set layout initialized flag to true so we don't redo this
         }
 
-        // CharSelectionStuff[0] is the index of the currently selected character (-1 if none selected) (Once again, wish there was a better way to do this with the dynamic approach)
+        // CharSelectionStuff[0] is the index of the currently selected character (-1 if none selected) (Once again, wish there was a better way to do this with the dynamic approach for readability)
         // If CharSelectionStuff[0] == -1, then no character is selected
         // If CharSelectionStuff[0] == 0, the student character is selected (only one implemented for now)
         // If CharSelectionStuff[0] == 1, the rat is selected (not fully implemented for now)
@@ -624,6 +660,7 @@ void ScreenManager::update(float dt)
         // TODO: Implement gameplay screen update logic (if needed)
         // Gameplay screen update logic would go here (not fully implemented yet)
         // right now all of that stuff is being handled by a GameManager class
+        gameManager->update(dt);
         break;
 
     case ScreenState::SAVE_QUIT:
@@ -638,7 +675,20 @@ void ScreenManager::update(float dt)
 //author: Eswin Baiden
 void ScreenManager::render()
 {
-    BeginDrawing(); // no matter the screen we always begin drawing first
+    // --- VIRTUAL RESOLUTION LOGIC START ---
+    // 1. Calculate Scale
+    float screenWidth = (float)GetScreenWidth();
+    float screenHeight = (float)GetScreenHeight();
+    scale = std::min(screenWidth / GAME_SCREEN_WIDTH, screenHeight / GAME_SCREEN_HEIGHT);
+    offset.x = (screenWidth - (GAME_SCREEN_WIDTH * scale)) * 0.5f;
+    offset.y = (screenHeight - (GAME_SCREEN_HEIGHT * scale)) * 0.5f;
+
+    // 2. Update Input Scaling for RayGui (GuiButtons will now respect resizing)
+    SetMouseOffset(-offset.x, -offset.y);
+    SetMouseScale(1.0f / scale, 1.0f / scale);
+
+    // 3. Draw to Virtual Texture
+    BeginTextureMode(target);
     ClearBackground(BLACK); // Clear the background to black before rendering any screen
 
     switch (currentScreen)
@@ -708,7 +758,8 @@ void ScreenManager::render()
                 DrawRectangleLinesEx(characterCards[i].currentAnimationPos, 4.0f, Color{0, 68, 0, 255});
 
                 //Checking to see if the mouse is hovering over this card (if so, update hovered index)
-                if (CheckCollisionPointRec(GetMousePosition(),characterCards[i].currentAnimationPos)) CharSelectionStuff[1] = i;
+                // FIX: Use GetVirtualMousePosition() for manual collision checks
+                if (CheckCollisionPointRec(GetVirtualMousePosition(),characterCards[i].currentAnimationPos)) CharSelectionStuff[1] = i;
 
                 // Check for clicks on the character card (only the first card is selectable for now)
                 // used GuiButton with empty text so i can use raygui's button click detection
@@ -763,11 +814,11 @@ void ScreenManager::render()
                         // Need to cast the stat values to string using std::to_string since DrawText requires a cstrings
                         // Using allStatLines pointer and getStatForCharacterID function to retrieve stats from the CSV file (defined in characters.cpp)
                         DrawText("Caste: Student", (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 20),24, WHITE);
-                        DrawText(("Health: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::MAX_HEALTH))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 50), 20, WHITE);
-                        DrawText(("Armor: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::ARMOR))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 80), 20, WHITE);
-                        DrawText(("Dexterity: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::DEX))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 110), 20, WHITE);
-                        DrawText(("Constitution: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::CON))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 140), 20, WHITE);
-                        DrawText(("Initiative: " + std::to_string(getStatForCharacterID(allStatLines,"Student",CSVStats::INITIATIVE))).c_str(),(int)(ScreenRects[1].x + 20),(int)(ScreenRects[1].y + 170), 20, WHITE);
+                        DrawText(TextFormat("Health: %d", getStatForCharacterID(allStatLines,"Student",CSVStats::MAX_HEALTH)), (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 50), 20, WHITE);
+                        DrawText(TextFormat("Armor: %d", getStatForCharacterID(allStatLines,"Student",CSVStats::ARMOR)), (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 80), 20, WHITE);
+                        DrawText(TextFormat("Dexterity: %d", getStatForCharacterID(allStatLines,"Student",CSVStats::DEX)), (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 110), 20, WHITE);
+                        DrawText(TextFormat("Constitution: %d", getStatForCharacterID(allStatLines,"Student",CSVStats::CON)), (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 140), 20, WHITE);
+                        DrawText(TextFormat("Initiative: %d", getStatForCharacterID(allStatLines,"Student",CSVStats::INITIATIVE)), (int)(ScreenRects[1].x + 20), (int)(ScreenRects[1].y + 170), 20, WHITE);
                         break;
 
                     case 1:
@@ -810,7 +861,10 @@ void ScreenManager::render()
                 scrollIntroCrawl = new std::stringstream(); // Dynamically allocate stringstream for intro crawl text
                 getIntroCrawlText(scrollIntroCrawl, 1); // Populate the intro crawl text based on selected character
                 introCrawlYPos = INTRO_CRAWL_START_Y;
-                EndDrawing(); // End drawing before changing screens
+
+                // MUST End texture mode before returning if we are exiting the function early
+                EndTextureMode();
+
                 changeScreen(ScreenState::INTRO_CRAWL); // Change to gameplay screen
                 return; // Exit render function early to avoid drawing the rest of the character select screen
             }
@@ -863,7 +917,19 @@ void ScreenManager::render()
         }
     }
 
-    EndDrawing(); // End drawing for the current frame
+    EndTextureMode(); // Stop drawing to virtual screen
+
+    // 4. Draw Virtual Texture to Real Screen
+    BeginDrawing();
+        ClearBackground(BLACK); // Black bars for letterboxing
+
+        // Source rect is negative height to flip it correctly for OpenGL coordinates
+        Rectangle sourceRec = { 0.0f, 0.0f, (float)target.texture.width, -(float)target.texture.height };
+        Rectangle destRec = { offset.x, offset.y, (float)GAME_SCREEN_WIDTH * scale, (float)GAME_SCREEN_HEIGHT * scale };
+        
+        DrawTexturePro(target.texture, sourceRec, destRec, { 0.0f, 0.0f }, 0.0f, WHITE);
+
+    EndDrawing();
 }
 
 //@brief: Enter a specific screen state and set up resources
@@ -973,6 +1039,13 @@ void ScreenManager::exitScreen(ScreenState s)
         case ScreenState::MAIN_MENU:
         case ScreenState::CHARACTER_SELECT:
         case ScreenState::INTRO_CRAWL:
+        {
+            if(scrollIntroCrawl && s == ScreenState::INTRO_CRAWL)
+            {
+                delete scrollIntroCrawl; // Delete the dynamically allocated stringstream for intro crawl text
+                scrollIntroCrawl = nullptr; // Set pointer to nullptr to avoid dangling pointer
+            }
+        }
         case ScreenState::GAMEPLAY:
         {
             // The GAMPLAY case needs to clean up the gameManager object specifically before falling through to the SAVE_QUIT case
@@ -1119,15 +1192,22 @@ void GameManager::enterGameState(GameState state)
             ScreenRects[R_BTN_USE_ITEM] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 150,ScreenRects[R_BTN_ATTACK].y,400,80};
             ScreenRects[R_LOG_BOX] = {SCREEN_WIDTH - 800, ScreenRects[R_BTN_ATTACK].y, 780, 175};
 
-            combatHandler.playerTurn = Steve->cbt.initiative >= Chad->cbt.initiative; // Determine who goes first based on initiative (simple comparison for now)
-            combatHandler.playerIsDefending = false;
-            combatHandler.enemyIsDefending = false;
+            // Dynamically allocate combat handler and initialize combat state variables
+            combatHandler = new CombatHandler;
+            combatHandler->playerTurn = Steve->cbt.initiative >= Chad->cbt.initiative; // Determine who goes first based on initiative (simple comparison for now)
+            combatHandler->playerIsDefending = false;
+            combatHandler->enemyIsDefending = false;
+            combatHandler->playerHitFlashTimer = 0.0f;
+            combatHandler->enemyHitFlashTimer = 0.0f;
+            combatHandler->gameOverState = false;
+            combatHandler->victoryState = false;
+            combatHandler->gameOverTimer = 0.0f;
 
-            combatHandler.log.str(""); // Clear the combat log
-            combatHandler.log.clear(); // Clear any error flags
-            combatHandler.log << "A wild " << Chad->getName() << " appears!" << std::endl; // Initial log entry
+            combatHandler->log.clear();
+            combatHandler->logScrollOffset = 0.0f;
+            AddNewLogEntry(combatHandler->log, "A wild " + Chad->getName() + " appears!"); // Initial log entry
 
-            combatHandler.enemyActionDelay = 1.0f; // Reset enemy action delay timer
+            combatHandler->enemyActionDelay = 1.0f; // Reset enemy action delay timer
             break;
         }
 
@@ -1162,6 +1242,12 @@ void GameManager::exitGameState(GameState state) //Not needed currently since we
         case GameState::COMBAT:
         {
             //TODO: Implement combat state cleanup
+            // Clean up combat handler
+            if (combatHandler)
+            {
+                delete combatHandler;
+                combatHandler = nullptr;
+            }
             break;
         }
 
@@ -1185,6 +1271,15 @@ void GameManager::exitGameState(GameState state) //Not needed currently since we
 //@author: Edwin Baiden
 void GameManager::update(float dt) //Currently only updating the health bars in combat state but will be expanded later
 {
+    // FIX: Calculate virtual mouse specifically for manual collision checks inside GameManager
+    // Since GameManager isn't ScreenManager, we duplicate the scale math locally to avoid changing class headers too much
+    float sw = (float)GetScreenWidth();
+    float sh = (float)GetScreenHeight();
+    float scale = std::min(sw / GAME_SCREEN_WIDTH, sh / GAME_SCREEN_HEIGHT);
+    Vector2 offset = { (sw - (GAME_SCREEN_WIDTH * scale)) * 0.5f, (sh - (GAME_SCREEN_HEIGHT * scale)) * 0.5f };
+    Vector2 mouse = GetMousePosition();
+    Vector2 virtualMouse = { (mouse.x - offset.x) / scale, (mouse.y - offset.y) / scale };
+
     switch (currentGameState)
     {
         case GameState::EXPLORATION:
@@ -1195,40 +1290,75 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
 
         case GameState::COMBAT:
         {
+            if(!combatHandler) break; // Safety check to ensure combat handler is valid
+            if(!Steve || !Chad) break; // Safety check to ensure characters are valid
             //TODO: Implement combat state update logic (for now just updating health bars)
             // Update health bar widths based on current health
             ScreenRects[R_PLAYER_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_PLAYER_HP_BG],Steve->vit.health, Steve->vit.maxHealth);
             ScreenRects[R_ENEMY_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_ENEMY_HP_BG], Chad->vit.health, Chad->vit.maxHealth);
 
-            if(!combatHandler.playerTurn)
+            combatHandler->playerHitFlashTimer = std::max(0.0f, combatHandler->playerHitFlashTimer - dt);
+            combatHandler->enemyHitFlashTimer  = std::max(0.0f, combatHandler->enemyHitFlashTimer  - dt);
+
+            // FIX: Use virtualMouse for the log box scroll check
+            if (CheckCollisionPointRec(virtualMouse, ScreenRects[R_LOG_BOX]))
             {
-                combatHandler.enemyActionDelay -= dt;
-                if (combatHandler.enemyActionDelay <= 0.0f)
+                float wheel = GetMouseWheelMove();
+                if (wheel != 0.0f)
+                {
+                    combatHandler->logScrollOffset += wheel * -25.0f;
+                }
+            }
+
+            // Handle game over states
+            if (combatHandler->gameOverState || combatHandler->victoryState)
+            {
+                combatHandler->gameOverTimer -= dt;
+                if (combatHandler->gameOverTimer <= 0.0f)
+                {
+                    // Return to main menu instead of unimplemented exploration
+                    // This prevents the window from closing unexpectedly
+                    if (combatHandler->gameOverState)
+                    {
+                        gameManager->changeGameState(GameState::EXPLORATION); // Refresh combat state to handle game over
+                    }
+                    else if (combatHandler->victoryState)
+                    {
+                        gameManager->changeGameState(GameState::EXPLORATION); // Refresh combat state to handle victory
+                    }
+                }
+                break; // Don't process normal combat logic during game over
+            }
+
+            if(!combatHandler->playerTurn)
+            {
+                combatHandler->enemyActionDelay -= dt;
+                if (combatHandler->enemyActionDelay <= 0.0f)
                 {
                     Action enemyAction = ai_choose(*Chad, *Steve); // AI chooses an action
 
                     if (enemyAction.type == ActionType::Attack)
                     {
-                        resolve_melee(*Chad, *Steve, combatHandler.playerIsDefending, combatHandler.log);
+                        combatHandler->playerHitFlashTimer = resolve_melee(*Chad, *Steve, combatHandler->playerIsDefending, combatHandler->log) ? 0.2f : 0.0f;
+                        combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
+                        if (!Steve->isAlive())
+                        {
+                            AddNewLogEntry(combatHandler->log, "You died.");
+                            combatHandler->gameOverTimer = 2.0f; // Set a timer instead of blocking
+                            combatHandler->gameOverState = true;
+                            return;
+                        }
                     }
                     else if (enemyAction.type == ActionType::Defend)
                     {
-                        combatHandler.enemyIsDefending = true;
-                        combatHandler.log << Chad->getName() << " is defending!" << std::endl;
+                        combatHandler->enemyIsDefending = true;
+                        AddNewLogEntry(combatHandler->log, Chad->getName() + " is defending!");
+                        combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
                     }
-                    combatHandler.playerTurn = true;
-                    combatHandler.playerIsDefending  = false;
-                    combatHandler.enemyIsDefending   = false;
+                    combatHandler->playerTurn = true;
+                    combatHandler->playerIsDefending  = false;
                     
                 }
-            }
-            if (!Steve->isAlive())
-            {
-                combatHandler.log << "You died." << std::endl;
-            }
-            else if (!Chad->isAlive())
-            {
-                combatHandler.log << "You have defeated " << Chad->getName() << "!" << std::endl;
             }
             break;
         }
@@ -1267,13 +1397,20 @@ void GameManager::render()
 
             //This pportion is mostly hardcoded for testing purposes. Its definitely going to become more dynamic and have structs for positioning later on
             // Drawing the Combat background, horizontally centered (SCREEN_WIDTH - ScreenTextures[0].width)/2, making it slightly shifted up to make room for UI elements at the bottom
+            if(!combatHandler) break; // Safety check to ensure combat handler is valid
+            if(!Steve || !Chad) break; // Safety check to ensure characters are valid
+            if(!ScreenTextures || numScreenTextures < 3) break; // Safety check for textures
+            if(!ScreenRects || numScreenRects < 15) break; // Safety check for rectangles
+            
             DrawTexture(ScreenTextures[0],(int)(SCREEN_WIDTH / 2.0f - ScreenTextures[0].width  / 2.0f), (int)(SCREEN_HEIGHT / 2.0f - ScreenTextures[0].height / 2.0f - 175.f), WHITE);
 
             // Drawing the Player character texture, positioned to the right side of the screen within the combat background (this is where a struct for character positions will come in handy later)
-            DrawTexturePro(ScreenTextures[1], {0.0f, 0.0f,(float)ScreenTextures[1].width, (float)ScreenTextures[1].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 500.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 650.f, 500.0f, 500.0f}, {0.0f, 0.0f}, 0.0f, WHITE);
+            if (combatHandler->playerHitFlashTimer > 0.0f) DrawTexturePro(ScreenTextures[1], {0.0f, 0.0f,(float)ScreenTextures[1].width, (float)ScreenTextures[1].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 500.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 650.f, 500.0f, 500.0f}, {0.0f, 0.0f}, 0.0f, RED);
+            else DrawTexturePro(ScreenTextures[1], {0.0f, 0.0f,(float)ScreenTextures[1].width, (float)ScreenTextures[1].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 500.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 650.f, 500.0f, 500.0f}, {0.0f, 0.0f}, 0.0f, WHITE);
 
             // Drawing the Enemy character texture, positioned to the left side of the screen within the combat background (this is where a struct for character positions will come in handy later)
-            DrawTexturePro(ScreenTextures[2], {0.0f, 0.0f, (float)ScreenTextures[2].width, (float)ScreenTextures[2].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 600.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 725.f, 200.f, 300.f}, {0.0f, 0.0f}, 0.0f, WHITE);
+            if (combatHandler->enemyHitFlashTimer > 0.0f) DrawTexturePro(ScreenTextures[2], {0.0f, 0.0f, (float)ScreenTextures[2].width, (float)ScreenTextures[2].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 600.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 725.f, 200.f, 300.f}, {0.0f, 0.0f}, 0.0f, RED);
+            else DrawTexturePro(ScreenTextures[2], {0.0f, 0.0f, (float)ScreenTextures[2].width, (float)ScreenTextures[2].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 600.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 725.f, 200.f, 300.f}, {0.0f, 0.0f}, 0.0f, WHITE);
 
             // Drawing UI elements using predefined rectangles(defined in the enterGameState for combat) and colors
             DrawRectangleRec(ScreenRects[R_PLAYER_NAME],COL_NAME_BAR);
@@ -1288,10 +1425,25 @@ void GameManager::render()
             DrawRectangleRec(ScreenRects[R_ENEMY_HP_BG], COL_HP_BG);
             DrawRectangleRec(ScreenRects[R_ENEMY_HP_FG],COL_HP_FG);
 
-            // Status boxes and log box
+            // Status boxes
             DrawRectangleRec(ScreenRects[R_PLAYER_STATUS],COL_STATUS_INNER);
             DrawRectangleRec(ScreenRects[R_ENEMY_STATUS],COL_STATUS_INNER);
+
+            // Log box make this scrollable
             DrawRectangleRec(ScreenRects[R_LOG_BOX],COL_LOG_BOX);
+            const float totalHeight   = LOG_LINE_HEIGHT * (float)combatHandler->log.size();
+            const float visibleHeight = ScreenRects[R_LOG_BOX].height - 10.0f;
+            float minScroll = 0.0f;
+            if (totalHeight > visibleHeight)
+            {
+                minScroll = totalHeight - visibleHeight;
+                combatHandler->logScrollOffset = std::clamp(combatHandler->logScrollOffset, 0.0f, minScroll);
+            }
+            else combatHandler->logScrollOffset = 0.0f; // No scrolling needed if all log entries fit
+
+            
+    
+
 
             // Buttons
             DrawRectangleRec(ScreenRects[R_BTN_ATTACK],COL_BUTTON);
@@ -1311,31 +1463,42 @@ void GameManager::render()
 
             DrawText(("Enemy: " + Chad->getName()).c_str(), (int)(ScreenRects[R_ENEMY_NAME].x + 20), (int)(ScreenRects[R_ENEMY_NAME].y + 10), FONT_SIZE_NAME, WHITE);
 
-            DrawText(("HP: " + std::to_string(Steve->vit.health) + " / " + std::to_string(Steve->vit.maxHealth)).c_str(), (int)(ScreenRects[R_PLAYER_PANEL].x + 30),(int)(ScreenRects[R_PLAYER_PANEL].y + 130),FONT_SIZE_HP,WHITE);
+            DrawText(TextFormat("HP: %d / %d", Steve->vit.health, Steve->vit.maxHealth), (int)(ScreenRects[R_PLAYER_PANEL].x + 30),(int)(ScreenRects[R_PLAYER_PANEL].y + 130),FONT_SIZE_HP,WHITE);
 
-            DrawText(("HP: " + std::to_string(Chad->vit.health) + " / " + std::to_string(Chad->vit.maxHealth)).c_str(), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
+            DrawText(TextFormat("HP: %d / %d", Chad->vit.health, Chad->vit.maxHealth), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
 
-            if (combatHandler.playerTurn)
+            if (combatHandler->playerTurn)
             {
                 if (GuiButton(ScreenRects[R_BTN_ATTACK], "Attack"))
                 {
-                    combatHandler.playerIsDefending = false;
-                    resolve_melee(*Steve, *Chad, combatHandler.enemyIsDefending, combatHandler.log);
-                    combatHandler.playerTurn = false;
-                    combatHandler.enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+                    combatHandler->playerIsDefending = false;
+                    combatHandler->enemyHitFlashTimer= resolve_melee(*Steve, *Chad, combatHandler->enemyIsDefending, combatHandler->log)? 0.2f : 0.0f;
+                    combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
+                    combatHandler->playerTurn = false;
+                    combatHandler->enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+
+                    if (!Chad->isAlive())
+                    {
+                        AddNewLogEntry(combatHandler->log, "You have defeated " + Chad->getName() + "!");
+                        combatHandler->gameOverTimer = 2.0f; // Set a timer instead of blocking
+                        combatHandler->victoryState = true;
+                        return;
+                    }
                 }
 
                 if (GuiButton(ScreenRects[R_BTN_DEFEND], "Defend"))
                 {
-                    combatHandler.playerIsDefending = true;
-                    combatHandler.log << Steve->getName() << " is defending!" << std::endl;
-                    combatHandler.playerTurn = false;
-                    combatHandler.enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+                    combatHandler->playerIsDefending = true;
+                    AddNewLogEntry(combatHandler->log, Steve->getName() + " is defending!");
+                    combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
+                    combatHandler->playerTurn = false;
+                    combatHandler->enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
                 }
                 if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "Use Item"))
                 {
                     // TODO: Implement use item functionality
                 }
+                combatHandler->enemyIsDefending   = false;
               
             }
             else
@@ -1348,7 +1511,21 @@ void GameManager::render()
                 GuiSetState(prevState);
             }
 
-            DrawText(combatHandler.log.str().c_str(), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)(ScreenRects[R_LOG_BOX].y + 10),FONT_SIZE_LOG, WHITE);
+            BeginScissorMode((int)ScreenRects[R_LOG_BOX].x + 1, (int)ScreenRects[R_LOG_BOX].y + 1, (int)ScreenRects[R_LOG_BOX].width - 2, (int)ScreenRects[R_LOG_BOX].height - 2);
+            float logY = ScreenRects[R_LOG_BOX].y + 5.0f - combatHandler->logScrollOffset;
+
+            for (int i = 0; i < combatHandler->log.size(); ++i) {
+                if (i != combatHandler->log.size() - 1) {
+                    // For all but the last log entry, use gray color
+                    DrawText(TextFormat(". %s", combatHandler->log[i].c_str()), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)logY, FONT_SIZE_LOG, GRAY);
+                }else 
+                {
+                    DrawText(TextFormat("> %s", combatHandler->log[i].c_str()), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)logY, FONT_SIZE_LOG, BLACK);
+                }
+                logY += LOG_LINE_HEIGHT;
+            }
+                
+            EndScissorMode();
             break;
         }
         

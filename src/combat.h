@@ -11,6 +11,7 @@
 #include <sstream>
 #include <algorithm>
 #include <random>
+#include <vector>
 
 
 //@brief: Enum representing different action types during combat
@@ -36,13 +37,23 @@ struct CombatHandler
     bool playerIsDefending  = false;
     bool enemyIsDefending   = false;
 
-    std::stringstream log;
     float enemyActionDelay = 1.0f;
+    
+    float playerHitFlashTimer = 0.0f;
+    float enemyHitFlashTimer = 0.0f;
+
+    std::vector<std::string> log;
+    float logScrollOffset = 0.0f;
+    
+    bool gameOverState = false;
+    bool victoryState = false;
+    float gameOverTimer = 0.0f;
 };
 
 //Function prototypes
 const std::string& nameOf(const Character& c);
 int clampi(int v, int lo, int hi);
-void resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::stringstream& log);
-void resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::stringstream& log);
+bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
+bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
 Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*foe*/);
+void AddNewLogEntry(std::vector<std::string>& log, const std::string& entry);

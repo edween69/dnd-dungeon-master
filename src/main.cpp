@@ -1,4 +1,4 @@
-/*  @authors: Andrew, Edwin, Sebastian
+/* @authors: Andrew, Edwin, Sebastian
     @date: 10/5/2025
     @brief:
 */
@@ -16,7 +16,7 @@ int main()
         SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     #endif
 
-    InitWindow(1920, 1080, "The Last Lift"); // Windowed mode for development
+    InitWindow(1280, 720, "The Last Lift"); // Windowed mode for development
     
     SetTargetFPS(30); // Set desired frame rate
 

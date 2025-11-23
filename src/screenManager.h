@@ -107,8 +107,14 @@
 #include "combat.h"
 #include "raygui.h"
 #include "rng.h"
+
 #ifndef SCREENMANAGER_H
 #define SCREENMANAGER_H
+
+// ======================== VIRTUAL RESOLUTION CONSTANTS ========================
+// The internal resolution the game logic "thinks" it is running at.
+#define GAME_SCREEN_WIDTH 1920
+#define GAME_SCREEN_HEIGHT 1080
 
 // ======================== GAME AND SCREEN STATE ENUMS ========================
 
@@ -131,6 +137,12 @@ class ScreenManager
 {
     private:
         ScreenState currentScreen; // Current active screen state
+        
+        // VIRTUAL RESOLUTION VARIABLES
+        RenderTexture2D target; // The texture we render the game onto
+        float scale;            // The scale factor to fit the window
+        Vector2 offset;         // The offset to center the game in the window
+
         void enterScreen(ScreenState screen); // Handle entering a new screen loading resources
         void exitScreen(ScreenState screen); // Handle exiting a screen unloading resources
 
@@ -147,6 +159,9 @@ class ScreenManager
         [[nodiscard]] ScreenState getCurrentScreen() const; // Get the current screen state used 
         void update(float deltaTime); // Update the current screen with delta time
         void render(); // Render the current screen
+
+        // Helper to convert real mouse coordinates to virtual game coordinates
+        Vector2 GetVirtualMousePosition();
 };
 
 //======================= GAME MANAGER CLASS DEFINITION =======================
@@ -156,7 +171,7 @@ class ScreenManager
 class GameManager {
     private:
         GameState currentGameState; // Current active game state
-        CombatHandler combatHandler; // Combat handler to manage combat state
+        CombatHandler* combatHandler; // Combat handler to manage combat state
         
     
     public:
