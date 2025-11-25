@@ -41,13 +41,13 @@ int clampi(int v, int lo, int hi)
 //@author: Sebastian Cardona
 bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log)
 {
-    int beforeHP = defender.vit.health;
+    std::int8_t beforeHP = defender.vit.health;
 
     if (defenderIsDefending) defender.startDefense();
     attacker.dealMeleeDamage(defender);
     defender.endDefense();
 
-    int delta = std::max(0, beforeHP - defender.vit.health);
+    std::int8_t delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) AddNewLogEntry(log, nameOf(defender) + " takes " + std::to_string(delta) + " damage.");
     else AddNewLogEntry(log, nameOf(attacker) + " misses.");
     return delta > 0;
@@ -63,7 +63,7 @@ bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefe
 //@author: Sebastian Cardona
 bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log) 
 {
-    int beforeHP   = defender.vit.health;
+    std::int8_t beforeHP   = defender.vit.health;
     //int originalAR = defender.def.armor;
 
     if (defenderIsDefending)
@@ -75,7 +75,7 @@ bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDef
     //defender.def.armor = originalAR;
     defender.endDefense();
 
-    int delta = std::max(0, beforeHP - defender.vit.health);
+    std::int8_t delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) AddNewLogEntry(log, nameOf(defender) + " takes " + std::to_string(delta) + " damage."); 
     else AddNewLogEntry(log, nameOf(attacker) + " misses.");
     return delta > 0;
