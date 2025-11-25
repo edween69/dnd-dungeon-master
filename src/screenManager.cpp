@@ -1514,7 +1514,7 @@ void GameManager::render()
             BeginScissorMode((int)ScreenRects[R_LOG_BOX].x + 1, (int)ScreenRects[R_LOG_BOX].y + 1, (int)ScreenRects[R_LOG_BOX].width - 2, (int)ScreenRects[R_LOG_BOX].height - 2);
             float logY = ScreenRects[R_LOG_BOX].y + 5.0f - combatHandler->logScrollOffset;
 
-            for (int i = 0; i < combatHandler->log.size(); ++i) {
+            for (std::size_t i = 0; i < combatHandler->log.size(); ++i) {
                 if (i != combatHandler->log.size() - 1) {
                     // For all but the last log entry, use gray color
                     DrawText(TextFormat(". %s", combatHandler->log[i].c_str()), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)logY, FONT_SIZE_LOG, GRAY);
