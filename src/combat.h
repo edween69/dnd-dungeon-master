@@ -1,30 +1,59 @@
-#include <cstdlib>
-#include <string>
+/*======================================== combat.h ========================================
+  Project: TTRPG Game ?
+  Subsystem: Combat Engine
+  Primary Author: Sebastian Cardona
+  Description: This file... @SebastianCardona please fill this in
+
+*/
 #include "characters.h"
-#include "rng.h"
-#ifndef COMBAT_H
-#define COMBAT_H
+#include <sstream>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <random>
+#include <vector>
 
-//keep
-//Enumerated action types
-enum class ActionType { Attack, Defend, UseMelee, UseRange, UseItem, Flee, None };
 
-//remove actor
-// Actor struct for player and zombie
-struct Action
+//@brief: Enum representing different action types during combat
+//@version: 1.0
+//@author: Sebastian Cardona
+enum class ActionType {Attack, Defend, UseRange, UseItem, None};
+
+//@brief: Struct representing an action taken during combat, including its type and description
+//@version: 1.0
+//@author: Sebastian Cardona
+struct Action 
 {
     ActionType type = ActionType::None;
-    int ItemNum = -1;//however many the player has
-    std::string description;
-
+    std::string desc; 
 };
 
-void apply_attack(Character& attacker, Character& defender, std::stringstream& log);
-void apply_ranged(Character& attacker, Character& defender, std::stringstream& log);
-void apply_defend(Character& a, std::stringstream& log);
-Action ai_choose(const Character& self, const Character& foe);
-Action player_choose();
-void startStats ();
-void runCombat(Student& stnt,NonPlayerCharacter& zombie);
+//@brief: Struct to handle combat state including turn management and logging(will be used to handle combat flow in the screenManager later)
+//@version: 1.0
+//@author: Edwin Baiden
+struct CombatHandler
+{
+    bool playerTurn = true;
+    bool playerIsDefending  = false;
+    bool enemyIsDefending   = false;
 
-#endif
+    float enemyActionDelay = 1.0f;
+    
+    float playerHitFlashTimer = 0.0f;
+    float enemyHitFlashTimer = 0.0f;
+
+    std::vector<std::string> log;
+    float logScrollOffset = 0.0f;
+    
+    bool gameOverState = false;
+    bool victoryState = false;
+    float gameOverTimer = 0.0f;
+};
+
+//Function prototypes
+const std::string& nameOf(const Character& c);
+int clampi(int v, int lo, int hi);
+bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
+bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
+Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*foe*/);
+void AddNewLogEntry(std::vector<std::string>& log, const std::string& entry);

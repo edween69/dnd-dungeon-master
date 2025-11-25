@@ -104,38 +104,45 @@
 #include "raylib.h"
 #include <cmath>
 #include "characters.h"
+#include "combat.h"
 #include "raygui.h"
 #include "rng.h"
+
 #ifndef SCREENMANAGER_H
 #define SCREENMANAGER_H
 
+// ======================== VIRTUAL RESOLUTION CONSTANTS ========================
+// The internal resolution the game logic "thinks" it is running at.
+#define GAME_SCREEN_WIDTH 1920
+#define GAME_SCREEN_HEIGHT 1080
+
 // ======================== GAME AND SCREEN STATE ENUMS ========================
 
-/**
- * @author Edwin Baiden
- * @brief Enum representing different screen states (main menu, character select, gameplay, save & quit).
- * @version 1.0
- */
+//@author: Edwin Baiden
+//@brief: Enum representing different screen states (main menu, character select, gameplay, save & quit).
+//@version: 1.0
 enum class ScreenState {MAIN_MENU, CHARACTER_SELECT,INTRO_CRAWL, GAMEPLAY, SAVE_QUIT};
 
-/**
- * @author Edwin Baiden
- * @brief Enum representing different game states (exploration, combat, dialogue, pause menu).
- * @version 1.0
- */
+//author: Edwin Baiden
+//@brief: Enum representing different game states (exploration, combat, dialogue, pause menu).
+//@version: 1.0
 enum class GameState { EXPLORATION, COMBAT, DIALOGUE, PAUSE_MENU };
 
-/**
- * @author Edwin Baiden
- * @brief Class to manage screen states and transitions
- * @version 1.0
- */
+//@author: Edwin Baiden
+//@brief: Class to manage screen states and transitions
+//@version: 1.0
 
 //======================= SCREEN MANAGER CLASS DEFINITION =======================
 class ScreenManager 
 {
     private:
         ScreenState currentScreen; // Current active screen state
+        
+        // VIRTUAL RESOLUTION VARIABLES
+        RenderTexture2D target; // The texture we render the game onto
+        float scale;            // The scale factor to fit the window
+        Vector2 offset;         // The offset to center the game in the window
+
         void enterScreen(ScreenState screen); // Handle entering a new screen loading resources
         void exitScreen(ScreenState screen); // Handle exiting a screen unloading resources
 
@@ -152,17 +159,19 @@ class ScreenManager
         [[nodiscard]] ScreenState getCurrentScreen() const; // Get the current screen state used 
         void update(float deltaTime); // Update the current screen with delta time
         void render(); // Render the current screen
+
+        // Helper to convert real mouse coordinates to virtual game coordinates
+        Vector2 GetVirtualMousePosition();
 };
 
 //======================= GAME MANAGER CLASS DEFINITION =======================
-/**
- * @author Edwin Baiden
- * @brief Class to manage game states and transitions.Helper for screenManager once gameplay is started. Literally the same as ScreenManager but for game states
- * @version 1.0
- */
+//@author: Edwin Baiden
+//@brief: Class to manage game states and transitions.Helper for screenManager once gameplay is started. Literally the same as ScreenManager but for game states
+//@version: 1.0
 class GameManager {
     private:
         GameState currentGameState; // Current active game state
+        CombatHandler* combatHandler; // Combat handler to manage combat state
         
     
     public:
@@ -203,11 +212,9 @@ struct SceneObject
     bool isItem = false;
 };
 // ========================= GAMESCENE CLASS DEFINITION =========================
-/**
- * @author Edwin Baiden
- * @brief Class to represent a game scene (contains game objects, environments, type of scene, positioning, etc.)
- * @version 1.0
- */
+//@author: Edwin Baiden
+//@brief: Class to represent a game scene (contains game objects, environments, type of scene, positioning, etc.)
+//@version: 1.0
 class GameScene 
 {
     public:
@@ -238,24 +245,20 @@ class ExplorationScene : public GameScene
 
 // ========================= ANIMATION NAMESPACE DEFINITION =========================
 
-/**
- * @author Edwin Baiden
- * @brief Namespace containing simple animation interpolation functions for GUI elements
- * @version 1.0
- */
+//@brief: Namespace containing simple animation interpolation functions for GUI elements
+//@version: 1.0
+//@author: Edwin Baiden
 // I like using the namespace as way way to organize related functions together without creating a class for them
 namespace animation {
 
     // Inline: Since this header file is used in both screenManager.cpp and main.cpp
     // making these functions inline prevents multiple definition errors during linking.
 
-    /**
-     * @author Edwin Baiden
-     * @brief Clamp blend factor between 0 and 1
-     * @param blendFactor - The input blend factor
-     * @return The clamped blend factor
-     * @version 1.0
-     */
+    //@brief: Clamp blend factor between 0 and 1
+    //@param blendFactor - The input blend factor
+    //@return: The clamped blend factor
+    //@version: 1.0
+    //@author: Edwin Baiden
     inline float saturate (float blendFactor) 
     {
         if (blendFactor < 0.0f) 
@@ -266,45 +269,37 @@ namespace animation {
             return blendFactor;
     }
 
-    /**
-     * @author Edwin Baiden
-     * @brief Linear interpolation between two float values (Overloaded for float, Vector2, and Color)
-     * @param start - The starting float value
-     * @param end - The ending float value
-     * @param blendFactor - The blend factor (0 to 1)
-     * @return The interpolated float value
-     * @version 1.0
-     */
+    //@brief: Linear interpolation between two float values (Overloaded for float, Vector2, and Color)
+    //@param start - The starting float value
+    //@param end - The ending float value
+    //@param blendFactor - The blend factor (0 to 1)
+    //@return: The interpolated float value
+    //@version: 1.0
+    //@author: Edwin Baiden
     inline float slopeInt(float start, float end, float blendFactor) 
     {
         blendFactor = saturate(blendFactor); // Clamp blend factor between 0 and 1
         return start + (end - start) * blendFactor; //simple y= mx+b formula for linear interpolation
     }
 
-    /**
-     * @author Edwin Baiden
-     * @brief Linear interpolation between two Vector2 values(Overloaded for float, Vector2, and Color)
-     * @param start - The starting Vector2 value
-     * @param end - The ending Vector2 value
-     * @param blendFactor - The blend factor (0 to 1)
-     * @return The interpolated Vector2 value
-     * @version 1.0
-     */
+    //@brief: Linear interpolation between two Vector2 values(Overloaded for float, Vector2, and Color)
+    //@param start - The starting Vector2 value
+    //@param end - The ending Vector2 value
+    //@param blendFactor - The blend factor (0 to 1)
+    //@return: The interpolated Vector2 value
     inline Vector2 slopeInt(const Vector2& start, const Vector2& end, float blendFactor) 
     {
         blendFactor = saturate(blendFactor);// Clamp blend factor between 0 and 1
         return {start.x + (end.x - start.x) * blendFactor, start.y + (end.y - start.y) * blendFactor}; //same as float version but for both x and y components
     }
 
-    /**
-     * @author Edwin Baiden
-     * @brief Linear interpolation between two Color values(Overloaded for float, Vector2, and Color)
-     * @param start - The starting Color value
-     * @param end - The ending Color value
-     * @param blendFactor - The blend factor (0 to 1)
-     * @return The interpolated Color value
-     * @version 1.0
-     */
+    //@brief: Linear interpolation between two Color values(Overloaded for float, Vector2, and Color)
+    //@param start - The starting Color value
+    //@param end - The ending Color value
+    //@param blendFactor - The blend factor (0 to 1)
+    //@return: The interpolated Color value
+    //@version: 1.0
+    //@author: Edwin Baiden
     inline Color slopeInt(const Color& start, const Color& end, float blendFactor) 
     {
         blendFactor = saturate(blendFactor); // Clamp blend factor between 0 and 1
@@ -317,26 +312,22 @@ namespace animation {
         };
     }
 
-    /**
-     * @author Edwin Baiden
-     * @brief Quadratic ease-in function for smooth acceleration of a property over time
-     * @param blendFactor - The input blend factor
-     * @return The eased blend factor float value
-     * @version 1.0
-     */
+    //@brief: Quadratic ease-in function for smooth acceleration of a property over time
+    //@param blendFactor - The input blend factor
+    //@return: The eased blend factor float value
+    //@version: 1.0
+    //@author: Edwin Baiden
     inline float easeInQuad(float blendFactor)
     {
         blendFactor = saturate(blendFactor); // Clamp blend factor between 0 and 1
         return ((blendFactor * blendFactor)- (2*blendFactor));// Quadratic ease-in formula (1-(1-t)^2)
     }
 
-    /**
-     * @author Edwin Baiden
-     * @brief Cubic ease-in-out function for smooth acceleration and deceleration of a property over time
-     * @param blendFactor - The input blend factor
-     * @return The eased blend factor float value
-     * @version 1.0
-     */
+    //@brief: Cubic ease-in-out function for smooth acceleration and deceleration of a property over time
+    //@param blendFactor - The input blend factor
+    //@return: The eased blend factor float value
+    //@version: 1.0
+    //@author: Edwin Baiden
     inline float easeInOutCubic(float blendFactor)
     {
         blendFactor = saturate(blendFactor); // Clamp blend factor between 0 and 1
