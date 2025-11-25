@@ -16,7 +16,7 @@ CXX := g++ # Compiler
 #    			  These standards could be overridden when calling the make command in the terminal. 
 #                 This is just to insure that if the user (Professor Helsing) does not have c++17 he can still compile with
 #                 the following "make CXXFLAGS="-std=c++11 -Wall -I./src""
-CXXFLAGS ?= -std=c++17 -Wall -I./src
+CXXFLAGS ?= -std=c++17 -Wall -I./src -O3
 
 TARGET_NAME  := TheLastLift
 SRC_DIR := src
@@ -28,7 +28,8 @@ SRCS := \
 	$(SRC_DIR)/main.cpp \
 	$(SRC_DIR)/screenManager.cpp \
 	$(SRC_DIR)/characters.cpp \
-	$(SRC_DIR)/rng.cpp 
+	$(SRC_DIR)/rng.cpp \
+	$(SRC_DIR)/combat.cpp
 
 OBJS := $(SRCS:.cpp=.o) # The object files we want to create from the src files (just replacing .cpp with .o from what i understand)
 
