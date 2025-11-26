@@ -110,7 +110,7 @@ Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*fo
  * @version 1.1
  * @author Sebastian Cardona, modified by Andrew Kurtz for GUI
  */
-void resolve_inventory(Student& player, std::int8_t selectedIndex, std::vector<std::string>& log) 
+void resolve_inventory(Student& player, std::uint8_t selectedIndex, std::vector<std::string>& log) 
 {
     const auto& items = player.inv.getItems();
 
