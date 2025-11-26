@@ -182,6 +182,9 @@
 #define R_BTN_DEFEND 12 // Index for defend button rectangle
 #define R_BTN_USE_ITEM 13 // Index for use item button rectangle
 #define R_LOG_BOX 14 // Index for log box rectangle
+#define R_ATTACK_MENU 15 // Index for attack menu rectangle
+#define R_MELEE_BTN 16 // Index for melee attack button rectangle
+#define R_RANGED_BTN 17 // Index for ranged attack button rectangle
 
 // Text sizes
 #define FONT_SIZE_NAME 30 // Font size for names
@@ -238,10 +241,11 @@ static float introCrawlYPos = 0.0f; // Y position of the intro crawl text
 // [2] = layoutInitFlag  (0 = false, 1 = true)
 static int *CharSelectionStuff = nullptr;
 
-static Student* Steve  = nullptr; // Player character instance
-static NonPlayerCharacter* Chad = nullptr; // NPC instance
+static Character** entities = nullptr; // Array of character pointers (players and NPCs)
 
 static GameManager *gameManager = nullptr; // Pointer to the GameManager instance managing game states
+
+static Font* nerdFont; // Nerd font for UI text
 
 //======================= GUI BUTTON AND TEXT STYLE FUNCTIONS =======================
 //Setting styles for buttons and text to improve GUI appearance and user experience
@@ -302,6 +306,7 @@ void startMenuStyles()
 //@brief: Sets the styles for buttons and text in the character selection screen
 //@version: 1.0
 //@author: Edwin Baiden
+
 void playerSelectStyles()
 {
     GuiSetStyle(BUTTON, BORDER_COLOR_NORMAL, 0x006600FF); // Dark green border for normal state
@@ -322,13 +327,26 @@ void playerSelectStyles()
     GuiSetStyle(BUTTON, TEXT_COLOR_DISABLED,    0x888888FF); // Light gray text for disabled state
 }
 
+void gamePlayStyles()
+{
+    nerdFont = new Font();
+    int codepoints[2] = {0xF04E5, 0xF1841}; // Codepoints for Nerd Font icons we will use
+
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
+    *nerdFont = LoadFontEx("../assets/fonts/JetBrainsMonoNLNerdFontMono-Bold.ttf", 32, codepoints, 2); // Load custom font used across screens
+    SetTextureFilter(nerdFont->texture, TEXTURE_FILTER_BILINEAR); // Set texture filter for better appearance
+
+    playerSelectStyles(); // Reuse character selection styles for gameplay for now
+    
+}
+
 //=============== CHARACTER CREATION FUNCTION FOR CHARACTER SELECT SCREEN ===============
 
 //@brief: Creates a character based on the provided ID by reading stats from the ../dat/Character_Starting_Stats.csv file (made possible by the allStatLines pointer variable)
 //@param ID - The character ID used to look up stats in the CSV file (e.g., "Student", "Zombie_Standard").
 //@version: 1.0
 //@author: Edwin Baiden
-void CreateCharacter(std::string ID) // This function will probably move later to characters.cpp/h
+void CreateCharacter(std::string ID, std::string name) // This function will probably move later to characters.cpp/h
 {
     Attributes     CharAttrs; // Structs to hold character attributes {Strength, Dexterity, 
                               // Constitution, Wisdom, Charisma, Intelligence} (defined in characters.h)
@@ -354,8 +372,8 @@ void CreateCharacter(std::string ID) // This function will probably move later t
     };
 
     CharCbt = {
-        5, // This is just a placeholder for now (melee damage)
-        3, // This is just a placeholder for now (ranged damage)
+        0, // This is just a placeholder for now (melee damage)
+        0, // This is just a placeholder for now (ranged damage)
         getStatForCharacterID(allStatLines, ID, CSVStats::INITIATIVE)
     };
 
@@ -371,12 +389,26 @@ void CreateCharacter(std::string ID) // This function will probably move later t
     if (ID == "Student") //If the ID is "Student", create a Student character
     {
         //(Name, Attributes, DefenseStats, CombatStats, VitalStats, StatusEffects)
-        Steve = new Student("Steve", CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+        entities[0] = new Student(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
     }
-    else if (ID == "Zombie_Standard") // If the ID is "Zombie_Standard", create a standard Zombie NPC
+    else if (ID == "Rat")
     {
         //(Name, Attributes, DefenseStats, CombatStats, VitalStats, StatusEffects)
-        Chad = new NonPlayerCharacter("Chad", CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+        entities[0] = new Rat(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    }
+    else if (ID == "Professor")
+    {
+        entities[0] = new Professor(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    }
+    else if (ID == "Attila")
+    {
+        entities[0] = new Atilla(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    }
+    
+    else
+    {
+        //(Name, Attributes, DefenseStats, CombatStats, VitalStats, StatusEffects)
+        entities[1] = new Zombie(CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
     }
 }
 
@@ -472,7 +504,6 @@ void ScreenManager::init()
     target = LoadRenderTexture(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR); // Smooth scaling
 
-    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     enterScreen(currentScreen); // Enter the initial screen to set up resources
 }
 
@@ -643,6 +674,9 @@ void ScreenManager::update(float dt)
             ScreenRects[0].y = characterCards[CharSelectionStuff[0]].currentAnimationPos.y + characterCards[CharSelectionStuff[0]].currentAnimationPos.height +PLAY_BTN_OFFSET_Y;
         }
 
+        SetMouseOffset(0, 0);
+        SetMouseScale(1.0f, 1.0f);
+
         break;
     }
     case ScreenState::INTRO_CRAWL:
@@ -675,19 +709,16 @@ void ScreenManager::update(float dt)
 //author: Eswin Baiden
 void ScreenManager::render()
 {
-    // --- VIRTUAL RESOLUTION LOGIC START ---
-    // 1. Calculate Scale
     float screenWidth = (float)GetScreenWidth();
     float screenHeight = (float)GetScreenHeight();
     scale = std::min(screenWidth / GAME_SCREEN_WIDTH, screenHeight / GAME_SCREEN_HEIGHT);
     offset.x = (screenWidth - (GAME_SCREEN_WIDTH * scale)) * 0.5f;
     offset.y = (screenHeight - (GAME_SCREEN_HEIGHT * scale)) * 0.5f;
 
-    // 2. Update Input Scaling for RayGui (GuiButtons will now respect resizing)
     SetMouseOffset(-offset.x, -offset.y);
     SetMouseScale(1.0f / scale, 1.0f / scale);
 
-    // 3. Draw to Virtual Texture
+
     BeginTextureMode(target);
     ClearBackground(BLACK); // Clear the background to black before rendering any screen
 
@@ -703,7 +734,7 @@ void ScreenManager::render()
             DrawTexture(ScreenTextures[0], 0, 0, WHITE); // Draw the background texture (index 0)
             DrawTexture(ScreenTextures[1], (SCREEN_WIDTH - ScreenTextures[1].width) / 2, -150, WHITE); // Draw the logo texture (index 1) centered at the top with a Y offset
 
-            startMenuStyles(); // Apply main menu styles to buttons
+            
 
             /*
                 -ScreenRects[0]: Rectangle for the "Start Game" button
@@ -733,7 +764,7 @@ void ScreenManager::render()
                 -CharSelectionStuff[1]: Index of the currently hovered character (-1 if none hovered)
             */
             DrawTexture(ScreenTextures[0], 0, 0, WHITE); // Draw the background texture (index 0)
-            playerSelectStyles(); // Apply character selection styles to buttons
+            
 
             CharSelectionStuff[1] = -1; // Reset hovered index eery frame
 
@@ -759,7 +790,7 @@ void ScreenManager::render()
 
                 //Checking to see if the mouse is hovering over this card (if so, update hovered index)
                 // FIX: Use GetVirtualMousePosition() for manual collision checks
-                if (CheckCollisionPointRec(GetVirtualMousePosition(),characterCards[i].currentAnimationPos)) CharSelectionStuff[1] = i;
+                if (CheckCollisionPointRec(GetMousePosition(),characterCards[i].currentAnimationPos)) CharSelectionStuff[1] = i;
 
                 // Check for clicks on the character card (only the first card is selectable for now)
                 // used GuiButton with empty text so i can use raygui's button click detection
@@ -856,8 +887,9 @@ void ScreenManager::render()
 
             if (GuiButton(ScreenRects[0], "Play Game") && CharSelectionStuff[0] != -1) // If "Play Game" button is clicked and a character is selected
             {
-                CreateCharacter("Student"); // For now only the student character is implemented
-                CreateCharacter("Zombie_Standard"); // Creating a standard zombie NPC for testing purposes
+                entities = new Character*[2] { nullptr, nullptr }; // Dynamically allocate array for player and NPC characters
+                CreateCharacter("Student","Steve"); // Create the player character (only student implemented for now)
+                CreateCharacter("Zombie_Standard","Chad"); // Create the NPC character (only zombie implemented for now)
                 scrollIntroCrawl = new std::stringstream(); // Dynamically allocate stringstream for intro crawl text
                 getIntroCrawlText(scrollIntroCrawl, 1); // Populate the intro crawl text based on selected character
                 introCrawlYPos = INTRO_CRAWL_START_Y;
@@ -870,20 +902,20 @@ void ScreenManager::render()
             }
             GuiSetState(prevState); //If a character is not selected re-enable the GUI to restore previous state
 
+
         break;
         }
         case ScreenState::INTRO_CRAWL:
         {
             if (!scrollIntroCrawl) break;
 
-            // Pull text out of the stringstream
-            const std::string text = scrollIntroCrawl->str();
-            std::istringstream reader(text);
+            scrollIntroCrawl->clear(); // Clear any error flags
+            scrollIntroCrawl->seekg(0, std::ios::beg); // Reset stringstream to beginning
             std::string line;
 
             float y = introCrawlYPos;
 
-            while (std::getline(reader, line))
+            while (std::getline(*scrollIntroCrawl, line))
             {
                 if (!line.empty())
                 {
@@ -928,7 +960,8 @@ void ScreenManager::render()
         Rectangle destRec = { offset.x, offset.y, (float)GAME_SCREEN_WIDTH * scale, (float)GAME_SCREEN_HEIGHT * scale };
         
         DrawTexturePro(target.texture, sourceRec, destRec, { 0.0f, 0.0f }, 0.0f, WHITE);
-
+    SetMouseOffset(0, 0);
+    SetMouseScale(1.0f, 1.0f);
     EndDrawing();
 }
 
@@ -942,6 +975,7 @@ void ScreenManager::enterScreen(ScreenState s)
     {
         case ScreenState::MAIN_MENU:
         {
+            startMenuStyles(); // Apply main menu styles to buttons
             // Load resources for the main menu screen
             /*
                 -ScreenTextures[0]: Background texture for the main menu screen
@@ -969,6 +1003,7 @@ void ScreenManager::enterScreen(ScreenState s)
         }
         case ScreenState::CHARACTER_SELECT:
         {
+            playerSelectStyles(); // Apply character selection styles to buttons
             allStatLines = storeAllStatLines(openStartingStatsCSV()); // Load and store all character stats from the CSV file(defined in characters.cpp and it handles auto closing and fstream pointer cleanup)
             characterCards = new charCard[MAX_CHAR_CARDS]; // Dynamically allocate array for character cards
 
@@ -1015,6 +1050,7 @@ void ScreenManager::enterScreen(ScreenState s)
         }
         case ScreenState::GAMEPLAY:
         {
+            gamePlayStyles(); // Apply gameplay styles to buttons
             gameManager = new GameManager; // Create a new GameManager object
             gameManager->enterGameState(gameManager->getCurrentGameState()); // Enter the initial game state
             break;
@@ -1167,13 +1203,14 @@ void GameManager::enterGameState(GameState state)
                 -ScreenTextures[2]: Enemy character texture for the combat state (For now just using a standard frat bro enemy)
                 -ScreenRects: Array of rectangles defining UI element positions and sizes for the combat state (using macro definitions for readibility , may be implemented for the other stuff later depending on time)
             */
+
             numScreenTextures = 3;
             ScreenTextures = new Texture2D[numScreenTextures];
             ScreenTextures[0] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
             ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/north-west.png");
             ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
 
-            numScreenRects = 15;
+            numScreenRects = 18;
             ScreenRects = new Rectangle[numScreenRects]; // Dynamically allocate array for screen rectangles
 
             ScreenRects[R_PLAYER_NAME] = {0,0, 450, 50};
@@ -1191,10 +1228,14 @@ void GameManager::enterGameState(GameState state)
             ScreenRects[R_BTN_DEFEND] = {ScreenRects[R_BOTTOM_PANEL].x + 20,ScreenRects[R_BTN_ATTACK].y + 100,400,80};
             ScreenRects[R_BTN_USE_ITEM] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 150,ScreenRects[R_BTN_ATTACK].y,400,80};
             ScreenRects[R_LOG_BOX] = {SCREEN_WIDTH - 800, ScreenRects[R_BTN_ATTACK].y, 780, 175};
+            ScreenRects[R_ATTACK_MENU] = {0};
+            ScreenRects[R_MELEE_BTN] = {0};
+            ScreenRects[R_RANGED_BTN] = {0};
+
 
             // Dynamically allocate combat handler and initialize combat state variables
             combatHandler = new CombatHandler;
-            combatHandler->playerTurn = Steve->cbt.initiative >= Chad->cbt.initiative; // Determine who goes first based on initiative (simple comparison for now)
+            combatHandler->playerTurn = entities[0]->cbt.initiative >= entities[1]->cbt.initiative; // Determine who goes first based on initiative (simple comparison for now)
             combatHandler->playerIsDefending = false;
             combatHandler->enemyIsDefending = false;
             combatHandler->playerHitFlashTimer = 0.0f;
@@ -1202,10 +1243,11 @@ void GameManager::enterGameState(GameState state)
             combatHandler->gameOverState = false;
             combatHandler->victoryState = false;
             combatHandler->gameOverTimer = 0.0f;
+            combatHandler->showAttackMenu = false;
 
             combatHandler->log.clear();
             combatHandler->logScrollOffset = 0.0f;
-            AddNewLogEntry(combatHandler->log, "A wild " + Chad->getName() + " appears!"); // Initial log entry
+            AddNewLogEntry(combatHandler->log, "A wild " + entities[1]->getName() + " appears!"); // Initial log entry
 
             combatHandler->enemyActionDelay = 1.0f; // Reset enemy action delay timer
             break;
@@ -1291,12 +1333,11 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
         case GameState::COMBAT:
         {
             if(!combatHandler) break; // Safety check to ensure combat handler is valid
-            if(!Steve || !Chad) break; // Safety check to ensure characters are valid
+            if(!entities[0] || !entities[1]) break; // Safety check to ensure characters are valid
             //TODO: Implement combat state update logic (for now just updating health bars)
             // Update health bar widths based on current health
-            ScreenRects[R_PLAYER_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_PLAYER_HP_BG],Steve->vit.health, Steve->vit.maxHealth);
-            ScreenRects[R_ENEMY_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_ENEMY_HP_BG], Chad->vit.health, Chad->vit.maxHealth);
-
+            ScreenRects[R_PLAYER_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_PLAYER_HP_BG],entities[0]->vit.health, entities[0]->vit.maxHealth);
+            ScreenRects[R_ENEMY_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_ENEMY_HP_BG], entities[1]->vit.health, entities[1]->vit.maxHealth);
             combatHandler->playerHitFlashTimer = std::max(0.0f, combatHandler->playerHitFlashTimer - dt);
             combatHandler->enemyHitFlashTimer  = std::max(0.0f, combatHandler->enemyHitFlashTimer  - dt);
 
@@ -1335,13 +1376,13 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
                 combatHandler->enemyActionDelay -= dt;
                 if (combatHandler->enemyActionDelay <= 0.0f)
                 {
-                    Action enemyAction = ai_choose(*Chad, *Steve); // AI chooses an action
+                    Action enemyAction = ai_choose(*(dynamic_cast<NonPlayerCharacter*>(entities[1])), *(dynamic_cast<PlayerCharacter*>(entities[0]))); // AI chooses an action
 
                     if (enemyAction.type == ActionType::Attack)
                     {
-                        combatHandler->playerHitFlashTimer = resolve_melee(*Chad, *Steve, combatHandler->playerIsDefending, combatHandler->log) ? 0.2f : 0.0f;
+                        combatHandler->playerHitFlashTimer = resolve_melee(*entities[1], *entities[0], combatHandler->playerIsDefending, combatHandler->log) ? 0.2f : 0.0f;
                         combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
-                        if (!Steve->isAlive())
+                        if (!entities[0]->isAlive())
                         {
                             AddNewLogEntry(combatHandler->log, "You died.");
                             combatHandler->gameOverTimer = 2.0f; // Set a timer instead of blocking
@@ -1352,7 +1393,7 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
                     else if (enemyAction.type == ActionType::Defend)
                     {
                         combatHandler->enemyIsDefending = true;
-                        AddNewLogEntry(combatHandler->log, Chad->getName() + " is defending!");
+                        AddNewLogEntry(combatHandler->log, entities[1]->getName() + " is defending!");
                         combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
                     }
                     combatHandler->playerTurn = true;
@@ -1398,7 +1439,7 @@ void GameManager::render()
             //This pportion is mostly hardcoded for testing purposes. Its definitely going to become more dynamic and have structs for positioning later on
             // Drawing the Combat background, horizontally centered (SCREEN_WIDTH - ScreenTextures[0].width)/2, making it slightly shifted up to make room for UI elements at the bottom
             if(!combatHandler) break; // Safety check to ensure combat handler is valid
-            if(!Steve || !Chad) break; // Safety check to ensure characters are valid
+            if(!entities[0] || !entities[1]) break; // Safety check to ensure characters are valid
             if(!ScreenTextures || numScreenTextures < 3) break; // Safety check for textures
             if(!ScreenRects || numScreenRects < 15) break; // Safety check for rectangles
             
@@ -1459,48 +1500,105 @@ void GameManager::render()
 
             // Drawing text information (names, HP values)
             // Once again need to convert numbers to strings using std::to_string since DrawText requires cstrings
-            DrawText(("Player: " + Steve->getName()).c_str(), (int)(ScreenRects[R_PLAYER_NAME].x + 20),(int)(ScreenRects[R_PLAYER_NAME].y + 10), FONT_SIZE_NAME, WHITE);
+            DrawText(("Player: " + entities[0]->getName()).c_str(), (int)(ScreenRects[R_PLAYER_NAME].x + 20),(int)(ScreenRects[R_PLAYER_NAME].y + 10), FONT_SIZE_NAME, WHITE);
 
-            DrawText(("Enemy: " + Chad->getName()).c_str(), (int)(ScreenRects[R_ENEMY_NAME].x + 20), (int)(ScreenRects[R_ENEMY_NAME].y + 10), FONT_SIZE_NAME, WHITE);
+            DrawText(("Enemy: " + entities[1]->getName()).c_str(), (int)(ScreenRects[R_ENEMY_NAME].x + 20), (int)(ScreenRects[R_ENEMY_NAME].y + 10), FONT_SIZE_NAME, WHITE);
 
-            DrawText(TextFormat("HP: %d / %d", Steve->vit.health, Steve->vit.maxHealth), (int)(ScreenRects[R_PLAYER_PANEL].x + 30),(int)(ScreenRects[R_PLAYER_PANEL].y + 130),FONT_SIZE_HP,WHITE);
-
-            DrawText(TextFormat("HP: %d / %d", Chad->vit.health, Chad->vit.maxHealth), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
+            DrawText(TextFormat("HP: %d / %d", entities[0]->vit.health, entities[0]->vit.maxHealth), (int)(ScreenRects[R_PLAYER_PANEL].x + 30),(int)(ScreenRects[R_PLAYER_PANEL].y + 130),FONT_SIZE_HP,WHITE);
+            DrawText(TextFormat("HP: %d / %d", entities[1]->vit.health, entities[1]->vit.maxHealth), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
 
             if (combatHandler->playerTurn)
-            {
-                if (GuiButton(ScreenRects[R_BTN_ATTACK], "Attack"))
-                {
-                    combatHandler->playerIsDefending = false;
-                    combatHandler->enemyHitFlashTimer= resolve_melee(*Steve, *Chad, combatHandler->enemyIsDefending, combatHandler->log)? 0.2f : 0.0f;
-                    combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
-                    combatHandler->playerTurn = false;
-                    combatHandler->enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+{
+    // 1. ATTACK BUTTON (Only toggles menu)
+    if (GuiButton(ScreenRects[R_BTN_ATTACK], "ATTACK"))
+    {
+        combatHandler->showAttackMenu = !combatHandler->showAttackMenu;
+        
+        if (combatHandler->showAttackMenu) 
+            AddNewLogEntry(combatHandler->log, "Choose your attack.");
+        else 
+            AddNewLogEntry(combatHandler->log, "Attack cancelled.");
+            
+        combatHandler->logScrollOffset = 1000.0f;
+    }
 
-                    if (!Chad->isAlive())
-                    {
-                        AddNewLogEntry(combatHandler->log, "You have defeated " + Chad->getName() + "!");
-                        combatHandler->gameOverTimer = 2.0f; // Set a timer instead of blocking
-                        combatHandler->victoryState = true;
-                        return;
-                    }
-                }
+    // 2. ATTACK MENU (Where the actual attacks happen)
+    if (combatHandler->showAttackMenu)
+    {
+        // Define the pop-up menu area
+        //{x, y, width, height}
+        ScreenRects[R_ATTACK_MENU] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 10, ScreenRects[R_BTN_ATTACK].y - 150, 300.0f, 140.0f};
+        DrawRectangleRec(ScreenRects[R_ATTACK_MENU], COL_BOTTOM_PANEL);
+        DrawRectangleLinesEx(ScreenRects[R_ATTACK_MENU], 3.0f, BLACK);
+        
+        ScreenRects[R_MELEE_BTN] = {ScreenRects[R_ATTACK_MENU].x + 10, ScreenRects[R_ATTACK_MENU].y + 10, ScreenRects[R_ATTACK_MENU].width - 20, 50.0f};
+        ScreenRects[R_RANGED_BTN] = {ScreenRects[R_ATTACK_MENU].x + 10, ScreenRects[R_ATTACK_MENU].y + 75, ScreenRects[R_ATTACK_MENU].width - 20, 50.0f};
 
-                if (GuiButton(ScreenRects[R_BTN_DEFEND], "Defend"))
-                {
-                    combatHandler->playerIsDefending = true;
-                    AddNewLogEntry(combatHandler->log, Steve->getName() + " is defending!");
-                    combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
-                    combatHandler->playerTurn = false;
-                    combatHandler->enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
-                }
-                if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "Use Item"))
-                {
-                    // TODO: Implement use item functionality
-                }
-                combatHandler->enemyIsDefending   = false;
-              
-            }
+        // --- MELEE BUTTON ---
+        if (GuiButton(ScreenRects[R_MELEE_BTN], "Melee Attack"))
+        {
+            combatHandler->showAttackMenu = false; // Close menu
+            combatHandler->playerIsDefending = false;
+            
+            // Resolve Melee Damage
+            bool hit = resolve_melee(*entities[0], *entities[1], combatHandler->enemyIsDefending, combatHandler->log);
+            combatHandler->enemyHitFlashTimer = hit ? 0.2f : 0.0f;
+            
+            // End Turn
+            combatHandler->logScrollOffset = 1000.0f;
+            combatHandler->playerTurn = false;
+            combatHandler->enemyActionDelay = 0.6f;
+        }
+
+        // --- RANGED BUTTON ---
+        if (GuiButton(ScreenRects[R_RANGED_BTN], "Ranged Attack"))
+        {
+            combatHandler->showAttackMenu = false; // Close menu
+            combatHandler->playerIsDefending = false;
+            
+            bool hit = resolve_ranged(*entities[0], *entities[1], combatHandler->enemyIsDefending, combatHandler->log);
+            combatHandler->enemyHitFlashTimer = hit ? 0.2f : 0.0f;
+            
+            // End Turn
+            combatHandler->logScrollOffset = 1000.0f;
+            combatHandler->playerTurn = false;
+            combatHandler->enemyActionDelay = 0.6f;
+        }
+
+        if (!entities[1]->isAlive())
+        {
+            AddNewLogEntry(combatHandler->log, "You have defeated " + entities[1]->getName() + "!");
+            combatHandler->gameOverTimer = 2.0f;
+            combatHandler->victoryState = true;
+            return; // Exit render
+        }
+    } else
+    {
+        ScreenRects[R_ATTACK_MENU] = {0}; // Reset attack menu rectangle when not shown
+        ScreenRects[R_MELEE_BTN] = {0}; // Reset melee button rectangle when not
+        ScreenRects[R_RANGED_BTN] = {0}; // Reset ranged button rectangle when not shown
+    }
+
+    // 3. DEFEND BUTTON (Outside menu logic)
+    if (GuiButton(ScreenRects[R_BTN_DEFEND], "DEFEND"))
+    {
+        combatHandler->showAttackMenu = false; // Close menu if they switch to defend
+        combatHandler->playerIsDefending = true;
+        AddNewLogEntry(combatHandler->log, entities[0]->getName() + " is defending!");
+        combatHandler->logScrollOffset = 1000.0f;
+        combatHandler->playerTurn = false;
+        combatHandler->enemyActionDelay = 0.6f;
+    }
+    
+    // 4. ITEM BUTTON
+    if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "USE ITEM"))
+    {
+        combatHandler->showAttackMenu = false;
+        // TODO: Item Logic
+    }
+    
+    combatHandler->enemyIsDefending = false;
+}
             else
             {
                 int prevState = GuiGetState();
@@ -1514,7 +1612,7 @@ void GameManager::render()
             BeginScissorMode((int)ScreenRects[R_LOG_BOX].x + 1, (int)ScreenRects[R_LOG_BOX].y + 1, (int)ScreenRects[R_LOG_BOX].width - 2, (int)ScreenRects[R_LOG_BOX].height - 2);
             float logY = ScreenRects[R_LOG_BOX].y + 5.0f - combatHandler->logScrollOffset;
 
-            for (std::size_t i = 0; i < combatHandler->log.size(); ++i) {
+            for (int i = 0; i < combatHandler->log.size(); ++i) {
                 if (i != combatHandler->log.size() - 1) {
                     // For all but the last log entry, use gray color
                     DrawText(TextFormat(". %s", combatHandler->log[i].c_str()), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)logY, FONT_SIZE_LOG, GRAY);
