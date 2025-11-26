@@ -42,12 +42,15 @@ struct CombatHandler
     float playerHitFlashTimer = 0.0f;
     float enemyHitFlashTimer = 0.0f;
 
+
     std::vector<std::string> log;
     float logScrollOffset = 0.0f;
     
     bool gameOverState = false;
     bool victoryState = false;
     float gameOverTimer = 0.0f;
+
+    bool showAttackMenu = false;
 };
 
 //Function prototypes
