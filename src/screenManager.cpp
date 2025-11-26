@@ -501,6 +501,7 @@ ScreenManager::~ScreenManager()
 void ScreenManager::init()
 {
     // Initialize Virtual Resolution Render Texture
+    ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     target = LoadRenderTexture(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR); // Smooth scaling
 
