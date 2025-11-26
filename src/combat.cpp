@@ -8,37 +8,42 @@
 
 #include "combat.h"
 
-//@brief: Get the name of a character
-//@param c - The character whose name is to be retrieved
-//@return: The name of the character as a string reference
-//@version: 1.0
-//@author: Sebastian Cardona
+/**
+ * @brief Get the name of a character
+ * @param c - The character whose name is to be retrieved
+ * @return The name of the character as a string reference
+ * @version 1.0
+ * @author Sebastian Cardona
+ */
 const std::string& nameOf(const Character& c)
 {
      return c.getName(); 
 }
 
-
-//@brief: Clamp an integer value between a lower and upper bound
-//@param v - The value to be clamped
-//@param lo - The lower bound
-//@param hi - The upper bound
-//@return: The clamped value
-//@version: 1.0
-//@author: Sebastian Cardona
+/**
+ * @brief Clamp an integer value between a lower and upper bound
+ * @param v - The value to be clamped
+ * @param lo - The lower bound
+ * @param hi - The upper bound
+ * @return The clamped value
+ * @version 1.0
+ * @author Sebastian Cardona
+ */
 int clampi(int v, int lo, int hi)
 { 
     return std::max(lo, std::min(v, hi)); 
 }
 
-//@brief: Resolve a melee attack from an attacker to a defender, considering if the defender is defending
-//@param attacker - The character performing the attack
-//@param defender - The character receiving the attack
-//@param defenderIsDefending - Boolean indicating if the defender is in a defending state
-//@param log - A stringstream to log the combat events
-//@version: 1.0
-//@return: True if damage was dealt, false otherwise
-//@author: Sebastian Cardona
+/**
+ * @brief Resolve a melee attack from an attacker to a defender, considering if the defender is defending
+ * @param attacker - The character performing the attack
+ * @param defender - The character receiving the attack
+ * @param defenderIsDefending - Boolean indicating if the defender is in a defending state
+ * @param log - A stringstream to log the combat events
+ * @version 1.0
+ * @return True if damage was dealt, false otherwise
+ * @author Sebastian Cardona
+ */
 bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log)
 {
     std::int8_t beforeHP = defender.vit.health;
@@ -53,14 +58,15 @@ bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefe
     return delta > 0;
 }
 
-//@brief: Resolve a ranged attack from an attacker to a defender, considering if the defender is defending
-//@param attacker - The character performing the attack
-//@param defender - The character receiving the attack
-//@param defenderIsDefending - Boolean indicating if the defender is in a defending state
-//@param log - A stringstream to log the combat events
-//@version: 1.0
-//@return: True if damage was dealt, false otherwise
-//@author: Sebastian Cardona
+/**
+ * @brief Resolve a ranged attack from an attacker to a defender, considering if the defender is defending
+ * @param defender - The character receiving the attack
+ * @param defenderIsDefending - Boolean indicating if the defender is in a defending state
+ * @param log - A stringstream to log the combat events
+ * @version 1.0
+ * @return True if damage was dealt, false otherwise
+ * @author Sebastian Cardona
+ */
 bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log) 
 {
     std::int8_t beforeHP   = defender.vit.health;
@@ -81,11 +87,13 @@ bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDef
     return delta > 0;
 }
 
-//@brief: AI function to choose an action for a non-player character during combat
-//@param self - The NPC character making the decision
-//@param foe - The player character being targeted
-//@version: 1.0
-//@author: Sebastian Cardona
+/**
+ * @brief AI function to choose an action for a non-player character during combat
+ * @param self - The NPC character making the decision
+ * @param foe - The player character being targeted
+ * @version 1.0
+ * @author Sebastian Cardona
+ */
 Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*foe*/) 
 {
     int roll = roll_d(4);           
@@ -94,9 +102,63 @@ Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*fo
         return {ActionType::Attack, "Attack"};
 }
 
-//@brief: Add a new log entry to the combat handler's log
-//@param handler - The combat handler managing the combat state
-//@param entry - The log entry to be added
+/**
+ * @brief Handles inventory selection logs
+ * @param player - character checking inventory
+ * @param selectedIndex - index chosen by player, 0 is no selection close menu
+ * @param log - A stringstream to log the combat events
+ * @version 1.1
+ * @author Sebastian Cardona, modified by Andrew Kurtz for GUI
+ */
+void resolve_inventory(Student& player, std::int8_t selectedIndex, std::vector<std::string>& log) 
+{
+    const auto& items = player.inv.getItems();
+
+    // If inventory is empty
+    if (items.empty())
+    {
+        AddNewLogEntry(log, nameOf(player) + " checks their bag, but it's empty.");
+        return;
+    }
+
+    // Cancelled
+    if (selectedIndex = 0)
+    {
+        AddNewLogEntry(log, nameOf(player) + " decides not to use an item.");
+        return;
+    }
+
+    // Out-of-range index
+    if (selectedIndex >= static_cast<int>(items.size()))
+    {
+        AddNewLogEntry(log, "Invalid item selection.");
+        return;
+    }
+
+    const Item& selected = items[static_cast<std::size_t>(selectedIndex)];
+
+    if (selected.healAmount > 0)
+    {
+        std::int8_t beforeHP = player.vit.health;
+        player.heal(selected.healAmount);
+        std::int8_t healed = player.vit.health - beforeHP;
+
+        std::string message = nameOf(player) + " uses " + selected.name + " and heals " + std::to_string(healed) + " HP. " +
+            "HP " + std::to_string(player.vit.health) + "/" + std::to_string(player.vit.maxHealth);
+
+        AddNewLogEntry(log, message);
+
+        // Consume 1 from inventory
+        player.inv.removeitem(selected.name, 1);
+    }
+    else { AddNewLogEntry(log, "That item can't be used right now."); }
+}
+
+/**
+ * @brief Add a new log entry to the combat handler's log
+ * @param handler - The combat handler managing the combat state
+ * @param entry - The log entry to be added
+ */
 void AddNewLogEntry(std::vector<std::string>& log, const std::string& entry)
 {
     log.push_back(entry);

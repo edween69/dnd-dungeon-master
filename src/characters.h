@@ -29,39 +29,39 @@ enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 // Structure to hold character attributes
 struct Attributes 
 {
-    std::int8_t strength;
-    std::int8_t dexterity;
-    std::int8_t constitution;
-    std::int8_t wisdom; //not important, no longer DND game
-    std::int8_t charisma; //not important, no longer DND game
-    std::int8_t intelligence; //not important, no longer DND game
+    std::int8_t strength = 0;
+    std::int8_t dexterity = 0;
+    std::int8_t constitution = 0;
+    std::int8_t wisdom = 0; //not important, no longer DND game
+    std::int8_t charisma = 0; //not important, no longer DND game
+    std::int8_t intelligence = 0; //not important, no longer DND game
 };
 
 // Structure to hold character defense stats
 struct DefenseStats
 {
-    std::int8_t armor;
-    std::int8_t magicResist; //not important, no longer DND game
+    std::int8_t armor = 0;
+    std::int8_t magicResist = 0; //not important, no longer DND game
 };
 
 // Structure to hold character combat stats
 struct CombatStats 
 {
-    std::uint8_t meleeDamage;
-    std::uint8_t rangeDamage;
-    std::int8_t initiative;
+    std::uint8_t meleeDamage = 0;
+    std::uint8_t rangeDamage = 0;
+    std::int8_t initiative = 0;
 };
 
 // Structure to hold weapon types
 struct Weapons {
-    std::uint8_t meleeWeapon;
-    std::uint8_t rangeWeapon;
+    std::uint8_t meleeWeapon = 0;
+    std::uint8_t rangeWeapon = 0;
 };
 
 // Structure to hold character vital stats
 struct VitalStats {
-    std::int8_t health;
-    std::int8_t maxHealth;
+    std::int8_t health = 0;
+    std::int8_t maxHealth = 0;
 };
 
 // Structure to hold character status effects
