@@ -28,39 +28,39 @@ enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 // TODO - a lot of these can be optimized by using smaller int sizes, have to look at what works best
 struct Attributes 
 {
-    int strength;
-    int dexterity;
-    int constitution;
-    int wisdom; //not important, no longer DND game
-    int charisma; //not important, no longer DND game
-    int intelligence; //not important, no longer DND game
+    int strength=0;
+    int constitution=0;
+    int dexterity=0;
+    int wisdom=0; //not important, no longer DND game
+    int charisma=0; //not important, no longer DND game
+    int intelligence=0; //not important, no longer DND game
 };
 
 // Structure to hold character defense stats
 struct DefenseStats
 {
-    int armor;
-    int magicResist; //not important, no longer DND game
+    int armor=0;
+    int magicResist=0; //not important, no longer DND game
 };
 
 // Structure to hold character combat stats
 struct CombatStats 
 {
-    int meleeDamage;
-    int rangeDamage;
-    int initiative;
+    int meleeDamage=0;
+    int rangeDamage=0;
+    int initiative=0;
 };
 
 // Structure to hold weapon types
 struct Weapons {
-    int meleeWeapon;
-    int rangeWeapon;
+    int meleeWeapon=0;
+    int rangeWeapon=0;
 };
 
 // Structure to hold character vital stats
 struct VitalStats {
-    int health;
-    int maxHealth;
+    int health=0;
+    int maxHealth=0;
 };
 
 // Structure to hold character status effects

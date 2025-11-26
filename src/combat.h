@@ -37,7 +37,7 @@ struct CombatHandler
     bool playerIsDefending  = false;
     bool enemyIsDefending   = false;
 
-    float enemyActionDelay = 1.0f;
+    float enemyActionDelay = 0.6f;
     
     float playerHitFlashTimer = 0.0f;
     float enemyHitFlashTimer = 0.0f;
@@ -48,6 +48,8 @@ struct CombatHandler
     bool gameOverState = false;
     bool victoryState = false;
     float gameOverTimer = 0.0f;
+
+    bool showAttackMenu = false;
 };
 
 //Function prototypes

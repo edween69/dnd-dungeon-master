@@ -182,6 +182,9 @@
 #define R_BTN_DEFEND 12 // Index for defend button rectangle
 #define R_BTN_USE_ITEM 13 // Index for use item button rectangle
 #define R_LOG_BOX 14 // Index for log box rectangle
+#define R_ATTACK_MENU 15 // Index for attack menu rectangle
+#define R_MELEE_BTN 16 // Index for melee attack button rectangle
+#define R_RANGED_BTN 17 // Index for ranged attack button rectangle
 
 // Text sizes
 #define FONT_SIZE_NAME 30 // Font size for names
@@ -238,8 +241,6 @@ static float introCrawlYPos = 0.0f; // Y position of the intro crawl text
 // [2] = layoutInitFlag  (0 = false, 1 = true)
 static int *CharSelectionStuff = nullptr;
 
-//static Student* Steve  = nullptr; // Player character instance
-//static NonPlayerCharacter* Chad = nullptr; // NPC instance
 static Character** entities = nullptr; // Array of character pointers (players and NPCs)
 
 static GameManager *gameManager = nullptr; // Pointer to the GameManager instance managing game states
@@ -371,8 +372,8 @@ void CreateCharacter(std::string ID, std::string name) // This function will pro
     };
 
     CharCbt = {
-        5, // This is just a placeholder for now (melee damage)
-        3, // This is just a placeholder for now (ranged damage)
+        0, // This is just a placeholder for now (melee damage)
+        0, // This is just a placeholder for now (ranged damage)
         getStatForCharacterID(allStatLines, ID, CSVStats::INITIATIVE)
     };
 
@@ -407,7 +408,7 @@ void CreateCharacter(std::string ID, std::string name) // This function will pro
     else
     {
         //(Name, Attributes, DefenseStats, CombatStats, VitalStats, StatusEffects)
-        entities[1] = new NonPlayerCharacter("Chad", CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+        entities[1] = new Zombie(CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
     }
 }
 
@@ -908,6 +909,8 @@ void ScreenManager::render()
         {
             if (!scrollIntroCrawl) break;
 
+            scrollIntroCrawl->clear(); // Clear any error flags
+            scrollIntroCrawl->seekg(0, std::ios::beg); // Reset stringstream to beginning
             std::string line;
 
             float y = introCrawlYPos;
@@ -1043,8 +1046,6 @@ void ScreenManager::enterScreen(ScreenState s)
         }
         case ScreenState::INTRO_CRAWL:
         {
-            scrollIntroCrawl->clear(); // Clear any error flags
-            scrollIntroCrawl->seekg(0, std::ios::beg); // Reset stringstream to beginning
             break;
         }
         case ScreenState::GAMEPLAY:
@@ -1209,7 +1210,7 @@ void GameManager::enterGameState(GameState state)
             ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/north-west.png");
             ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
 
-            numScreenRects = 15;
+            numScreenRects = 18;
             ScreenRects = new Rectangle[numScreenRects]; // Dynamically allocate array for screen rectangles
 
             ScreenRects[R_PLAYER_NAME] = {0,0, 450, 50};
@@ -1227,6 +1228,10 @@ void GameManager::enterGameState(GameState state)
             ScreenRects[R_BTN_DEFEND] = {ScreenRects[R_BOTTOM_PANEL].x + 20,ScreenRects[R_BTN_ATTACK].y + 100,400,80};
             ScreenRects[R_BTN_USE_ITEM] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 150,ScreenRects[R_BTN_ATTACK].y,400,80};
             ScreenRects[R_LOG_BOX] = {SCREEN_WIDTH - 800, ScreenRects[R_BTN_ATTACK].y, 780, 175};
+            ScreenRects[R_ATTACK_MENU] = {0};
+            ScreenRects[R_MELEE_BTN] = {0};
+            ScreenRects[R_RANGED_BTN] = {0};
+
 
             // Dynamically allocate combat handler and initialize combat state variables
             combatHandler = new CombatHandler;
@@ -1238,6 +1243,7 @@ void GameManager::enterGameState(GameState state)
             combatHandler->gameOverState = false;
             combatHandler->victoryState = false;
             combatHandler->gameOverTimer = 0.0f;
+            combatHandler->showAttackMenu = false;
 
             combatHandler->log.clear();
             combatHandler->logScrollOffset = 0.0f;
@@ -1502,39 +1508,97 @@ void GameManager::render()
             DrawText(TextFormat("HP: %d / %d", entities[1]->vit.health, entities[1]->vit.maxHealth), (int)(ScreenRects[R_ENEMY_PANEL].x + 30),(int)(ScreenRects[R_ENEMY_PANEL].y + 130),FONT_SIZE_HP, WHITE);
 
             if (combatHandler->playerTurn)
-            {
-                if (GuiButton(ScreenRects[R_BTN_ATTACK], "ATTACK"))
-                {
-                    combatHandler->playerIsDefending = false;
-                    combatHandler->enemyHitFlashTimer= resolve_melee(*entities[0], *entities[1], combatHandler->enemyIsDefending, combatHandler->log)? 0.2f : 0.0f;
-                    combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
-                    combatHandler->playerTurn = false;
-                    combatHandler->enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
+{
+    // 1. ATTACK BUTTON (Only toggles menu)
+    if (GuiButton(ScreenRects[R_BTN_ATTACK], "ATTACK"))
+    {
+        combatHandler->showAttackMenu = !combatHandler->showAttackMenu;
+        
+        if (combatHandler->showAttackMenu) 
+            AddNewLogEntry(combatHandler->log, "Choose your attack.");
+        else 
+            AddNewLogEntry(combatHandler->log, "Attack cancelled.");
+            
+        combatHandler->logScrollOffset = 1000.0f;
+    }
 
-                    if (!entities[1]->isAlive())
-                    {
-                        AddNewLogEntry(combatHandler->log, "You have defeated " + entities[1]->getName() + "!");
-                        combatHandler->gameOverTimer = 2.0f; // Set a timer instead of blocking
-                        combatHandler->victoryState = true;
-                        return;
-                    }
-                }
+    // 2. ATTACK MENU (Where the actual attacks happen)
+    if (combatHandler->showAttackMenu)
+    {
+        // Define the pop-up menu area
+        //{x, y, width, height}
+        ScreenRects[R_ATTACK_MENU] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 10, ScreenRects[R_BTN_ATTACK].y - 150, 300.0f, 140.0f};
+        DrawRectangleRec(ScreenRects[R_ATTACK_MENU], COL_BOTTOM_PANEL);
+        DrawRectangleLinesEx(ScreenRects[R_ATTACK_MENU], 3.0f, BLACK);
+        
+        ScreenRects[R_MELEE_BTN] = {ScreenRects[R_ATTACK_MENU].x + 10, ScreenRects[R_ATTACK_MENU].y + 10, ScreenRects[R_ATTACK_MENU].width - 20, 50.0f};
+        ScreenRects[R_RANGED_BTN] = {ScreenRects[R_ATTACK_MENU].x + 10, ScreenRects[R_ATTACK_MENU].y + 75, ScreenRects[R_ATTACK_MENU].width - 20, 50.0f};
 
-                if (GuiButton(ScreenRects[R_BTN_DEFEND], "DEFEND"))
-                {
-                    combatHandler->playerIsDefending = true;
-                    AddNewLogEntry(combatHandler->log, entities[0]->getName() + " is defending!");
-                    combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
-                    combatHandler->playerTurn = false;
-                    combatHandler->enemyActionDelay = 0.6f; // 0.6 seconds before enemy acts
-                }
-                if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "USE ITEM"))
-                {
-                    // TODO: Implement use item functionality
-                }
-                combatHandler->enemyIsDefending   = false;
-              
-            }
+        // --- MELEE BUTTON ---
+        if (GuiButton(ScreenRects[R_MELEE_BTN], "Melee Attack"))
+        {
+            combatHandler->showAttackMenu = false; // Close menu
+            combatHandler->playerIsDefending = false;
+            
+            // Resolve Melee Damage
+            bool hit = resolve_melee(*entities[0], *entities[1], combatHandler->enemyIsDefending, combatHandler->log);
+            combatHandler->enemyHitFlashTimer = hit ? 0.2f : 0.0f;
+            
+            // End Turn
+            combatHandler->logScrollOffset = 1000.0f;
+            combatHandler->playerTurn = false;
+            combatHandler->enemyActionDelay = 0.6f;
+        }
+
+        // --- RANGED BUTTON ---
+        if (GuiButton(ScreenRects[R_RANGED_BTN], "Ranged Attack"))
+        {
+            combatHandler->showAttackMenu = false; // Close menu
+            combatHandler->playerIsDefending = false;
+            
+            bool hit = resolve_ranged(*entities[0], *entities[1], combatHandler->enemyIsDefending, combatHandler->log);
+            combatHandler->enemyHitFlashTimer = hit ? 0.2f : 0.0f;
+            
+            // End Turn
+            combatHandler->logScrollOffset = 1000.0f;
+            combatHandler->playerTurn = false;
+            combatHandler->enemyActionDelay = 0.6f;
+        }
+
+        if (!entities[1]->isAlive())
+        {
+            AddNewLogEntry(combatHandler->log, "You have defeated " + entities[1]->getName() + "!");
+            combatHandler->gameOverTimer = 2.0f;
+            combatHandler->victoryState = true;
+            return; // Exit render
+        }
+    } else
+    {
+        ScreenRects[R_ATTACK_MENU] = {0}; // Reset attack menu rectangle when not shown
+        ScreenRects[R_MELEE_BTN] = {0}; // Reset melee button rectangle when not
+        ScreenRects[R_RANGED_BTN] = {0}; // Reset ranged button rectangle when not shown
+    }
+
+    // 3. DEFEND BUTTON (Outside menu logic)
+    if (GuiButton(ScreenRects[R_BTN_DEFEND], "DEFEND"))
+    {
+        combatHandler->showAttackMenu = false; // Close menu if they switch to defend
+        combatHandler->playerIsDefending = true;
+        AddNewLogEntry(combatHandler->log, entities[0]->getName() + " is defending!");
+        combatHandler->logScrollOffset = 1000.0f;
+        combatHandler->playerTurn = false;
+        combatHandler->enemyActionDelay = 0.6f;
+    }
+    
+    // 4. ITEM BUTTON
+    if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "USE ITEM"))
+    {
+        combatHandler->showAttackMenu = false;
+        // TODO: Item Logic
+    }
+    
+    combatHandler->enemyIsDefending = false;
+}
             else
             {
                 int prevState = GuiGetState();
