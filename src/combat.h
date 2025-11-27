@@ -55,8 +55,12 @@ struct CombatHandler
 
 //Function prototypes
 const std::string& nameOf(const Character& c);
+enum class ActionType { Attack, Defend, UseRange, UseItem, None };
+struct Action { ActionType type = ActionType::None; std::string desc; };
 int clampi(int v, int lo, int hi);
 bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
 bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
+void resolve_inventory(Student& player, std::vector<std::string>& log);
 Action ai_choose(const NonPlayerCharacter& /*self*/, const PlayerCharacter& /*foe*/);
 void AddNewLogEntry(std::vector<std::string>& log, const std::string& entry);
+void runCombat(Student& player, NonPlayerCharacter& enemy); 

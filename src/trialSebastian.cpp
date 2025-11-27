@@ -83,7 +83,7 @@ static void resolve_inventory(Student& player, std::stringstream& log)
 
     if (items.empty())
     {
-        log << nameOf(player) << " checks their bag, but it's empty.\n";
+        log << nameOf(player) << "'s inventory is empty.\n";
         return;
     }
 
