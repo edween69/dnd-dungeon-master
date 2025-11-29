@@ -292,8 +292,12 @@ static void runCombat(Student& player, NonPlayerCharacter& enemy)
                 AddNewLogEntry(log, nameOf(enemy) + " does nothing.\n");
             }
         }
-
-        //std::cout << log.str(); change to show log from vector
+        //Displaying log after one round of combat
+        for(const auto& entry: log) 
+        {
+            std::cout << entry << "\n";
+        }
+        
 
         if (!player.isAlive())
         { 

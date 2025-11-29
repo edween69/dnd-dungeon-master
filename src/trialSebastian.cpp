@@ -261,7 +261,7 @@ void runCombat(Student& player, NonPlayerCharacter& enemy)
             }
         }
 
-        std::cout << log.str();
+        std::cout << log.str(); //This is where the log gets written out
 
         if (!player.isAlive())
         { 
