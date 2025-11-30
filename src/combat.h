@@ -55,8 +55,6 @@ struct CombatHandler
 
 //Function prototypes
 const std::string& nameOf(const Character& c);
-enum class ActionType { Attack, Defend, UseRange, UseItem, None };
-struct Action { ActionType type = ActionType::None; std::string desc; };
 int clampi(int v, int lo, int hi);
 bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);
 bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDefending, std::vector<std::string>& log);

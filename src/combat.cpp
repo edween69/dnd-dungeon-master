@@ -204,7 +204,7 @@ void AddNewLogEntry(std::vector<std::string>& log, const std::string& entry)
     }
 }
 
-
+/*
 //@brief: function to run combat engine
 //@param player - The player character
 //@param enemy - The NPC character currently in combat with player
@@ -314,3 +314,4 @@ static void runCombat(Student& player, NonPlayerCharacter& enemy)
         print_status();
     }
 }
+*/

@@ -40,8 +40,8 @@ RM := # Command to remove files (OS dependent, will be set later)
 # Detecting the OS and setting the appropriate flags and libraries for raylib
 # On Windows, $(OS) is already set to Windows_NT so we don't need to call uname
 ifeq ($(OS),Windows_NT)     # This is for the windows case (OS is a free environment variable in windows)
-	CXXFLAGS  += -IC:/msys64/ucrt64/include 
-	LDFLAGS   += -LC:/msys64/ucrt64/lib 
+	CXXFLAGS  += -IC:/raylib/raylib/src
+	LDFLAGS   += -LC:/raylib/raylib/src
 	LDLIBS    += -lraylib -lopengl32 -lgdi32 -lwinmm
 	RM        := del /Q
 	OBJSTOCLEAN := $(subst /,\,$(OBJS)) # Apparently windows uses "\" instead of "/" for file paths
