@@ -193,6 +193,7 @@
 #define FONT_SIZE_LOG 20 // Font size for log
 #define LOG_LINE_HEIGHT 24 // Line height for log text
 
+
 // Centered text helpers (for readability while saving runtime memory)
 // used this as reference: https://stackoverflow.com/questions/163365/how-do-i-make-a-c-macro-behave-like-a-function
 #define CENTER_TEXT_X(rect, txt, size) \
@@ -330,7 +331,7 @@ void playerSelectStyles()
 void gamePlayStyles()
 {
     nerdFont = new Font();
-    int codepoints[2] = {0xF04E5, 0xF1841}; // Codepoints for Nerd Font icons we will use
+    int codepoints[9] = {0xF04E5, 0xF1841, 0xF0BC7, 0xF0238, 0xEAF3, 0xEAF4,0xF0415,0xF1677,0xF140B}; // Codepoints for Nerd Font icons we will use
 
     ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     *nerdFont = LoadFontEx("../assets/fonts/JetBrainsMonoNLNerdFontMono-Bold.ttf", 32, codepoints, 2); // Load custom font used across screens
@@ -471,6 +472,57 @@ void getIntroCrawlText(std::stringstream *ss, int chosenCharacterIdx)
     }
     file.close(); // Close the file after reading
 
+}
+
+void DrawStatusPanel(const Rectangle& panel, const StatusEffects& entityStatEff, const Font& fnt)
+{
+    int byteSize = 0;
+    struct StatusType
+    {
+        const char* Effect;
+        const char* Icon;
+        Color GoodOrBadEff;
+    };
+
+    std::vector<StatusType> activeStatEffects;
+
+    //Bad Effects are red
+    if (true) activeStatEffects.push_back({"POISONED",CodepointToUTF8(0xF04E5,&byteSize), RED});
+    if (true) activeStatEffects.push_back({"BURNING",CodepointToUTF8(0xF1841,&byteSize), RED});
+    if (true) activeStatEffects.push_back({"WEAKENED",CodepointToUTF8(0xF0BC7,&byteSize), RED});
+    if (true) activeStatEffects.push_back({"SLOWED",CodepointToUTF8(0xF0238,&byteSize), RED});
+
+    //Good Effects are green
+    if (true) activeStatEffects.push_back({"STRENGTHENED",CodepointToUTF8(0xF0B3C,&byteSize), GREEN});
+    if (true) activeStatEffects.push_back({"REGENERATING",CodepointToUTF8(0xF0B3D,&byteSize), GREEN});
+    if (true) activeStatEffects.push_back({"FAST",CodepointToUTF8(0xF0B3E,&byteSize), GREEN});
+    if (true) activeStatEffects.push_back({"DEFENDING",CodepointToUTF8(0xF0B3F,&byteSize), GREEN});
+
+    TraceLog(LOG_INFO, "Drawing %d active status effects", (int)activeStatEffects.size());
+
+    const float padding = 8.0f;
+    const float fontSize = 24.0f;
+    const float spacing = 1.0f;
+    const float lineGap = 4.0f;
+
+    float startX = panel.x + padding;
+    float startY = panel.y +padding;
+
+    float textHeightSample = MeasureTextEx(GetFontDefault(),"A", fontSize , spacing).y;
+
+    for(size_t i = 0; i < activeStatEffects.size(); ++i)
+    {
+        float y = startY + (i * (textHeightSample + lineGap));
+
+        Vector2 labelSize = MeasureTextEx(GetFontDefault(), activeStatEffects[i].Effect , fontSize , spacing);
+        Vector2 labelPos = {startX, y + ((textHeightSample + lineGap)- labelSize.y)/2.0f};
+        DrawTextEx(GetFontDefault(), activeStatEffects[i].Effect, labelPos, fontSize, spacing, activeStatEffects[i].GoodOrBadEff);
+
+        Vector2 iconSize = MeasureTextEx(fnt, activeStatEffects[i].Icon , fontSize , spacing);
+        Vector2 iconPos = {panel.x + panel.width - padding - iconSize.x, y + ((textHeightSample + lineGap)- iconSize.y)/2.0f};
+        DrawTextEx(fnt, activeStatEffects[i].Icon, iconPos, fontSize, spacing, activeStatEffects[i].GoodOrBadEff);
+
+    }
 }
 
 // =================== SCREENMANAGER CLASS FUNCTION DEFINITIONS ===================
@@ -1341,7 +1393,7 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
             ScreenRects[R_ENEMY_HP_FG].width = HEALTH_BAR_WIDTH(ScreenRects[R_ENEMY_HP_BG], entities[1]->vit.health, entities[1]->vit.maxHealth);
             combatHandler->playerHitFlashTimer = std::max(0.0f, combatHandler->playerHitFlashTimer - dt);
             combatHandler->enemyHitFlashTimer  = std::max(0.0f, combatHandler->enemyHitFlashTimer  - dt);
-
+            
             // FIX: Use virtualMouse for the log box scroll check
             if (CheckCollisionPointRec(virtualMouse, ScreenRects[R_LOG_BOX]))
             {
@@ -1445,6 +1497,7 @@ void GameManager::render()
             if(!ScreenRects || numScreenRects < 15) break; // Safety check for rectangles
             
             DrawTexture(ScreenTextures[0],(int)(SCREEN_WIDTH / 2.0f - ScreenTextures[0].width  / 2.0f), (int)(SCREEN_HEIGHT / 2.0f - ScreenTextures[0].height / 2.0f - 175.f), WHITE);
+            
 
             // Drawing the Player character texture, positioned to the right side of the screen within the combat background (this is where a struct for character positions will come in handy later)
             if (combatHandler->playerHitFlashTimer > 0.0f) DrawTexturePro(ScreenTextures[1], {0.0f, 0.0f,(float)ScreenTextures[1].width, (float)ScreenTextures[1].height}, {SCREEN_WIDTH / 2.0f + ScreenTextures[0].width / 2.0f - 500.f, SCREEN_HEIGHT / 2.0f + ScreenTextures[0].height / 2.0f - 650.f, 500.0f, 500.0f}, {0.0f, 0.0f}, 0.0f, RED);
@@ -1531,12 +1584,12 @@ void GameManager::render()
         ScreenRects[R_ATTACK_MENU] = {ScreenRects[R_BTN_ATTACK].x + ScreenRects[R_BTN_ATTACK].width + 10, ScreenRects[R_BTN_ATTACK].y - 150, 300.0f, 140.0f};
         DrawRectangleRec(ScreenRects[R_ATTACK_MENU], COL_BOTTOM_PANEL);
         DrawRectangleLinesEx(ScreenRects[R_ATTACK_MENU], 3.0f, BLACK);
-        
+        int byteSize = 0;
         ScreenRects[R_MELEE_BTN] = {ScreenRects[R_ATTACK_MENU].x + 10, ScreenRects[R_ATTACK_MENU].y + 10, ScreenRects[R_ATTACK_MENU].width - 20, 50.0f};
         ScreenRects[R_RANGED_BTN] = {ScreenRects[R_ATTACK_MENU].x + 10, ScreenRects[R_ATTACK_MENU].y + 75, ScreenRects[R_ATTACK_MENU].width - 20, 50.0f};
 
         // --- MELEE BUTTON ---
-        if (GuiButton(ScreenRects[R_MELEE_BTN], "Melee Attack"))
+        if (GuiButton(ScreenRects[R_MELEE_BTN], ""))
         {
             combatHandler->showAttackMenu = false; // Close menu
             combatHandler->playerIsDefending = false;
@@ -1550,9 +1603,12 @@ void GameManager::render()
             combatHandler->playerTurn = false;
             combatHandler->enemyActionDelay = 0.6f;
         }
+        DrawText("MELEE", (int)(ScreenRects[R_MELEE_BTN].x + 20), (int)(ScreenRects[R_MELEE_BTN].y + 10),FONT_SIZE_BTN, GetColor(GuiGetStyle(BUTTON, TEXT_COLOR_NORMAL)));
+        //(font, text, position, fontSize, spacing, tint)
+        DrawTextEx(*nerdFont,CodepointToUTF8(0xF04E5,&byteSize), (Vector2){ScreenRects[R_MELEE_BTN].x + ScreenRects[R_MELEE_BTN].width - 50, ScreenRects[R_MELEE_BTN].y + 2}, FONT_SIZE_BTN + 20, 1.0f, GetColor(GuiGetStyle(BUTTON, TEXT_COLOR_NORMAL))); // Sword icon
 
         // --- RANGED BUTTON ---
-        if (GuiButton(ScreenRects[R_RANGED_BTN], "Ranged Attack"))
+        if (GuiButton(ScreenRects[R_RANGED_BTN], ""))
         {
             combatHandler->showAttackMenu = false; // Close menu
             combatHandler->playerIsDefending = false;
@@ -1565,6 +1621,9 @@ void GameManager::render()
             combatHandler->playerTurn = false;
             combatHandler->enemyActionDelay = 0.6f;
         }
+
+        DrawText("RANGED", (int)(ScreenRects[R_RANGED_BTN].x + 20), (int)(ScreenRects[R_RANGED_BTN].y + 10),FONT_SIZE_BTN, GetColor(GuiGetStyle(BUTTON, TEXT_COLOR_NORMAL)));
+        DrawTextEx(*nerdFont,CodepointToUTF8(0xF1841,&byteSize), (Vector2){ScreenRects[R_RANGED_BTN].x + ScreenRects[R_RANGED_BTN].width - 50, ScreenRects[R_RANGED_BTN].y + 2}, FONT_SIZE_BTN + 20, 1.0f, GetColor(GuiGetStyle(BUTTON, TEXT_COLOR_NORMAL))); // Bow and arrow icon
 
         if (!entities[1]->isAlive())
         {
@@ -1604,16 +1663,16 @@ void GameManager::render()
             {
                 int prevState = GuiGetState();
                 GuiDisable();
-                GuiButton(ScreenRects[R_BTN_ATTACK], "Attack");
-                GuiButton(ScreenRects[R_BTN_DEFEND], "Defend");
-                GuiButton(ScreenRects[R_BTN_USE_ITEM], "Use Item");
+                GuiButton(ScreenRects[R_BTN_ATTACK], "ATTACK");
+                GuiButton(ScreenRects[R_BTN_DEFEND], "DEFEND");
+                GuiButton(ScreenRects[R_BTN_USE_ITEM], "USE ITEM");
                 GuiSetState(prevState);
             }
 
             BeginScissorMode((int)ScreenRects[R_LOG_BOX].x + 1, (int)ScreenRects[R_LOG_BOX].y + 1, (int)ScreenRects[R_LOG_BOX].width - 2, (int)ScreenRects[R_LOG_BOX].height - 2);
             float logY = ScreenRects[R_LOG_BOX].y + 5.0f - combatHandler->logScrollOffset;
 
-            for (int i = 0; i < combatHandler->log.size(); ++i) {
+            for (size_t i = 0; i < combatHandler->log.size(); ++i) {
                 if (i != combatHandler->log.size() - 1) {
                     // For all but the last log entry, use gray color
                     DrawText(TextFormat(". %s", combatHandler->log[i].c_str()), (int)(ScreenRects[R_LOG_BOX].x + 10), (int)logY, FONT_SIZE_LOG, GRAY);
@@ -1625,6 +1684,8 @@ void GameManager::render()
             }
                 
             EndScissorMode();
+            DrawStatusPanel(ScreenRects[R_PLAYER_STATUS],entities[0]->statEff,*nerdFont);
+            DrawStatusPanel(ScreenRects[R_ENEMY_STATUS],entities[1]->statEff,*nerdFont);
             break;
         }
         
@@ -1641,3 +1702,4 @@ void GameManager::render()
         }
     }
 }
+
