@@ -43,9 +43,9 @@ bool resolve_melee(Character& attacker, Character& defender, bool defenderIsDefe
 {
     int beforeHP = defender.vit.health;
 
-    if (defenderIsDefending) defender.startDefense();
+    //if (defenderIsDefending) defender.startDefense();
     attacker.dealMeleeDamage(defender);
-    defender.endDefense();
+    //defender.endDefense();
 
     int delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) AddNewLogEntry(log, nameOf(defender) + " takes " + std::to_string(delta) + " damage.");
@@ -66,14 +66,15 @@ bool resolve_ranged(Character& attacker, Character& defender, bool defenderIsDef
     int beforeHP   = defender.vit.health;
     //int originalAR = defender.def.armor;
 
-    if (defenderIsDefending)
+    
+    //if (defenderIsDefending)
         //defender.def.armor = originalAR + defend_bonus_armor(defender);//
         defender.startDefense();
     
 
     attacker.dealRangeDamage(defender);
     //defender.def.armor = originalAR;
-    defender.endDefense();
+    //defender.endDefense();
 
     int delta = std::max(0, beforeHP - defender.vit.health);
     if (delta > 0) AddNewLogEntry(log, nameOf(defender) + " takes " + std::to_string(delta) + " damage."); 

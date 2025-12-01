@@ -185,6 +185,8 @@
 #define R_ATTACK_MENU 15 // Index for attack menu rectangle
 #define R_MELEE_BTN 16 // Index for melee attack button rectangle
 #define R_RANGED_BTN 17 // Index for ranged attack button rectangle
+#define R_ITEM_MENU 18 // Index for item menu rectangle
+#define R_HEALTH_POTION_BTN 19 // Index for health potion button rectangle
 
 // Text sizes
 #define FONT_SIZE_NAME 30 // Font size for names
@@ -331,10 +333,10 @@ void playerSelectStyles()
 void gamePlayStyles()
 {
     nerdFont = new Font();
-    int codepoints[9] = {0xF04E5, 0xF1841, 0xF0BC7, 0xF0238, 0xEAF3, 0xEAF4,0xF0415,0xF1677,0xF140B}; // Codepoints for Nerd Font icons we will use
+    int codepoints[10] = {0xF04E5, 0xF1841, 0xF0BC7, 0xF0238, 0xF063, 0xF062,0xF0415,0xF1677,0xF140B,0xF0498}; // Codepoints for Nerd Font icons we will use
 
     ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
-    *nerdFont = LoadFontEx("../assets/fonts/JetBrainsMonoNLNerdFontMono-Bold.ttf", 32, codepoints, 2); // Load custom font used across screens
+    *nerdFont = LoadFontEx("../assets/fonts/JetBrainsMonoNLNerdFontMono-Bold.ttf", 32, codepoints, 10); // Load custom font used across screens
     SetTextureFilter(nerdFont->texture, TEXTURE_FILTER_BILINEAR); // Set texture filter for better appearance
 
     playerSelectStyles(); // Reuse character selection styles for gameplay for now
@@ -480,23 +482,23 @@ void DrawStatusPanel(const Rectangle& panel, const StatusEffects& entityStatEff,
     struct StatusType
     {
         const char* Effect;
-        const char* Icon;
+        std::string Icon;
         Color GoodOrBadEff;
     };
 
     std::vector<StatusType> activeStatEffects;
 
     //Bad Effects are red
-    if (true) activeStatEffects.push_back({"POISONED",CodepointToUTF8(0xF04E5,&byteSize), RED});
-    if (true) activeStatEffects.push_back({"BURNING",CodepointToUTF8(0xF1841,&byteSize), RED});
-    if (true) activeStatEffects.push_back({"WEAKENED",CodepointToUTF8(0xF0BC7,&byteSize), RED});
-    if (true) activeStatEffects.push_back({"SLOWED",CodepointToUTF8(0xF0238,&byteSize), RED});
+    if (entityStatEff.isPoisoned) activeStatEffects.push_back({"POISONED",CodepointToUTF8(0xF0BC7, &byteSize), RED});
+    if (entityStatEff.isBurning) activeStatEffects.push_back({"BURNING",CodepointToUTF8(0xF0238,&byteSize), RED});
+    if (entityStatEff.isWeakened) activeStatEffects.push_back({"WEAKENED",CodepointToUTF8(0xF063,&byteSize), RED});
+    if (entityStatEff.isSlowed) activeStatEffects.push_back({"SLOWED",CodepointToUTF8(0xF1677,&byteSize), RED});
 
     //Good Effects are green
-    if (true) activeStatEffects.push_back({"STRENGTHENED",CodepointToUTF8(0xF0B3C,&byteSize), GREEN});
-    if (true) activeStatEffects.push_back({"REGENERATING",CodepointToUTF8(0xF0B3D,&byteSize), GREEN});
-    if (true) activeStatEffects.push_back({"FAST",CodepointToUTF8(0xF0B3E,&byteSize), GREEN});
-    if (true) activeStatEffects.push_back({"DEFENDING",CodepointToUTF8(0xF0B3F,&byteSize), GREEN});
+    if (entityStatEff.isStrengthened) activeStatEffects.push_back({"STRENGTHENED",CodepointToUTF8(0xF062,&byteSize), GREEN});
+    if (entityStatEff.isRegenerating) activeStatEffects.push_back({"REGENERATING",CodepointToUTF8(0xF0415,&byteSize), GREEN});
+    if (entityStatEff.isFast) activeStatEffects.push_back({"FAST",CodepointToUTF8(0xF140B,&byteSize), GREEN});
+    if (entityStatEff.defending) activeStatEffects.push_back({"DEFENDING",CodepointToUTF8(0xF0498,&byteSize), GREEN});
 
     TraceLog(LOG_INFO, "Drawing %d active status effects", (int)activeStatEffects.size());
 
@@ -518,11 +520,16 @@ void DrawStatusPanel(const Rectangle& panel, const StatusEffects& entityStatEff,
         Vector2 labelPos = {startX, y + ((textHeightSample + lineGap)- labelSize.y)/2.0f};
         DrawTextEx(GetFontDefault(), activeStatEffects[i].Effect, labelPos, fontSize, spacing, activeStatEffects[i].GoodOrBadEff);
 
-        Vector2 iconSize = MeasureTextEx(fnt, activeStatEffects[i].Icon , fontSize , spacing);
+        Vector2 iconSize = MeasureTextEx(fnt, activeStatEffects[i].Icon.c_str() , fontSize+20, spacing);
         Vector2 iconPos = {panel.x + panel.width - padding - iconSize.x, y + ((textHeightSample + lineGap)- iconSize.y)/2.0f};
-        DrawTextEx(fnt, activeStatEffects[i].Icon, iconPos, fontSize, spacing, activeStatEffects[i].GoodOrBadEff);
+        DrawTextEx(fnt, activeStatEffects[i].Icon.c_str(), iconPos, fontSize +20 , spacing, activeStatEffects[i].GoodOrBadEff);
 
     }
+}
+
+void showItemsInInventory(PlayerCharacter *player)
+{
+
 }
 
 // =================== SCREENMANAGER CLASS FUNCTION DEFINITIONS ===================
@@ -1429,11 +1436,13 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
                 combatHandler->enemyActionDelay -= dt;
                 if (combatHandler->enemyActionDelay <= 0.0f)
                 {
+                    if (combatHandler->enemyIsDefending) entities[1]->endDefense();
+                    combatHandler->enemyIsDefending = false;
                     Action enemyAction = ai_choose(*(dynamic_cast<NonPlayerCharacter*>(entities[1])), *(dynamic_cast<PlayerCharacter*>(entities[0]))); // AI chooses an action
 
                     if (enemyAction.type == ActionType::Attack)
                     {
-                        combatHandler->playerHitFlashTimer = resolve_melee(*entities[1], *entities[0], combatHandler->playerIsDefending, combatHandler->log) ? 0.2f : 0.0f;
+                        combatHandler->playerHitFlashTimer = resolve_melee(*entities[1], *entities[0], combatHandler->playerIsDefending, combatHandler->log) ? 0.2f : 0.0f;                        
                         combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
                         if (!entities[0]->isAlive())
                         {
@@ -1446,11 +1455,11 @@ void GameManager::update(float dt) //Currently only updating the health bars in 
                     else if (enemyAction.type == ActionType::Defend)
                     {
                         combatHandler->enemyIsDefending = true;
+                        entities[1]->startDefense();
                         AddNewLogEntry(combatHandler->log, entities[1]->getName() + " is defending!");
                         combatHandler->logScrollOffset = 1000.0f; // Auto scroll to bottom on new log entry
                     }
                     combatHandler->playerTurn = true;
-                    combatHandler->playerIsDefending  = false;
                     
                 }
             }
@@ -1566,6 +1575,8 @@ void GameManager::render()
     // 1. ATTACK BUTTON (Only toggles menu)
     if (GuiButton(ScreenRects[R_BTN_ATTACK], "ATTACK"))
     {
+        combatHandler->playerIsDefending  = false;
+        entities[0]->endDefense();
         combatHandler->showAttackMenu = !combatHandler->showAttackMenu;
         
         if (combatHandler->showAttackMenu) 
@@ -1644,6 +1655,7 @@ void GameManager::render()
     {
         combatHandler->showAttackMenu = false; // Close menu if they switch to defend
         combatHandler->playerIsDefending = true;
+        entities[0]->startDefense();
         AddNewLogEntry(combatHandler->log, entities[0]->getName() + " is defending!");
         combatHandler->logScrollOffset = 1000.0f;
         combatHandler->playerTurn = false;
@@ -1653,11 +1665,13 @@ void GameManager::render()
     // 4. ITEM BUTTON
     if (GuiButton(ScreenRects[R_BTN_USE_ITEM], "USE ITEM"))
     {
+        combatHandler->playerIsDefending  = false;
+        entities[0]->endDefense();
         combatHandler->showAttackMenu = false;
         // TODO: Item Logic
     }
     
-    combatHandler->enemyIsDefending = false;
+    
 }
             else
             {
