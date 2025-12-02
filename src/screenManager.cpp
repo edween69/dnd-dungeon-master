@@ -527,10 +527,6 @@ void DrawStatusPanel(const Rectangle& panel, const StatusEffects& entityStatEff,
     }
 }
 
-void showItemsInInventory(PlayerCharacter *player)
-{
-
-}
 
 // =================== SCREENMANAGER CLASS FUNCTION DEFINITIONS ===================
 
@@ -1270,7 +1266,7 @@ void GameManager::enterGameState(GameState state)
             ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/north-west.png");
             ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
 
-            numScreenRects = 18;
+            numScreenRects = 19;
             ScreenRects = new Rectangle[numScreenRects]; // Dynamically allocate array for screen rectangles
 
             ScreenRects[R_PLAYER_NAME] = {0,0, 450, 50};
@@ -1291,6 +1287,7 @@ void GameManager::enterGameState(GameState state)
             ScreenRects[R_ATTACK_MENU] = {0};
             ScreenRects[R_MELEE_BTN] = {0};
             ScreenRects[R_RANGED_BTN] = {0};
+            ScreenRects[R_ITEM_MENU] = {0};
 
 
             // Dynamically allocate combat handler and initialize combat state variables
@@ -1304,6 +1301,7 @@ void GameManager::enterGameState(GameState state)
             combatHandler->victoryState = false;
             combatHandler->gameOverTimer = 0.0f;
             combatHandler->showAttackMenu = false;
+            combatHandler->showItemMenu = false;
 
             combatHandler->log.clear();
             combatHandler->logScrollOffset = 0.0f;
@@ -1578,6 +1576,7 @@ void GameManager::render()
         combatHandler->playerIsDefending  = false;
         entities[0]->endDefense();
         combatHandler->showAttackMenu = !combatHandler->showAttackMenu;
+        combatHandler->showItemMenu = false; // Close item menu if open
         
         if (combatHandler->showAttackMenu) 
             AddNewLogEntry(combatHandler->log, "Choose your attack.");
@@ -1656,6 +1655,7 @@ void GameManager::render()
         combatHandler->showAttackMenu = false; // Close menu if they switch to defend
         combatHandler->playerIsDefending = true;
         entities[0]->startDefense();
+        combatHandler->showItemMenu = false;
         AddNewLogEntry(combatHandler->log, entities[0]->getName() + " is defending!");
         combatHandler->logScrollOffset = 1000.0f;
         combatHandler->playerTurn = false;
@@ -1667,9 +1667,66 @@ void GameManager::render()
     {
         combatHandler->playerIsDefending  = false;
         entities[0]->endDefense();
-        combatHandler->showAttackMenu = false;
-        // TODO: Item Logic
+        combatHandler->showItemMenu = !combatHandler->showItemMenu;
+        combatHandler->showAttackMenu = false; // Close attack menu if open
+        if (dynamic_cast<PlayerCharacter*>(entities[0])->inv.getItems().empty())
+        {
+            AddNewLogEntry(combatHandler->log, "No items in inventory.");
+            combatHandler->showItemMenu = false;
+        }
+        else if (combatHandler->showItemMenu) 
+        {
+            AddNewLogEntry(combatHandler->log, "Choose an item to use.");
+        }
+        combatHandler->logScrollOffset = 1000.0f;
     }
+
+        if (combatHandler->showItemMenu)
+        {
+            auto& items = dynamic_cast<PlayerCharacter*>(entities[0])->inv.getItems();
+            float itemBtnHeight = 55.0f;
+            float padding = 10.0f;
+            float itemMenuHeight = (itemBtnHeight * items.size()) + (padding * 2);
+            ScreenRects[R_ITEM_MENU] = {ScreenRects[R_BTN_USE_ITEM].x + ScreenRects[R_BTN_USE_ITEM].width + 10, ScreenRects[R_BTN_USE_ITEM].y - itemMenuHeight - 10, ScreenRects[R_BTN_USE_ITEM].width, itemMenuHeight};
+
+            DrawRectangleRec(ScreenRects[R_ITEM_MENU], COL_BOTTOM_PANEL);
+            DrawRectangleLinesEx(ScreenRects[R_ITEM_MENU], 3.0f, BLACK);
+
+            for (size_t i =0; i < items.size(); i++)
+            {
+                Rectangle itemRect = {ScreenRects[R_ITEM_MENU].x + padding, ScreenRects[R_ITEM_MENU].y + padding + (i * itemBtnHeight), ScreenRects[R_ITEM_MENU].width - (padding * 2), itemBtnHeight - 5.0f};
+                if (GuiButton(itemRect,""))
+                {
+                    if (items[i].healAmount > 0)
+                    {
+                        int beforeHeal = entities[0]->vit.health;
+                        if (entities[0]->vit.health == entities[0]->vit.maxHealth)
+                        {
+                            AddNewLogEntry(combatHandler->log, entities[0]->getName() + "'s health is already full!");
+                            combatHandler->logScrollOffset = 1000.0f;
+                            combatHandler->showItemMenu = false;
+                            continue; // Skip using the item if health is full
+                        }
+                        dynamic_cast<PlayerCharacter*>(entities[0])->heal(items[i].healAmount);
+                        int healedAmount = entities[0]->vit.health - beforeHeal;
+                        AddNewLogEntry(combatHandler->log, entities[0]->getName() + " used " + items[i].name + " and healed " + std::to_string(healedAmount) + " HP!");
+                        dynamic_cast<PlayerCharacter*>(entities[0])->inv.removeitem(items[i].name,1);
+                        combatHandler->logScrollOffset = 1000.0f;
+                        combatHandler->playerTurn = false;
+                        combatHandler->enemyActionDelay = 0.6f;
+                        combatHandler->showItemMenu = false;
+                    }
+                }
+
+                std::string itemLabel = items[i].name;
+                for (char& c : itemLabel) c = toupper(c); // Convert label to uppercase
+                itemLabel += " (x" + std::to_string(items[i].quantity) + ")";
+                DrawText(itemLabel.c_str(), (int)(itemRect.x + 10), (int)(itemRect.y + 10), FONT_SIZE_BTN, GetColor(GuiGetStyle(BUTTON, TEXT_COLOR_NORMAL)));
+            }
+        }
+        
+
+    
     
     
 }

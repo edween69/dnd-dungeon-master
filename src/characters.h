@@ -13,9 +13,11 @@
 */
 
 #include <string>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdint>
 #include "rng.h"
 #include "raylib.h"
 #ifndef CHARACTERS_H
@@ -25,42 +27,41 @@ enum CSVStats {STR=1, DEX, CON, WIS, CHA, INT, MAX_HEALTH, ARMOR, INITIATIVE};
 
 // For stats contained in the Character_Starting_Stats.csv file, do not initialize
 // Structure to hold character attributes
-// TODO - a lot of these can be optimized by using smaller int sizes, have to look at what works best
 struct Attributes 
 {
-    int strength=0;
-    int constitution=0;
-    int dexterity=0;
-    int wisdom=0; //not important, no longer DND game
-    int charisma=0; //not important, no longer DND game
-    int intelligence=0; //not important, no longer DND game
+    std::int8_t strength = 0;
+    std::int8_t dexterity = 0;
+    std::int8_t constitution = 0;
+    std::int8_t wisdom = 0; //not important, no longer DND game
+    std::int8_t charisma = 0; //not important, no longer DND game
+    std::int8_t intelligence = 0; //not important, no longer DND game
 };
 
 // Structure to hold character defense stats
 struct DefenseStats
 {
-    int armor=0;
-    int magicResist=0; //not important, no longer DND game
+    std::int8_t armor = 0;
+    std::int8_t magicResist = 0; //not important, no longer DND game
 };
 
 // Structure to hold character combat stats
 struct CombatStats 
 {
-    int meleeDamage=0;
-    int rangeDamage=0;
-    int initiative=0;
+    std::uint8_t meleeDamage = 0;
+    std::uint8_t rangeDamage = 0;
+    std::int8_t initiative = 0;
 };
 
 // Structure to hold weapon types
 struct Weapons {
-    int meleeWeapon=0;
-    int rangeWeapon=0;
+    std::uint8_t meleeWeapon = 0;
+    std::uint8_t rangeWeapon = 0;
 };
 
 // Structure to hold character vital stats
 struct VitalStats {
-    int health=0;
-    int maxHealth=0;
+    std::int8_t health = 0;
+    std::int8_t maxHealth = 0;
 };
 
 // Structure to hold character status effects
@@ -75,16 +76,90 @@ struct StatusEffects
     bool isFast = false;
     bool defending = false;
 };
-// Structure to hold character inventories, WIP
-struct Inventory
+
+// Data Structure to hold character inventories, WIP
+struct Item
 {
-    int healthPotions;
+    std::string name;
+    std::string description;
+    std::uint8_t quantity = 1;
+    std::uint8_t healAmount = 0;
+    bool singleuse = false; 
+    bool consumed = false;
 };
 
+//Consumable based items
+struct Consumable: Item
+{
+    
+    //int attackboost = 0;
+    //int defenseboost = 0;
+    Consumable() {singleuse=true;}
+};
 
-// @author: Edwin Baiden
-// @brief: Base class for all characters in the game (including players and NPCs), containing common attributes and methods including health management and status effects.
-// @version: 1.0
+//Health potion struct
+struct HealthPotion: Consumable
+{
+    HealthPotion(int amount = 15)
+    {
+        name = "Health Potion";
+        description = "A strange liquid, restores 15HP";
+        healAmount = amount;
+        quantity = 1;
+    }
+};
+
+//Inventory class for storing the different items in a vector, currently only health potions are implemented.
+//Also allows for easier inventory management with add/remove item functions
+class inventory
+{
+    public: 
+        void additem(const Item& item)
+        {
+            for(auto& it : items)
+            {
+                if(it.name == item.name && it.healAmount == item.healAmount) 
+                {
+                it.quantity += item.quantity;
+                return;
+                }
+            }
+            items.push_back(item);
+        }
+
+        bool removeitem(const std::string& name, int qty = 1)
+        {
+            for (auto it = items.begin(); it != items.end(); ++it) 
+            {
+                if (it->name == name) 
+                {
+                    if (it->quantity < qty)
+                        return false;  
+
+                    it->quantity -= qty;
+
+                    if (it->quantity <= 0)
+                        items.erase(it);
+
+                    return true;        
+                }
+            }
+            return false; // item not found
+        }
+        const std::vector<Item>& getItems() const
+        {
+            return items;
+        }
+    private:
+        std::vector<Item> items;
+
+};
+
+/**
+ * @author: Edwin Baiden
+ * @brief: Base class for all characters in the game (including players and NPCs), containing common attributes and methods including health management and status effects.
+ * @version: 1.0
+ */
 class Character 
 {
     public:
@@ -96,7 +171,7 @@ class Character
         VitalStats vit;
         StatusEffects statEff;
         Weapons wep;
-        Inventory inv; //Need to implement for all characters (zombies/player)
+        
         
         
         // Constructor to initialize all attributes
@@ -105,17 +180,19 @@ class Character
 
         virtual ~Character() = default; // Virtual destructor for proper cleanup of derived classes
 
-        // Check if character is alive
-        //@brief: Returns true if the character's health is above zero, indicating they are alive.
-        //@return: bool - true if alive, false if dead.
+        /**
+         * @brief: Returns true if the character's health is above zero, indicating they are alive.
+         * @return: bool - true if alive, false if dead.
+         */
         bool isAlive() const 
         {
             return vit.health > 0;
         }
 
-        // Apply damage to the character and ensure health doesn't drop below zero
-        //@brief: Reduces the character's health by the specified damage amount.
-        //@param damage - The amount of damage to apply.
+        /**
+         * @brief: Reduces the character's health by the specified damage amount.
+         * @param damage - The amount of damage to apply.
+         */
         void takeDamage(int damage) 
         {
             vit.health -= damage;
@@ -125,9 +202,11 @@ class Character
             }
         }
 
-        // @author: Andrew
-        // @brief: calculates and applies melee damage
-        // @param enemy - target that will take damage
+        /**
+         * @author: Andrew
+         * @brief: calculates and applies melee damage
+         * @param enemy - target that will take damage
+         */
         void dealMeleeDamage (Character& enemy)
         {
             this->cbt.meleeDamage = std::max(this->att.dexterity,this->att.strength) + this->wep.meleeWeapon;
@@ -135,12 +214,13 @@ class Character
             {
                 enemy.takeDamage(roll_d(6) + this->cbt.meleeDamage);
             }
-            //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
-        // @author: Andrew
-        // @brief: calculates and applies range damage
-        // @param enemy - target that will take damage
+        /**
+         * @author: Andrew
+         * @brief: calculates and applies range damage
+         * @param enemy - target that will take damage
+         */
         void dealRangeDamage (Character& enemy)
         {
             this->cbt.rangeDamage = std::max(this->att.dexterity,this->att.wisdom) + this->wep.rangeWeapon;
@@ -148,11 +228,12 @@ class Character
             {
                 enemy.takeDamage(roll_d(4) + this->cbt.rangeDamage);
             }
-            //TODO: NEED TO ADD INFO TO INFORM SYSTEM/USER OF MISS
         }
 
-        // @author: Andrew
-        // @brief: adds defense bonus
+        /**
+         * @author: Andrew
+         * @brief: adds defense bonus
+         */
         void startDefense() 
         {
             statEff.defending = true;
@@ -160,8 +241,10 @@ class Character
            
         }
 
-        // @author: Andrew
-        // @brief: removes defense bonus
+        /**
+         * @author: Andrew
+         * @brief: removes defense bonus
+         */
         void endDefense() 
         {
             if(statEff.defending) { this->def.armor -= 5; }
@@ -174,10 +257,11 @@ class Character
         virtual const std::string& getName() const = 0; // Pure virtual function to get character name must be implemented by derived classes
 };
 
-
-//@author: Edwin Baiden
-//@brief: Derived class representing player-controlled characters, with additional attributes such as name and character class.
-//@version: 1.0
+/**
+ * @author: Edwin Baiden
+ * @brief: Derived class representing player-controlled characters, with additional attributes such as name and character class.
+ * @version: 1.0
+ */
 class PlayerCharacter : public Character 
 {
     // Player-specific attributes
@@ -193,6 +277,8 @@ class PlayerCharacter : public Character
         // Heal the character and ensure health doesn't exceed maxHealth
         //@brief: Increases the character's health by the specified amount, up to their maximum health.
         //@param amount - The amount of health to restore.
+        inventory inv;
+
         void heal(int amount) 
         {
             vit.health += amount;
@@ -202,17 +288,18 @@ class PlayerCharacter : public Character
             }
         }
 
-        void bandage() 
-        {
-            heal(15);
-        }
+        
+        inventory& getInventory() { return inv; } //getter for inventory
+        const inventory& getInventory() const { return inv; }
+
         virtual ~PlayerCharacter() = default; // Virtual destructor can be overridden if needed
 };
 
-
-//@author: Edwin Baiden
-//@brief: Derived class representing non-player characters (NPCs), with additional attributes such as NPC type.
-//@version: 1.0
+/**
+ * @author: Edwin Baiden
+ * @brief: Derived class representing non-player characters (NPCs), with additional attributes such as NPC type.
+ * @version: 1.0
+ */
 class NonPlayerCharacter : public Character 
 {
     // NPC-specific attributes
@@ -238,7 +325,9 @@ class Student : public PlayerCharacter
             // Default attributes for Student character
             wep.meleeWeapon = 2; // ruler
             wep.rangeWeapon = 2; // textbooks
-            inv.healthPotions = 1;
+            HealthPotion Hpotion; //Adding potion to inventory for student for testing
+            //Damageboost Dpotion
+            inv.additem(Hpotion);
         };
 };
 
@@ -290,13 +379,13 @@ class Zombie : public NonPlayerCharacter
         {
             wep.meleeWeapon = 3;
             wep.rangeWeapon = 2; // default value, may not be used
-            inv.healthPotions = 0;
+            
         };
 };
 
 std::ifstream* openStartingStatsCSV();
 std::istringstream* storeAllStatLines(std::ifstream* statsFile);
-int getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);
+std::int8_t getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);
 
 struct charCard 
 {

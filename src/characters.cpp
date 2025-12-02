@@ -5,6 +5,10 @@
 
 #include "characters.h"
 
+/**
+ * @brief Loads starting character stats from character CSV file to be read by storeAllStatsLines()
+ * @return StartingStatFile - string stream to be fed into storeAllStatsLines()
+ */
 std::ifstream* openStartingStatsCSV()
 {
     //Using filesystem to get path of the CSV relative to the executable
@@ -19,6 +23,11 @@ std::ifstream* openStartingStatsCSV()
     return StartingStatFile;
 }
 
+/**
+ * @brief Stores character starting starts from openStartingStatsCSV()
+ * @param StartingStatFile - comes from openStartingStatsCSV(), carries character starting data
+ * @return a new pointer
+ */
 std::istringstream* storeAllStatLines(std::ifstream* StartingStatFile)
 {
     if (!StartingStatFile) return nullptr;
@@ -42,7 +51,15 @@ std::istringstream* storeAllStatLines(std::ifstream* StartingStatFile)
     return new std::istringstream(allLines);
 }
 
-int getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat)
+/**
+ * @brief 
+ * @param allLines - string stream from storeAllStatLines()
+ * @param characterID - name of the character ie student
+ * @param stat - stat value index
+ * @return stoi(cell) - is the value of the desired stat
+ * @return -128 - error value
+ */
+std::int8_t getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat)
 {
     std::string line;
     std::string currentID;
@@ -68,5 +85,5 @@ int getStatForCharacterID(std::istringstream* allLines, std::string characterID,
             }
         }
     }
-    return -1024; // Return -1024 if character ID or stat not found
+    return -128; // Return -128 if character ID or stat not found
 }
