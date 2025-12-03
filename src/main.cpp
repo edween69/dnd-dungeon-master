@@ -28,7 +28,7 @@ int main()
         sm.render();
     }
 
-
+    
     CloseWindow();
     return 0;
 }
