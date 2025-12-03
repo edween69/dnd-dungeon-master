@@ -187,66 +187,49 @@ class GameManager {
         void render(); // Render the current game state
         void enterGameState(GameState state); // Handle entering a new game state loading resources
         void exitGameState(GameState state); // Handle exiting a game state unloading resources
+        bool backToMainMenu = false; // Flag to indicate returning to main menu
 };
 
-enum ArrowDirection {NONE=-1, UP, DOWN, LEFT, RIGHT};
+enum ArrowDirection { NONE = -1, UP, DOWN, LEFT, RIGHT };
 
-struct SceneCharacter
-{
-    std::string id;
-    Texture2D texture{};
-    Rectangle pos {};
-    bool isPlayerCharacter = false;
+// Items on the floor (Keys, Potions)
+struct SceneItem {
+    std::string itemName;   // Name to match inventory string (e.g. "Key 1")
+    std::string hoverText;  // Text to display on mouseover
+    Rectangle clickArea;    // Click zone on screen
+    int textureIndex;       // Index in Global ScreenTextures
+    bool requiresVictory;   // True if item only appears after room battle is won
 };
 
-struct SceneArrow
-{
-    Rectangle clickArea {};
-    ArrowDirection direction;
-    int targetSceneIndex = -1;
-    bool isEnabled;
-
+// Navigation points (Doors, Hallway Arrows)
+struct SceneArrow {
+    Rectangle clickArea;    
+    ArrowDirection dir;     
+    int targetSceneIndex;   
+    bool isEnabled;         
+    std::string hoverText;  
+    std::string requiredKeyName; // If not empty, checks player inventory for this string
 };
 
-struct SceneObject
-{
-    std::string itemName;
-    std::string hoverDesc;
-    Rectangle clickArea;
-    int textureIndex;
-    bool winRequired;
-};
-// ========================= GAMESCENE CLASS DEFINITION =========================
-//@author: Edwin Baiden
-//@brief: Class to represent a game scene (contains game objects, environments, type of scene, positioning, etc.)
-//@version: 1.0
+// The Room Container
 class GameScene 
 {
     public:
-        GameState sceneType;
         std::string sceneName;
-    
-    private:
-        std::string envPath;
-
-
-};
-
-class CombatScene : public GameScene
-{
-    public:
-        std::vector<SceneCharacter> charactersInScene;
+        int textureIndex;       // Background texture index
+        
+        Vector2 minimapCoords;  // 0.0-1.0 Position on map image
+        float minimapRotation;  // Rotation of the turtle icon
+        
         std::vector<SceneArrow> sceneArrows;
-        std::vector<SceneObject> sceneObjects;
+        std::vector<SceneItem> sceneItems; 
+        
+        // Combat Trigger
+        bool hasEncounter = false; 
+        int encounterID = -1;      
 };
 
-class ExplorationScene : public GameScene
-{
-    public:
-        std::vector<SceneCharacter> charactersInScene;
-        std::vector<SceneArrow> sceneArrows;
-        std::vector<SceneObject> sceneObjects;
-};
+void InitGameScenes(Character* playerCharacter); // Initialize all game scenes
 
 // ========================= ANIMATION NAMESPACE DEFINITION =========================
 

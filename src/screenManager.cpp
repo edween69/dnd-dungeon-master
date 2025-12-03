@@ -1005,6 +1005,14 @@ void ScreenManager::render()
         // That may change later as we add more UI elements specific to gameplay
         gameManager->update(GetFrameTime()); // Update the game manager with delta time
         gameManager->render();               // Render the game manager
+        if (gameManager->backToMainMenu)
+        {
+            gameManager->backToMainMenu = false; // Reset flag
+            gameManager->~GameManager();          // Call destructor to clean up resources
+            delete gameManager;                  // Delete the game manager object
+            gameManager = nullptr;               // Set pointer to nullptr to avoid dangling pointer
+            changeScreen(ScreenState::MAIN_MENU); // Change back to main menu screen
+        }
         break;
     }
 
@@ -1798,6 +1806,7 @@ void GameManager::render()
                 combatHandler->gameOverTimer = 0.0f;
             }
             currentGameState = GameState::COMBAT;
+            backToMainMenu = true;
         }
 
         DrawRectangleRec(ScreenRects[R_BTN_QUIT_NO_SAVE], COL_BUTTON);
@@ -1812,6 +1821,7 @@ void GameManager::render()
                 combatHandler->gameOverTimer = 0.0f; // Instant exit, no delay
             }
             currentGameState = GameState::COMBAT;
+            backToMainMenu = true;
         }
 
         break;
