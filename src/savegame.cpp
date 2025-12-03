@@ -69,7 +69,17 @@ void saveSystem::loadGame(std::string& currentScreenOut, PlayerCharacter& player
     z3defeatedOut = zombie3defeated;
 }
 
-
+//Order of saving 
+/*
+screenID 
+Name
+player class
+strength, dex, con, wis, char, int, armor, MR
+hp, maxhp
+melee weapon, ranged weapon
+key1, key2, z1, z2, z3
+Inventory
+*/
 bool saveSystem::saveToFile(const std::string& filename) const
 {
     std::ofstream out(filename);

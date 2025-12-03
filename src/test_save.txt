@@ -1,0 +1,12 @@
+GYM_HALLWAY
+Sebastian
+Student
+10 5 7 0 0 0
+3 0
+20 30
+0 0
+1 0 1 0 1
+1
+Health Potion
+Restores 15 HP
+2 0 0 0
