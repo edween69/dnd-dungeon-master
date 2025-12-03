@@ -121,12 +121,12 @@
 //@author: Edwin Baiden
 //@brief: Enum representing different screen states (main menu, character select, gameplay, save & quit).
 //@version: 1.0
-enum class ScreenState {MAIN_MENU, CHARACTER_SELECT,INTRO_CRAWL, GAMEPLAY, SAVE_QUIT};
+enum class ScreenState {MAIN_MENU, CHARACTER_SELECT,INTRO_CRAWL, GAMEPLAY};
 
 //author: Edwin Baiden
 //@brief: Enum representing different game states (exploration, combat, dialogue, pause menu).
 //@version: 1.0
-enum class GameState { EXPLORATION, COMBAT, DIALOGUE, PAUSE_MENU };
+enum class GameState {EXPLORATION, COMBAT, PAUSE_MENU};
 
 //@author: Edwin Baiden
 //@brief: Class to manage screen states and transitions
@@ -174,6 +174,8 @@ class GameManager {
     private:
         GameState currentGameState; // Current active game state
         CombatHandler* combatHandler; // Combat handler to manage combat state
+        GameState prevGameState; // Previous game state before transition
+        GameState nextGameState; // Next game state to transition to
         
     
     public:
