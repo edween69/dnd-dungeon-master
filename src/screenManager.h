@@ -201,7 +201,7 @@ struct SceneCharacter
 
 struct SceneArrow
 {
-    Rectangle pos {};
+    Rectangle clickArea {};
     ArrowDirection direction;
     int targetSceneIndex = -1;
     bool isEnabled;
@@ -210,10 +210,11 @@ struct SceneArrow
 
 struct SceneObject
 {
-    Texture2D texture{};
-    Rectangle pos {};
-    bool isInteractable = false;
-    bool isItem = false;
+    std::string itemName;
+    std::string hoverDesc;
+    Rectangle clickArea;
+    int textureIndex;
+    bool winRequired;
 };
 // ========================= GAMESCENE CLASS DEFINITION =========================
 //@author: Edwin Baiden
