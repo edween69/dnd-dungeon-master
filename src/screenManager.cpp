@@ -228,6 +228,35 @@
 #define COL_HP_BG Color{60, 15, 20, 255}           // Color for health bar background
 #define COL_HP_FG Color{190, 50, 60, 255}          // Color for health bar foreground
 
+#define TEX_ENTRANCE 0  
+#define TEX_EXIT 1
+#define TEX_FRONT_OFFICE 2
+#define TEX_EAST_HALLWAY_TOWARD 3
+#define TEX_EAST_HALLWAY_AWAY 4
+#define TEX_WEST_HALLWAY_TOWARD 5
+#define TEX_WEST_HALLWAY_AWAY 6
+#define TEX_CLASSROOM_1 7
+#define TEX_CLASSROOM_2 8
+#define TEX_CLASSROOM_3 9
+#define TEX_IN_OFFICE 10
+#define TEX_BATH_MEN 11
+#define TEX_BATH_WOM 12
+
+
+#define TEX_KEY_1 13
+#define TEX_KEY_2 14
+#define TEX_HEALTH_POTION 15
+
+#define TEX_ARROW 16
+#define TEX_MINIMAP 17
+#define TEX_TURTLE 18
+#define TOTAL_EXP_TEX 19
+
+// Minimap Settings
+#define MINIMAP_SIZE 300.0f
+#define MINIMAP_MARGIN 20.0f
+#define MINIMAP_BORDER 4.0f
+
 //======================= GLOBAL STATIC POINTERS + VARIABLES =======================
 // I had an issue where the program was using too much runtime memory so i decided to make shared items across screens static pointers
 // This way they are only allocated when needed and deallocated when not needed to save memory and the variables can be reused across screens and functions
@@ -257,6 +286,224 @@ static Character **entities = nullptr; // Array of character pointers (players a
 static GameManager *gameManager = nullptr; // Pointer to the GameManager instance managing game states
 
 static Font *nerdFont; // Nerd font for UI text
+
+static std::vector<GameScene> gameScenes; // Vector holding all game scenes
+static int currentSceneIndex = 0; // Index of the current game scene
+static int activeEncounterID = -1;
+static int savedPlayerSceneIndex = 0; // Index of the scene where the player was before entering combat
+static std::map<int,bool> battleWon; // Map to track which encounters have been won
+
+static std::vector<std::string> collectedItems; // Vector to hold names of items that the player has picked up
+bool isItemCollected(const std::string& itemName) {
+    for (const auto& item : collectedItems) {
+        if (item == itemName) return true;
+    }
+    return false;
+}
+
+void InitGameScenes(Character* playerCharacter)
+{
+    if (ScreenTextures)
+    {
+        for (int i = 0; i < numScreenTextures; ++i) UnloadTexture(ScreenTextures[i]);
+        delete[] ScreenTextures;
+        ScreenTextures = nullptr;
+    }
+
+    gameScenes.clear();
+    battleWon.clear();
+    collectedItems.clear();
+    currentSceneIndex = 0;
+    savedPlayerSceneIndex = 0;
+
+    if (dynamic_cast<Student*>(playerCharacter))
+    {
+        numScreenTextures = TOTAL_EXP_TEX;
+        ScreenTextures = new Texture2D[numScreenTextures];
+
+        ChangeDirectory(GetApplicationDirectory());
+        ScreenTextures[TEX_ENTRANCE] = LoadTexture("../assets/images/environments/Building1/Hallway/Entrance.png");
+        ScreenTextures[TEX_EXIT] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-4].png");
+        ScreenTextures[TEX_FRONT_OFFICE] = LoadTexture("../assets/images/environments/Building1/Office/Hallway[2-2].png");
+        ScreenTextures[TEX_EAST_HALLWAY_TOWARD] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-1].png");
+        ScreenTextures[TEX_EAST_HALLWAY_AWAY] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
+        ScreenTextures[TEX_WEST_HALLWAY_TOWARD] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-3].png");
+        ScreenTextures[TEX_WEST_HALLWAY_AWAY] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[3-1].png");
+        ScreenTextures[TEX_CLASSROOM_1] = LoadTexture("../assets/images/environments/Building1/Class-Office/Classroom1.png");
+        ScreenTextures[TEX_CLASSROOM_2] = LoadTexture("../assets/images/environments/Building1/Class-Office/Classroom2.png");
+        ScreenTextures[TEX_CLASSROOM_3] = LoadTexture("../assets/images/environments/Building1/Class-Office/ClassroomZombies.png");
+        ScreenTextures[TEX_IN_OFFICE] = LoadTexture("../assets/images/environments/Building1/Class-Office/Office.png"); // after the bat has been taken it will change to office(withoutbat)
+        ScreenTextures[TEX_BATH_MEN] = LoadTexture("../assets/images/environments/Building1/Bathrooms/BathroomM.png");
+        ScreenTextures[TEX_BATH_WOM] = LoadTexture("../assets/images/environments/Building1/Bathrooms/BathroomG.png");
+        
+        ScreenTextures[TEX_KEY_1] = LoadTexture("../assets/images/items/Key1.png");
+        ScreenTextures[TEX_KEY_2] = LoadTexture("../assets/images/items/Key2.png");
+        ScreenTextures[TEX_HEALTH_POTION] = LoadTexture("../assets/images/items/HealthPotion.png");
+        
+        
+        ScreenTextures[TEX_ARROW] = LoadTexture("../assets/images/UI/explorationArrow.png");
+        ScreenTextures[TEX_MINIMAP] = LoadTexture("../assets/images/environments/Building1/NewLayout.png");
+        ScreenTextures[TEX_TURTLE] = LoadTexture("../assets/images/UI/turtleIcon.png");
+
+
+        gameScenes.resize(TEX_BATH_WOM + 1);
+        currentSceneIndex     = TEX_ENTRANCE;
+        savedPlayerSceneIndex = TEX_ENTRANCE;
+
+        // Entrance Scene
+        GameScene* s;
+
+        s = &gameScenes[TEX_ENTRANCE];
+        s->sceneName = "Entrance";
+        s->textureIndex = TEX_ENTRANCE;
+        s->minimapCoords = Vector2{0.475f, 0.8f};
+        s->minimapRotation = 0.0f;
+        s->sceneArrows = {
+            //x,y, width, height
+            {{675, 600, 50, 50},LEFT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{1250, 600, 50, 50},RIGHT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{935, 700, 50, 50}, UP, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
+            {{935, 900, 50, 50}, DOWN, TEX_EXIT, true, "Exit Building", ""}
+        };
+       
+        //Exit Scene
+        s= &gameScenes[TEX_EXIT];
+        s->sceneName = "Exit";
+        s->textureIndex = TEX_EXIT;
+        s->minimapCoords = Vector2{0.5f, 0.95f};
+        s->minimapRotation = 180.f;
+        s->sceneArrows = {
+            {{700, 100, 200, 200},DOWN, TEX_ENTRANCE, true, "Enter Building", ""}
+        };
+
+        // Front of Office Scene (left arrow goes to east hallway toward, right arrow goes to west hallway toward, down arrow goes to exit, up arrow goes to in-office)
+        s = &gameScenes[TEX_FRONT_OFFICE];
+        s->sceneName = "Front Office";
+        s->textureIndex = TEX_FRONT_OFFICE;
+        s->minimapCoords = Vector2{0.5f, 0.85f};
+        s->minimapRotation = 0.0f;
+        s->sceneArrows = {
+            {{50, 300, 200, 200}, RIGHT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{550, 300, 200, 200}, LEFT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{50, 100, 200, 200}, DOWN, TEX_EXIT, false, "Exit Building", "Key 2"},
+            {{700, 100, 200, 200}, UP, TEX_IN_OFFICE, true, "Enter Office", ""}
+        };
+
+        //East Hallway Toward Scene
+        s = &gameScenes[TEX_EAST_HALLWAY_TOWARD];
+        s->sceneName = "East Hallway";
+        s->textureIndex = TEX_EAST_HALLWAY_TOWARD;
+        s->minimapCoords = Vector2{0.3f, 0.5f};
+        s->minimapRotation = 270.0f;
+        s->sceneArrows = {
+            {{550, 300, 200, 200},LEFT, TEX_CLASSROOM_1, true, "Enter Classroom 1", "Key 1"},
+            {{50, 300, 200, 200}, RIGHT, TEX_CLASSROOM_2, true, "Enter Classroom 2", ""},
+            {{5, 100, 200, 200}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Go West", ""}  
+        };
+
+        //East Hallway Away Scene
+        s = &gameScenes[TEX_EAST_HALLWAY_AWAY];
+        s->sceneName = "East Hallway";
+        s->textureIndex = TEX_EAST_HALLWAY_AWAY;
+        s->minimapCoords = Vector2{0.3f, 0.5f};
+        s->minimapRotation = 90.0f;
+        s->sceneArrows = 
+        { 
+            {{700, 100, 200, 200}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{550, 300, 200, 200}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{50, 300, 200, 200}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
+            {{5, 100, 200, 200}, RIGHT, TEX_EXIT, false, "Exit Building", "Key 2"}
+        };
+
+        //West Hallway Toward Scene
+        s = &gameScenes[TEX_WEST_HALLWAY_TOWARD];
+        s->sceneName = "West Hallway";
+        s->textureIndex = TEX_WEST_HALLWAY_TOWARD;
+        s->minimapCoords = Vector2{0.7f, 0.5f};
+        s->minimapRotation = 90.0f;
+        s->sceneArrows = {
+            {{550, 300, 200, 200}, UP, TEX_CLASSROOM_3, true, "Enter Classroom 3", ""},
+            {{50, 300, 200, 200}, LEFT, TEX_BATH_MEN, true, "Enter Men's Bathroom", ""},
+            {{650, 300, 200, 200}, RIGHT, TEX_BATH_WOM, true, "Enter Women's Bathroom", ""},
+            {{700, 100, 200, 200}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Go East", ""}
+        };
+
+        //West Hallway Away Scene
+        s = &gameScenes[TEX_WEST_HALLWAY_AWAY];
+        s->sceneName = "West Hallway";
+        s->textureIndex = TEX_WEST_HALLWAY_AWAY;
+        s->minimapCoords = Vector2{0.7f, 0.5f};
+        s->minimapRotation = 270.0f;
+        s->sceneArrows = {
+            {{5, 100, 200, 200}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{550, 300, 200, 200}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{50, 300, 200, 200}, RIGHT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
+            {{700, 100, 200, 200}, LEFT, TEX_EXIT, false, "Exit Building", "Key 2"}
+        };
+
+        // Classroom 1 Scene
+        s = &gameScenes[TEX_CLASSROOM_1];
+        s->sceneName = "Classroom 1";
+        s->textureIndex = TEX_CLASSROOM_1;
+        s->minimapCoords = Vector2{0.25f, 0.65f};
+        s->minimapRotation = 180.0f;
+        s->sceneArrows = {
+            {{700, 100, 200, 200}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Exit Classroom", ""}
+        };
+        s->sceneItems = {{ "Key 2", "Pick up Key 2", {600, 400, 50, 50}, TEX_KEY_2, true}};
+        s->hasEncounter = true;
+        s->encounterID = 0;
+
+        // Classroom 2 Scene
+        s = &gameScenes[TEX_CLASSROOM_2];
+        s->sceneName = "Classroom 2";
+        s->textureIndex = TEX_CLASSROOM_2;
+        s->minimapCoords = Vector2{0.35f, 0.65f};
+        s->minimapRotation = 0.0f;
+        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+        s->sceneItems = {{"Health Potion", "Pick up Health Potion", {500, 400, 50, 50}, TEX_HEALTH_POTION, false}};
+
+        // Classroom 3 Scene
+        s = &gameScenes[TEX_CLASSROOM_3];
+        s->sceneName = "Classroom 3";
+        s->textureIndex = TEX_CLASSROOM_3;
+        s->minimapCoords = Vector2{0.15f, 0.65f};
+        s->minimapRotation = 90.0f;
+        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+
+        // In-Office Scene
+        s = &gameScenes[TEX_IN_OFFICE];
+        s->sceneName = "Office";
+        s->textureIndex = TEX_IN_OFFICE;
+        s->minimapCoords = Vector2{0.5f, 0.8f};
+        s->minimapRotation = 0.0f;
+        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_FRONT_OFFICE, true, "Exit Office", ""}};
+        s->sceneItems = {{"Key 1", "Pick up Key 1", {600, 400, 50, 50}, TEX_KEY_1, true}};
+
+        //Men's Bathroom Scene
+        s = &gameScenes[TEX_BATH_MEN];
+        s->sceneName = "Men's Bathroom";
+        s->textureIndex = TEX_BATH_MEN;
+        s->minimapCoords = Vector2{0.75f, 0.6f};
+        s->minimapRotation = 0.0f;
+        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
+        
+
+        
+        //Women's Bathroom Scene
+        s = &gameScenes[TEX_BATH_WOM];
+        s->sceneName = "Women's Bathroom";
+        s->textureIndex = TEX_BATH_WOM;
+        s->minimapCoords = Vector2{0.65f, 0.6f};
+        s->minimapRotation = 180.0f;
+        s->sceneArrows = {{{700, 100, 200, 200},DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
+        s->hasEncounter = true;
+        s->encounterID = 1;
+
+    }
+
+
+}
 
 //======================= GUI BUTTON AND TEXT STYLE FUNCTIONS =======================
 // Setting styles for buttons and text to improve GUI appearance and user experience
@@ -1209,6 +1456,8 @@ GameManager::GameManager(GameState initial)
 {
     ChangeDirectory(GetApplicationDirectory()); // Ensure working directory is set to application directory (Cause MacOS)
     currentGameState = initial;
+    nextGameState = initial;
+    prevGameState = initial;
 }
 
 //@brief: Destructor for the GameManager class
@@ -1257,7 +1506,11 @@ void GameManager::enterGameState(GameState state)
     {
     case GameState::EXPLORATION:
     {
-        // TODO: Implement exploration state setup
+        if (entities && entities[0])
+        {
+            InitGameScenes(entities[0]); // Initialize game scenes with the player character
+            activeEncounterID =-1;
+        }
         break;
     }
 
@@ -1390,7 +1643,68 @@ void GameManager::update(float dt) // Currently only updating the health bars in
     {
     case GameState::EXPLORATION:
     {
-        // TODO: Implement exploration state update
+        if (gameScenes.empty()) break;
+
+        GameScene &scene = gameScenes[currentSceneIndex];
+
+        // Handle clicks
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            // 1) Items on the floor
+            for (auto &item : scene.sceneItems)
+            {
+                bool alreadyHave = isItemCollected(item.itemName);
+                bool victoryGate = !item.requiresVictory
+                                   || (scene.hasEncounter &&
+                                       battleWon[scene.encounterID]);
+
+                if (!alreadyHave &&
+                    victoryGate &&
+                    CheckCollisionPointRec(virtualMouse, item.clickArea))
+                {
+                    collectedItems.push_back(item.itemName);
+
+                    // Example: put health potion into inventory
+                    if (item.itemName == "Health Potion")
+                    {
+                        if (auto *pc = dynamic_cast<PlayerCharacter*>(entities[0]))
+                        {
+                            HealthPotion hpotion;
+                            pc->inv.additem(hpotion);
+                        }
+                    }
+                }
+            }
+
+            // 2) Navigation arrows
+            for (const auto &arrow : scene.sceneArrows)
+            {
+                if (!arrow.isEnabled) continue;
+
+                // Key gate for locked doors
+                if (!arrow.requiredKeyName.empty() &&
+                    !isItemCollected(arrow.requiredKeyName))
+                {
+                    continue;
+                }
+
+                if (CheckCollisionPointRec(virtualMouse, arrow.clickArea))
+                {
+                    currentSceneIndex = arrow.targetSceneIndex;
+                    GameScene &newScene = gameScenes[currentSceneIndex];
+
+                    // If this room has an encounter that is not yet won, start combat
+                    if (newScene.hasEncounter &&
+                        !battleWon[newScene.encounterID])
+                    {
+                        savedPlayerSceneIndex = currentSceneIndex;
+                        activeEncounterID     = newScene.encounterID;
+                        changeGameState(GameState::COMBAT);
+                    }
+                    break;
+                }
+            }
+        }
         break;
     }
 
@@ -1418,23 +1732,21 @@ void GameManager::update(float dt) // Currently only updating the health bars in
         }
 
         // Handle game over states
-        if (combatHandler->gameOverState || combatHandler->victoryState)
+                if (combatHandler->gameOverState || combatHandler->victoryState)
         {
             combatHandler->gameOverTimer -= dt;
             if (combatHandler->gameOverTimer <= 0.0f)
             {
-                // Return to main menu instead of unimplemented exploration
-                // This prevents the window from closing unexpectedly
-                if (combatHandler->gameOverState)
+                if (combatHandler->victoryState && activeEncounterID >= 0)
                 {
-                    gameManager->changeGameState(GameState::EXPLORATION); // Refresh combat state to handle game over
+                    battleWon[activeEncounterID] = true;
+                    activeEncounterID = -1;
                 }
-                else if (combatHandler->victoryState)
-                {
-                    gameManager->changeGameState(GameState::EXPLORATION); // Refresh combat state to handle victory
-                }
+
+                // For now both win and loss just drop you back into exploration
+                changeGameState(GameState::EXPLORATION);
             }
-            break; // Don't process normal combat logic during game over
+            break;
         }
 
         if (!combatHandler->playerTurn)
@@ -1489,7 +1801,135 @@ void GameManager::render()
     {
     case GameState::EXPLORATION:
     {
-        // TODO: Implement exploration state rendering
+        if (gameScenes.empty() || !ScreenTextures) break;
+
+        const GameScene &scene = gameScenes[currentSceneIndex];
+
+        // 1) Background
+        DrawTexturePro(ScreenTextures[scene.textureIndex],{0.0f, 0.0f, (float)ScreenTextures[scene.textureIndex].width, (float)ScreenTextures[scene.textureIndex].height}, {0.0f, 0.0f, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT}, {0.0f, 0.0f}, 0.0f, WHITE);
+
+        // 2) Items (only if not collected and victory gate satisfied)
+        for (const auto &item : scene.sceneItems)
+        {
+            bool alreadyHave = isItemCollected(item.itemName);
+            bool victoryGate = !item.requiresVictory
+                               || (scene.hasEncounter &&
+                                   battleWon[scene.encounterID]);
+            if (alreadyHave || !victoryGate) continue;
+
+            Rectangle src = {0, 0,
+                             (float)ScreenTextures[item.textureIndex].width,
+                             (float)ScreenTextures[item.textureIndex].height};
+            DrawTexturePro(ScreenTextures[item.textureIndex],
+                           src,
+                           item.clickArea,
+                           {0, 0},
+                           0.0f,
+                           WHITE);
+        }
+
+        // 3) Navigation arrows
+        for (const auto &arrow : scene.sceneArrows)
+{
+    if (!arrow.isEnabled) continue;
+
+    // Locked door / gated arrow
+    if (!arrow.requiredKeyName.empty() &&
+        !isItemCollected(arrow.requiredKeyName))
+    {
+        // Draw just an outline or a “locked” indicator
+        DrawRectangleLinesEx(arrow.clickArea, 3.0f, GRAY);
+        continue;
+    }
+
+   Rectangle src = {
+    0.0f,
+    0.0f,
+    (float)ScreenTextures[TEX_ARROW].width,
+    (float)ScreenTextures[TEX_ARROW].height
+};
+
+Rectangle dest = {
+    arrow.clickArea.x + arrow.clickArea.width  / 2.0f,
+    arrow.clickArea.y + arrow.clickArea.height / 2.0f,
+    arrow.clickArea.width,
+    arrow.clickArea.height
+};
+
+Vector2 origin = {
+    dest.width  / 2.0f,
+    dest.height / 2.0f
+};
+
+    // Base texture is UP, so:
+    float arrowRotation = 0.0f;
+    switch (arrow.dir)
+    {
+        case UP:    arrowRotation = 0.0f;   break;   // base
+        case DOWN:  arrowRotation = 180.0f; break;
+        case LEFT:  arrowRotation = -90.0f; break;   // or 270
+        case RIGHT: arrowRotation = 90.0f;  break;
+        case NONE:
+        default:    arrowRotation = 0.0f;   break;
+    }
+
+    DrawTexturePro(ScreenTextures[TEX_ARROW],
+                   src,
+                   dest,
+                   origin,
+                   arrowRotation,
+                   WHITE);
+
+    DrawRectangleLinesEx(arrow.clickArea, 2.0f, RED);
+
+}
+
+        // 4) Minimap + turtle
+        Rectangle mapDest = {
+            SCREEN_WIDTH - MINIMAP_SIZE - MINIMAP_MARGIN,
+            MINIMAP_MARGIN,
+            MINIMAP_SIZE,
+            MINIMAP_SIZE
+        };
+
+        Rectangle mapSrc = {0, 0,
+                            (float)ScreenTextures[TEX_MINIMAP].width,
+                            (float)ScreenTextures[TEX_MINIMAP].height};
+
+        DrawRectangleLinesEx(mapDest, MINIMAP_BORDER, BLACK);
+        DrawTexturePro(ScreenTextures[TEX_MINIMAP],
+                       mapSrc,
+                       mapDest,
+                       {0, 0},
+                       0.0f,
+                       WHITE);
+
+        // Turtle icon
+        Vector2 turtlePos = {
+            mapDest.x + scene.minimapCoords.x * mapDest.width,
+            mapDest.y + scene.minimapCoords.y * mapDest.height
+        };
+
+        Rectangle turtleSrc = {0, 0,
+                               (float)ScreenTextures[TEX_TURTLE].width,
+                               (float)ScreenTextures[TEX_TURTLE].height};
+
+        Rectangle turtleDest = {
+            turtlePos.x - 16,
+            turtlePos.y - 16,
+            32,
+            32
+        };
+
+        DrawTexturePro(ScreenTextures[TEX_TURTLE],
+                       turtleSrc,
+                       turtleDest,
+                       {16, 16},              // rotate around center
+                       scene.minimapRotation, // facing direction
+                       WHITE);
+
+        // Optional label
+        DrawText(scene.sceneName.c_str(), 20, 20, 30, WHITE);
         break;
     }
 

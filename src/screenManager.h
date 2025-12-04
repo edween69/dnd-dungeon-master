@@ -103,6 +103,7 @@
 //Including necessary libraries and headers
 #include "raylib.h"
 #include <cmath>
+#include <map>
 #include "characters.h"
 #include "combat.h"
 #include "raygui.h"
@@ -179,7 +180,7 @@ class GameManager {
         
     
     public:
-        explicit GameManager(GameState initial = GameState::COMBAT); //TODO: REMEMBER TO CHANGE TO EXPLORATION LATER
+        explicit GameManager(GameState initial = GameState::EXPLORATION); //TODO: REMEMBER TO CHANGE TO EXPLORATION LATER
         ~GameManager(); // Destructor
         void changeGameState(GameState newState); // Request a game state change
         [[nodiscard]] GameState getCurrentGameState() const; // Get the current game state
