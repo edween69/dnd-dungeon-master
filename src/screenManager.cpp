@@ -246,11 +246,12 @@
 #define TEX_KEY_1 13
 #define TEX_KEY_2 14
 #define TEX_HEALTH_POTION 15
+#define TEX_BAT 16
 
-#define TEX_ARROW 16
-#define TEX_MINIMAP 17
-#define TEX_TURTLE 18
-#define TOTAL_EXP_TEX 19
+#define TEX_ARROW 17
+#define TEX_MINIMAP 18
+#define TEX_TURTLE 19
+#define TOTAL_EXP_TEX 20
 
 // Minimap Settings
 #define MINIMAP_SIZE 300.0f
@@ -288,9 +289,10 @@ static GameManager *gameManager = nullptr; // Pointer to the GameManager instanc
 static Font *nerdFont; // Nerd font for UI text
 
 static std::vector<GameScene> gameScenes; // Vector holding all game scenes
-static int currentSceneIndex = 0; // Index of the current game scene
 static int activeEncounterID = -1;
-static int savedPlayerSceneIndex = 0; // Index of the scene where the player was before entering combat
+static int currentSceneIndex = TEX_ENTRANCE; // Index of the current active scene
+static int savedPlayerSceneIndex = TEX_ENTRANCE; // Index of the scene where the player was before entering combat
+
 static std::map<int,bool> battleWon; // Map to track which encounters have been won
 
 static std::vector<std::string> collectedItems; // Vector to hold names of items that the player has picked up
@@ -311,10 +313,7 @@ void InitGameScenes(Character* playerCharacter)
     }
 
     gameScenes.clear();
-    battleWon.clear();
-    collectedItems.clear();
-    currentSceneIndex = 0;
-    savedPlayerSceneIndex = 0;
+    
 
     if (dynamic_cast<Student*>(playerCharacter))
     {
@@ -325,10 +324,10 @@ void InitGameScenes(Character* playerCharacter)
         ScreenTextures[TEX_ENTRANCE] = LoadTexture("../assets/images/environments/Building1/Hallway/Entrance.png");
         ScreenTextures[TEX_EXIT] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-4].png");
         ScreenTextures[TEX_FRONT_OFFICE] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-2].png");
-        ScreenTextures[TEX_EAST_HALLWAY_TOWARD] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-1].png");
-        ScreenTextures[TEX_EAST_HALLWAY_AWAY] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
-        ScreenTextures[TEX_WEST_HALLWAY_TOWARD] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-3].png");
-        ScreenTextures[TEX_WEST_HALLWAY_AWAY] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[3-1].png");
+        ScreenTextures[TEX_WEST_HALLWAY_TOWARD] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-1].png");
+        ScreenTextures[TEX_WEST_HALLWAY_AWAY] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
+        ScreenTextures[TEX_EAST_HALLWAY_TOWARD] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-3].png");
+        ScreenTextures[TEX_EAST_HALLWAY_AWAY] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[3-1].png");
         ScreenTextures[TEX_CLASSROOM_1] = LoadTexture("../assets/images/environments/Building1/Class-Office/Classroom1.png");
         ScreenTextures[TEX_CLASSROOM_2] = LoadTexture("../assets/images/environments/Building1/Class-Office/Classroom2.png");
         ScreenTextures[TEX_CLASSROOM_3] = LoadTexture("../assets/images/environments/Building1/Class-Office/ClassroomZombies.png");
@@ -339,6 +338,7 @@ void InitGameScenes(Character* playerCharacter)
         ScreenTextures[TEX_KEY_1] = LoadTexture("../assets/images/items/Key1.png");
         ScreenTextures[TEX_KEY_2] = LoadTexture("../assets/images/items/Key2.png");
         ScreenTextures[TEX_HEALTH_POTION] = LoadTexture("../assets/images/items/HealthPotion.png");
+        ScreenTextures[TEX_BAT] = LoadTexture("../assets/images/items/BaseballBat.png");
         
         
         ScreenTextures[TEX_ARROW] = LoadTexture("../assets/images/UI/explorationArrow.png");
@@ -347,8 +347,7 @@ void InitGameScenes(Character* playerCharacter)
 
 
         gameScenes.resize(TEX_BATH_WOM + 1);
-        currentSceneIndex     = TEX_ENTRANCE;
-        savedPlayerSceneIndex = TEX_ENTRANCE;
+        
 
         // Entrance Scene
         GameScene* s;
@@ -360,8 +359,8 @@ void InitGameScenes(Character* playerCharacter)
         s->minimapRotation = 0.0f;
         s->sceneArrows = {
             //x,y, width, height
-            {{550, 500, 150, 150},LEFT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
-            {{1220, 500, 150, 150},RIGHT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{550, 500, 150, 150},LEFT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{1220, 500, 150, 150},RIGHT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
             {{885, 650, 150, 150}, UP, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
             {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""}
         };
@@ -378,65 +377,65 @@ void InitGameScenes(Character* playerCharacter)
 
         // Front of Office Scene (left arrow goes to east hallway toward, right arrow goes to west hallway toward, down arrow goes to exit, up arrow goes to in-office)
         s = &gameScenes[TEX_FRONT_OFFICE];
-        s->sceneName = "Front Office";
+        s->sceneName = "Office Front";
         s->textureIndex = TEX_FRONT_OFFICE;
-        s->minimapCoords = Vector2{0.45f, 0.45f};
+        s->minimapCoords = Vector2{0.45f, 0.475f};
         s->minimapRotation = 0.0f;
         s->sceneArrows = {
-            {{50, 300, 150, 150}, RIGHT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
-            {{550, 300, 150, 150}, LEFT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
-            {{50, 100, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""},
-            {{855, 700, 150, 150}, UP, TEX_IN_OFFICE, true, "Enter Office", ""}
-        };
-
-        //East Hallway Toward Scene
-        s = &gameScenes[TEX_EAST_HALLWAY_TOWARD];
-        s->sceneName = "East Hallway";
-        s->textureIndex = TEX_EAST_HALLWAY_TOWARD;
-        s->minimapCoords = Vector2{0.25f, 0.475f};
-        s->minimapRotation = 270.0f;
-        s->sceneArrows = {
-            {{500, 535, 150, 150},LEFT, TEX_CLASSROOM_1, true, "Enter Classroom 1", ""},
-            {{1250, 535, 150, 150}, RIGHT, TEX_CLASSROOM_2, true, "Enter Classroom 2", ""},
-            {{875, 750, 150, 150}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Go West", ""}  
-        };
-
-        //East Hallway Away Scene
-        s = &gameScenes[TEX_EAST_HALLWAY_AWAY];
-        s->sceneName = "East Hallway";
-        s->textureIndex = TEX_EAST_HALLWAY_AWAY;
-        s->minimapCoords = Vector2{0.2f, 0.475f};
-        s->minimapRotation = 90.0f;
-        s->sceneArrows = 
-        { 
-            {{855, 850,150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
-            {{855, 550,150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
-            {{500, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
-            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", ""}
+            {{1250,725, 150, 150}, RIGHT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{520, 725, 150, 150}, LEFT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""},
+            {{885, 650, 150, 150}, UP, TEX_IN_OFFICE, true, "Enter Office", ""}
         };
 
         //West Hallway Toward Scene
         s = &gameScenes[TEX_WEST_HALLWAY_TOWARD];
         s->sceneName = "West Hallway";
         s->textureIndex = TEX_WEST_HALLWAY_TOWARD;
-        s->minimapCoords = Vector2{0.675f, 0.475f};
-        s->minimapRotation = 90.0f;
+        s->minimapCoords = Vector2{0.25f, 0.475f};
+        s->minimapRotation = 270.0f;
         s->sceneArrows = {
-            {{885, 600, 150, 150}, UP, TEX_CLASSROOM_3, true, "Enter Classroom 3", ""},
-            {{500, 600, 150, 150}, LEFT, TEX_BATH_MEN, true, "Enter Men's Bathroom", ""},
-            {{1350, 600, 150, 150}, RIGHT, TEX_BATH_WOM, true, "Enter Women's Bathroom", ""},
-            {{885, 850, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Go East", ""}
+            {{500, 535, 150, 150},LEFT, TEX_CLASSROOM_1, true, "Enter Classroom 1", ""},
+            {{1250, 535, 150, 150}, RIGHT, TEX_CLASSROOM_2, true, "Enter Classroom 2", ""},
+            {{875, 750, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""}  
         };
 
         //West Hallway Away Scene
         s = &gameScenes[TEX_WEST_HALLWAY_AWAY];
         s->sceneName = "West Hallway";
         s->textureIndex = TEX_WEST_HALLWAY_AWAY;
+        s->minimapCoords = Vector2{0.2f, 0.475f};
+        s->minimapRotation = 90.0f;
+        s->sceneArrows = 
+        { 
+            {{855, 850,150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{855, 550,150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{500, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
+            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", ""}
+        };
+
+        //East Hallway Toward Scene
+        s = &gameScenes[TEX_EAST_HALLWAY_TOWARD];
+        s->sceneName = " East Hallway";
+        s->textureIndex = TEX_EAST_HALLWAY_TOWARD;
+        s->minimapCoords = Vector2{0.675f, 0.475f};
+        s->minimapRotation = 90.0f;
+        s->sceneArrows = {
+            {{885, 600, 150, 150}, UP, TEX_CLASSROOM_3, true, "Enter Classroom 3", ""},
+            {{500, 600, 150, 150}, LEFT, TEX_BATH_MEN, true, "Enter Men's Bathroom", ""},
+            {{1350, 600, 150, 150}, RIGHT, TEX_BATH_WOM, true, "Enter Women's Bathroom", ""},
+            {{885, 850, 150, 150}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Go West", ""}
+        };
+
+        //East Hallway Away Scene
+        s = &gameScenes[TEX_EAST_HALLWAY_AWAY];
+        s->sceneName = "East Hallway";
+        s->textureIndex = TEX_EAST_HALLWAY_AWAY;
         s->minimapCoords = Vector2{0.7f, 0.5f};
         s->minimapRotation = 270.0f;
         s->sceneArrows = {
-            {{855, 850,150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
-            {{855, 550,150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{855, 850,150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{855, 550,150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
             {{500, 500, 150, 150}, LEFT, TEX_EXIT, true, "Exit Building", ""},
             {{1250, 500, 150, 150}, RIGHT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""}
         };
@@ -445,12 +444,12 @@ void InitGameScenes(Character* playerCharacter)
         s = &gameScenes[TEX_CLASSROOM_1];
         s->sceneName = "Classroom 1";
         s->textureIndex = TEX_CLASSROOM_1;
-        s->minimapCoords = Vector2{0.25f, 0.65f};
+        s->minimapCoords = Vector2{0.19f, 0.625f};
         s->minimapRotation = 180.0f;
         s->sceneArrows = {
-            {{700, 100, 200, 200}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Exit Classroom", ""}
+            {{885, 855, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}
         };
-        s->sceneItems = {{ "Key 2", "Pick up Key 2", {600, 400, 50, 50}, TEX_KEY_2, true}};
+        s->sceneItems = {{ "Key 2", "Pick up Key 2", {600,625, 150, 150}, TEX_KEY_2, true}};
         s->hasEncounter = true;
         s->encounterID = 0;
 
@@ -458,10 +457,10 @@ void InitGameScenes(Character* playerCharacter)
         s = &gameScenes[TEX_CLASSROOM_2];
         s->sceneName = "Classroom 2";
         s->textureIndex = TEX_CLASSROOM_2;
-        s->minimapCoords = Vector2{0.35f, 0.65f};
+        s->minimapCoords = Vector2{0.15f, 0.325f};
         s->minimapRotation = 0.0f;
-        s->sceneArrows = {{{885 ,855, 150, 150}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
-        s->sceneItems = {{"Health Potion", "Pick up Health Potion", {500, 400, 50, 50}, TEX_HEALTH_POTION, false}};
+        s->sceneArrows = {{{885 ,855, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+        s->sceneItems = {{"Health Potion", "Pick up Health Potion", {500, 480, 150, 150}, TEX_HEALTH_POTION, false}};
 
         // Classroom 3 Scene
         s = &gameScenes[TEX_CLASSROOM_3];
@@ -469,7 +468,7 @@ void InitGameScenes(Character* playerCharacter)
         s->textureIndex = TEX_CLASSROOM_3;
         s->minimapCoords = Vector2{0.15f, 0.65f};
         s->minimapRotation = 90.0f;
-        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
 
         // In-Office Scene
         s = &gameScenes[TEX_IN_OFFICE];
@@ -477,10 +476,11 @@ void InitGameScenes(Character* playerCharacter)
         s->textureIndex = TEX_IN_OFFICE;
         s->minimapCoords = Vector2{0.5f, 0.8f};
         s->minimapRotation = 0.0f;
-        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_FRONT_OFFICE, true, "Exit Office", ""}};
-        s->sceneItems = {{"Key 1", "Pick up Key 1", {600, 400, 50, 50}, TEX_KEY_1, true}};
-        s->hasEncounter = true;
-        s->encounterID = 2;
+        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_FRONT_OFFICE, true, "Exit Office", ""}};
+        s->sceneItems = {{"Key 1", "Pick up Key 1", {700, 400, 90, 90}, TEX_KEY_1, false},
+                         {"Baseball Bat", "Pick up Baseball Bat", {800, 500,300, 150}, TEX_BAT, false}};
+        //s->hasEncounter = true;
+        //s->encounterID = 2;
 
         //Men's Bathroom Scene
         s = &gameScenes[TEX_BATH_MEN];
@@ -488,7 +488,7 @@ void InitGameScenes(Character* playerCharacter)
         s->textureIndex = TEX_BATH_MEN;
         s->minimapCoords = Vector2{0.75f, 0.6f};
         s->minimapRotation = 0.0f;
-        s->sceneArrows = {{{700, 100, 200, 200}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
+        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
         
 
         
@@ -498,7 +498,7 @@ void InitGameScenes(Character* playerCharacter)
         s->textureIndex = TEX_BATH_WOM;
         s->minimapCoords = Vector2{0.65f, 0.6f};
         s->minimapRotation = 180.0f;
-        s->sceneArrows = {{{700, 100, 200, 200},DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
+        s->sceneArrows = {{{885, 855,150, 150},DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
         s->hasEncounter = true;
         s->encounterID = 1;
 
@@ -1561,6 +1561,7 @@ void GameManager::enterGameState(GameState state)
         ScreenRects[R_BTN_SAVE_EXIT] = { ScreenRects[R_PAUSE_PANEL].x + (PAUSE_PANEL_WIDTH - PAUSE_BTN_WIDTH) / 2.0f, ScreenRects[R_BTN_RESUME].y + PAUSE_BTN_HEIGHT + PAUSE_BTN_SPACING, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
         ScreenRects[R_BTN_QUIT_NO_SAVE] = { ScreenRects[R_PAUSE_PANEL].x + (PAUSE_PANEL_WIDTH - PAUSE_BTN_WIDTH) / 2.0f, ScreenRects[R_BTN_SAVE_EXIT].y + PAUSE_BTN_HEIGHT + PAUSE_BTN_SPACING, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
 
+        
         // Dynamically allocate combat handler and initialize combat state variables
         combatHandler = new CombatHandler;
         combatHandler->playerTurn = entities[0]->cbt.initiative >= entities[1]->cbt.initiative; // Determine who goes first based on initiative (simple comparison for now)
@@ -1698,9 +1699,14 @@ void GameManager::update(float dt) // Currently only updating the health bars in
                     if (newScene.hasEncounter &&
                         !battleWon[newScene.encounterID])
                     {
-                        savedPlayerSceneIndex = currentSceneIndex;
+                        savedPlayerSceneIndex = currentSceneIndex; // Save current scene before entering combat
                         activeEncounterID     = newScene.encounterID;
                         changeGameState(GameState::COMBAT);
+                    }
+                    else
+                    {
+                        // No encounter or already won, just move to the new scene
+                        currentSceneIndex = arrow.targetSceneIndex;
                     }
                     break;
                 }
