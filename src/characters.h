@@ -114,6 +114,17 @@ struct HealthPotion: Consumable
 class inventory
 {
     public: 
+        //clear items when loading new game 
+        void clearItems()
+        {
+            items.clear();
+        }
+        //setting player items when loading game
+        void setItems(const std::vector<Item>& newItems)
+        {
+            items = newItems;
+        }
+    
         void additem(const Item& item)
         {
             for(auto& it : items)
@@ -268,6 +279,11 @@ class PlayerCharacter : public Character
     public:
         std::string name;
         std::string characterClass; // e.g., Student, Rat, Professor, Atilla
+        bool key1 = false;
+        bool key2 = false;
+        bool zombie1Defeated = false;
+        bool zombie2Defeated = false;
+        bool zombie3Defeated = false;
         const std::string& getName() const override { return name; } // Override to return player character's name
 
         // Constructor to initialize player character attributes

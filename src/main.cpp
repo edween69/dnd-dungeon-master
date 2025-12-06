@@ -16,7 +16,9 @@ int main()
         SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     #endif
 
+    InitAudioDevice();// Initialize audio device
     InitWindow(1280, 720, "The Last Lift"); // Windowed mode for development
+    
     
     SetTargetFPS(30); // Set desired frame rate
 

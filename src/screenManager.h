@@ -177,6 +177,7 @@ class GameManager {
         CombatHandler* combatHandler=nullptr; // Combat handler to manage combat state
         GameState prevGameState; // Previous game state before transition
         GameState nextGameState; // Next game state to transition to
+        float sceneTransitionTimer = 0.0f; // Timer for scene transitions
          
 
         
@@ -220,6 +221,7 @@ class GameScene
     public:
         std::string sceneName;
         int textureIndex;       // Background texture index
+        std::string environmentTexture = ""; // Environment texture file path
         
         Vector2 minimapCoords;  // 0.0-1.0 Position on map image
         float minimapRotation;  // Rotation of the turtle icon
@@ -229,7 +231,19 @@ class GameScene
         
         // Combat Trigger
         bool hasEncounter = false; 
-        int encounterID = -1;      
+        int encounterID = -1;   
+        
+        float combatBgX=0.0f;
+        float combatBgY=0.0f;
+
+        float playerCharX=0.0f;
+        float playerCharY=0.0f;
+        
+        float enemyCharX=0.0f;
+        float enemyCharY=0.0f;
+
+        Vector2 playerScale = {0.0f, 0.0f};
+        Vector2 enemyScale = {0.0f, 0.0f};
 };
 
 void InitGameScenes(Character* playerCharacter); // Initialize all game scenes
@@ -333,6 +347,10 @@ namespace animation {
         }
     }
 
+    inline float sinPulse(float amplitudeFactor, float speedFactor, float blendFactor)
+    {
+        return amplitudeFactor * sinf(speedFactor * saturate(blendFactor));
+    }
 }
 
 

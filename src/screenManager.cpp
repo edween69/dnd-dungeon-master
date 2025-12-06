@@ -42,7 +42,13 @@
 #define INTRO_CRAWL_END_Y -1400
 #define INTRO_CRAWL_FONT_SIZE 28
 #define INTRO_CRAWL_LINE_HEIGHT 34
-
+//================= SOUND INDICES ===================
+#define SND_SELECT 0
+#define SND_HIT 1
+#define SND_HEAL 2
+#define SND_ZOM_DEATH 3
+#define SND_ZOM_GROAN 4
+#define TOTAL_SOUNDS 5
 //================= COMBAT UI RECTANGLE INDICES ===================
 #define R_PLAYER_NAME 0
 #define R_ENEMY_NAME 1
@@ -69,6 +75,14 @@
 #define R_BTN_RESUME 22
 #define R_BTN_SAVE_EXIT 23
 #define R_BTN_QUIT_NO_SAVE 24
+
+// ================= EXPLORATION PAUSE MENU RECTANGLES =================
+#define R_EXP_PAUSE_BTN 19
+#define R_EXP_PAUSE_BG_OVERLAY 20
+#define R_EXP_PAUSE_PANEL 21
+#define R_EXP_BTN_RESUME 22
+#define R_EXP_BTN_SAVE_EXIT 23
+#define R_EXP_BTN_QUIT_NO_SAVE 24
 
 // Character select screen rects
 #define R_PLAY_BTN 0
@@ -174,6 +188,7 @@
 
 //======================= GLOBAL STATIC POINTERS =======================
 std::istringstream *allStatLines = nullptr;
+static Sound *gameSounds = nullptr;
 static Texture2D *ScreenTextures = nullptr;
 static int numScreenTextures = 0;
 static Rectangle *ScreenRects = nullptr;
@@ -193,6 +208,15 @@ static std::map<int,bool> battleWon;
 static std::vector<std::string> collectedItems;
 static int byteSize=0;
 
+//======================= SOUND INITIALIZATION =======================
+void InitGameSounds() {
+    gameSounds = new Sound[TOTAL_SOUNDS];
+    gameSounds[SND_SELECT] = LoadSound("../assets/sfx/select.wav");
+    gameSounds[SND_HIT] = LoadSound("../assets/sfx/hitHurt.wav");
+    gameSounds[SND_HEAL] = LoadSound("../assets/sfx/heal.wav");
+    gameSounds[SND_ZOM_DEATH] = LoadSound("../assets/sfx/explosion.wav");
+    gameSounds[SND_ZOM_GROAN] = LoadSound("../assets/sfx/zombieGroan.wav");
+}
 //======================= RESOURCE CLEANUP FUNCTIONS =======================
 
 // Safely cleans up all screen textures
@@ -315,18 +339,29 @@ void InitGameScenes(Character* playerCharacter) {
         s->minimapCoords = {0.475f, 0.8f};
         s->minimapRotation = 0.0f;
         s->sceneArrows = {
-            {{550, 500, 150, 150}, LEFT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{550, 500, 150, 150}, LEFT, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""},
             {{1220, 500, 150, 150}, RIGHT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
             {{885, 650, 150, 150}, UP, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
-            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""}
+            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", "Key 2"}
         };
 
         s = &gameScenes[TEX_EXIT];
         s->sceneName = "Exit";
         s->textureIndex = TEX_EXIT;
+        s->environmentTexture = "../assets/images/environments/Building1/Hallway/Hallway[2-4].png";
         s->minimapCoords = {0.5f, 0.825f};
         s->minimapRotation = 180.0f;
         s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_ENTRANCE, true, "Enter Building", ""}};
+        s->hasEncounter = true;
+        s->encounterID = 2;
+        s->combatBgX = (SCREEN_CENTER_X - (ScreenTextures[TEX_EXIT].width) / 2.0f);
+        s->combatBgY = (SCREEN_CENTER_Y - (ScreenTextures[TEX_EXIT].height) / 2.0f- 175.0f);
+        s->playerCharX = (SCREEN_CENTER_X + (ScreenTextures[TEX_EXIT].width) / 2.0f - 450.0f);
+        s->playerCharY = (SCREEN_CENTER_Y + (ScreenTextures[TEX_EXIT].height) / 2.0f - 700.0f);
+        s->enemyCharX = (SCREEN_CENTER_X + (ScreenTextures[TEX_EXIT].width) / 2.0f - 675.0f);
+        s->enemyCharY = (SCREEN_CENTER_Y + (ScreenTextures[TEX_EXIT].height) / 2.0f - 750.0f);
+        s->playerScale = {600.0f,650.0f};
+        s->enemyScale = {400.0f,500.0f};
 
         s = &gameScenes[TEX_FRONT_OFFICE];
         s->sceneName = "Office Front";
@@ -336,7 +371,7 @@ void InitGameScenes(Character* playerCharacter) {
         s->sceneArrows = {
             {{550, 725, 150, 150}, LEFT, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
             {{1250, 725, 150, 150}, RIGHT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
-            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""},
+            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", "Key 2"},
             {{885, 650, 150, 150}, UP, TEX_IN_OFFICE, true, "Enter Office", ""}
         };
 
@@ -347,7 +382,7 @@ void InitGameScenes(Character* playerCharacter) {
         s->minimapRotation = 270.0f;
         s->sceneArrows = {
             {{500, 535, 150, 150}, LEFT, TEX_CLASSROOM_1, true, "Enter Classroom 1", ""},
-            {{1250, 535, 150, 150}, RIGHT, TEX_CLASSROOM_2, true, "Enter Classroom 2", ""},
+            {{1250, 535, 150, 150}, RIGHT, TEX_CLASSROOM_2, true, "Enter Classroom 2", "Key 1"},
             {{875, 750, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""}
         };
 
@@ -360,7 +395,7 @@ void InitGameScenes(Character* playerCharacter) {
             {{855, 850, 150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
             {{855, 550, 150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
             {{500, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
-            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", ""}
+            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", "Key 2"}
         };
 
         s = &gameScenes[TEX_EAST_HALLWAY_TOWARD];
@@ -383,19 +418,29 @@ void InitGameScenes(Character* playerCharacter) {
         s->sceneArrows = {
             {{855, 850, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
             {{855, 550, 150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
-            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", ""},
+            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", "Key 2"},
             {{550, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""}
         };
 
         s = &gameScenes[TEX_CLASSROOM_1];
         s->sceneName = "Classroom 1";
         s->textureIndex = TEX_CLASSROOM_1;
+        s->environmentTexture = "../assets/images/environments/Building1/Class-Office/Classroom1.png";
         s->minimapCoords = {0.19f, 0.625f};
         s->minimapRotation = 180.0f;
         s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
         s->sceneItems = {{"Key 2", "Pick up Key 2", {600, 625, 150, 150}, TEX_KEY_2, true}};
         s->hasEncounter = true;
         s->encounterID = 0;
+        s->combatBgX = (SCREEN_CENTER_X - (ScreenTextures[TEX_CLASSROOM_1].width) / 2.0f);
+        s->combatBgY = (SCREEN_CENTER_Y - (ScreenTextures[TEX_CLASSROOM_1].height) / 2.0f- 175.0f);
+        s->playerCharX = (SCREEN_CENTER_X + (ScreenTextures[TEX_CLASSROOM_1].width) / 2.0f - 500.0f);
+        s->playerCharY = (SCREEN_CENTER_Y + (ScreenTextures[TEX_CLASSROOM_1].height) / 2.0f - 790.0f);
+        s->enemyCharX = (SCREEN_CENTER_X + (ScreenTextures[TEX_CLASSROOM_1].width) / 2.0f - 670.0f);
+        s->enemyCharY = (SCREEN_CENTER_Y + (ScreenTextures[TEX_CLASSROOM_1].height) / 2.0f - 795.0f);
+        s->playerScale = {600.0f,700.0f};
+        s->enemyScale = {400.0f,400.0f};
+
 
         s = &gameScenes[TEX_CLASSROOM_2];
         s->sceneName = "Classroom 2";
@@ -415,6 +460,7 @@ void InitGameScenes(Character* playerCharacter) {
         s = &gameScenes[TEX_IN_OFFICE];
         s->sceneName = "Office";
         s->textureIndex = TEX_IN_OFFICE;
+        s->environmentTexture = "../assets/images/environments/Building1/Class-Office/Office.png";
         s->minimapCoords = {0.45f, 0.35f};
         s->minimapRotation = 0.0f;
         s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_FRONT_OFFICE, true, "Exit Office", ""}};
@@ -422,6 +468,16 @@ void InitGameScenes(Character* playerCharacter) {
             {"Key 1", "Pick up Key 1", {600, 400, 90, 90}, TEX_KEY_1, false},
             {"Baseball Bat", "Pick up Baseball Bat", {800, 500, 300, 150}, TEX_BAT, false}
         };
+        s->hasEncounter = true;
+        s->encounterID = 1;
+        s->combatBgX = (SCREEN_CENTER_X - (ScreenTextures[TEX_IN_OFFICE].width) / 2.0f);
+        s->combatBgY = (SCREEN_CENTER_Y - (ScreenTextures[TEX_IN_OFFICE].height) / 2.0f- 150.0f);
+        s->playerCharX = (SCREEN_CENTER_X + (ScreenTextures[TEX_IN_OFFICE].width) / 2.0f - 500.0f);
+        s->playerCharY = (SCREEN_CENTER_Y + (ScreenTextures[TEX_IN_OFFICE].height) / 2.0f - 1075.0f);
+        s->enemyCharX = (SCREEN_CENTER_X + (ScreenTextures[TEX_IN_OFFICE].width) / 2.0f - 700.0f);
+        s->enemyCharY = (SCREEN_CENTER_Y + (ScreenTextures[TEX_IN_OFFICE].height) / 2.0f - 1295.0f);
+        s->playerScale = {700.0f,700.0f};
+        s->enemyScale = {300.0f,500.0f};
 
         s = &gameScenes[TEX_BATH_MEN];
         s->sceneName = "Men's Bathroom";
@@ -433,9 +489,11 @@ void InitGameScenes(Character* playerCharacter) {
         s = &gameScenes[TEX_BATH_WOM];
         s->sceneName = "Women's Bathroom";
         s->textureIndex = TEX_BATH_WOM;
+        s->environmentTexture = "../assets/images/environments/Building1/Class-Office/BathroomG.png";
         s->minimapCoords = {0.8f, 0.6f};
         s->minimapRotation = 180.0f;
         s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
+        
     }
 }
 
@@ -599,6 +657,7 @@ ScreenManager::~ScreenManager() {
 void ScreenManager::init() {
     ChangeDirectory(GetApplicationDirectory());
     target = LoadRenderTexture(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+    InitGameSounds();
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
     enterScreen(currentScreen);
 }
@@ -647,9 +706,9 @@ void ScreenManager::update(float dt) {
                     CHARACTER_CARD_HEIGHT
                 };
                 
-                characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
+                //characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
                 characterCards[i].currentAnimationPos = characterCards[i].defaultRow;
-                characterCards[i].currentAnimationPos.y = SCREEN_HEIGHT + 200.0f;
+                //characterCards[i].currentAnimationPos.y = SCREEN_HEIGHT + 200.0f;
             }
             CharSelectionStuff[2] = 1;
         }
@@ -681,11 +740,11 @@ void ScreenManager::update(float dt) {
             characterCards[i].currentAnimationPos.x = animation::slopeInt(
                 characterCards[i].currentAnimationPos.x,
                 characterCards[i].targetAnimationPos.x,
-                animation::easeInQuad(1.0f - expf(-10.0f * dt)));
+                animation::easeInOutCubic(1.0f - expf(-15.0f * dt)));
             characterCards[i].currentAnimationPos.y = animation::slopeInt(
                 characterCards[i].currentAnimationPos.y,
                 characterCards[i].targetAnimationPos.y,
-                animation::easeInQuad(1.0f - expf(-10.0f * dt)));
+                animation::easeInOutCubic(1.0f - expf(-15.0f * dt)));
         }
 
         ScreenRects[R_PLAY_BTN] = {
@@ -727,32 +786,47 @@ void ScreenManager::render() {
 
     switch (currentScreen) {
     case ScreenState::MAIN_MENU:
+    {
         DrawTexture(ScreenTextures[0], 0, 0, WHITE);
         DrawTexture(ScreenTextures[1], CENTERED_X(ScreenTextures[1].width), -150, WHITE);
 
         if (GuiButton(ScreenRects[0], "Start Game"))
             changeScreen(ScreenState::CHARACTER_SELECT);
-        if (GuiButton(ScreenRects[1], "Exit Game")) {
+        if (GuiButton(ScreenRects[1], "Exit Game")) 
+        {
             exitScreen(currentScreen);
             CloseWindow();
         }
+        
+        int prevStateMM = GuiGetState();
+        GuiDisable();
+        if(GuiButton(ScreenRects[2], "Load Saved Game"));
+        GuiSetState(prevStateMM);
         break;
-
+    }
     case ScreenState::CHARACTER_SELECT: {
         DrawTexture(ScreenTextures[0], 0, 0, WHITE);
         CharSelectionStuff[1] = -1;
 
         for (int i = 0; i < MAX_CHAR_CARDS; i++) {
             DrawTexturePro(characterCards[i].texture,
-                          {0.0f, 0.0f, (float)characterCards[i].texture.width, (float)characterCards[i].texture.height},
-                          characterCards[i].currentAnimationPos, {0.0f, 0.0f}, 0.0f, WHITE);
+                        {0.0f, 0.0f, (float)characterCards[i].texture.width, (float)characterCards[i].texture.height},
+                        characterCards[i].currentAnimationPos, 
+                        {0.0f, 0.0f}, 
+                        0.0f, 
+                        CharSelectionStuff[0] == i ? WHITE : Color{100, 100, 100, 200} 
+            );
+
             DrawRectangleLinesEx(characterCards[i].currentAnimationPos, 4.0f, Color{0, 68, 0, 255});
 
             if (CheckCollisionPointRec(GetMousePosition(), characterCards[i].currentAnimationPos))
                 CharSelectionStuff[1] = i;
 
             if (i == 0 && GuiButton(characterCards[i].currentAnimationPos, ""))
+            {
                 CharSelectionStuff[0] = (CharSelectionStuff[0] == i) ? -1 : i;
+                PlaySound(gameSounds[SND_SELECT]);
+            }
 
             if (CharSelectionStuff[0] == i) {
                 DrawRectangleLinesEx({characterCards[i].currentAnimationPos.x - 6.0f,
@@ -866,10 +940,11 @@ void ScreenManager::enterScreen(ScreenState s) {
         ScreenTextures[0] = LoadTexture("../assets/images/UI/startMenuBg.png");
         ScreenTextures[1] = LoadTexture("../assets/images/UI/gameTitle.png");
 
-        numScreenRects = 2;
+        numScreenRects = 3;
         ScreenRects = new Rectangle[numScreenRects];
         ScreenRects[0] = {CENTERED_X(MAIN_BUTTON_WIDTH), SCREEN_CENTER_Y + MAIN_BUTTON_OFFSET_Y, MAIN_BUTTON_WIDTH, MAIN_BUTTON_HEIGHT};
         ScreenRects[1] = {CENTERED_X(MAIN_BUTTON_WIDTH), SCREEN_CENTER_Y + MAIN_BUTTON_OFFSET_Y + MAIN_BUTTON_SPACING, MAIN_BUTTON_WIDTH, MAIN_BUTTON_HEIGHT};
+        ScreenRects[2] = {CENTERED_X(MAIN_BUTTON_WIDTH), SCREEN_CENTER_Y + MAIN_BUTTON_OFFSET_Y + 2 * MAIN_BUTTON_SPACING, MAIN_BUTTON_WIDTH, MAIN_BUTTON_HEIGHT};
         break;
     }
 
@@ -899,7 +974,11 @@ void ScreenManager::enterScreen(ScreenState s) {
     case ScreenState::GAMEPLAY: {
         gamePlayStyles();
         gameManager = new GameManager;
-        gameManager->enterGameState(gameManager->getCurrentGameState());
+        if (activeEncounterID != -1) {
+            gameManager->changeGameState(GameState::COMBAT);
+        } else {
+            gameManager->enterGameState(gameManager->getCurrentGameState());
+        }
         break;
     }
     }
@@ -967,8 +1046,19 @@ void GameManager::enterGameState(GameState state) {
         
         if (entities && entities[0]) {
             InitGameScenes(entities[0]);
-            activeEncounterID = -1;
         }
+
+        // Pause button in top-right corner
+        numScreenRects = 25;
+        ScreenRects = new Rectangle[numScreenRects];
+        ScreenRects[R_EXP_PAUSE_BTN] = {SCREEN_WIDTH - 75 - 10, 50, 75, 75};
+        ScreenRects[R_EXP_PAUSE_BG_OVERLAY] = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+        ScreenRects[R_EXP_PAUSE_PANEL] = {PAUSE_PANEL_X, PAUSE_PANEL_Y, PAUSE_PANEL_WIDTH, PAUSE_PANEL_HEIGHT};
+        ScreenRects[R_EXP_BTN_RESUME] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
+        ScreenRects[R_EXP_BTN_SAVE_EXIT] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f + PAUSE_BTN_HEIGHT + PAUSE_BTN_SPACING, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
+        ScreenRects[R_EXP_BTN_QUIT_NO_SAVE] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f + 2 * (PAUSE_BTN_HEIGHT + PAUSE_BTN_SPACING), PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
+    
+        sceneTransitionTimer = 0.5f; // Set the scene transition timer to 1 second
         break;
     }
 
@@ -991,9 +1081,21 @@ void GameManager::enterGameState(GameState state) {
 
         numScreenTextures = 3;
         ScreenTextures = new Texture2D[numScreenTextures];
-        ScreenTextures[0] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[1-2].png");
+        ScreenTextures[0] = LoadTexture(gameScenes[currentSceneIndex].environmentTexture.c_str());
         ScreenTextures[1] = LoadTexture("../assets/images/characters/pc/Student-Fighter/rotations/north-west.png");
-        ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
+        switch (activeEncounterID) 
+        {
+            case 0:
+                ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/Professor1.png");
+                break;
+            case 1:
+                ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/Sorority1.png");
+                break;
+            case 2:
+            default:
+                ScreenTextures[2] = LoadTexture("../assets/images/characters/npc/Enemies/FratBro1.png");
+                break;
+        }
         TraceLog(LOG_INFO, "Combat screen textures loaded.");
 
         numScreenRects = 25;
@@ -1035,19 +1137,22 @@ void GameManager::enterGameState(GameState state) {
         if (activeEncounterID == 0) 
         {
             if (entities && entities[1]) { delete entities[1]; entities[1] = nullptr; }
-            CreateCharacter("Zombie_Standard", "Frat Bro");
-            TraceLog(LOG_INFO, "Created enemy: Frat Bro");
+            CreateCharacter("Zombie_Prof", "Professor");
+            PlaySound(gameSounds[SND_ZOM_GROAN]);
+            TraceLog(LOG_INFO, "Created enemy: Professor");
         } else if (activeEncounterID == 1) 
         {
             if (entities && entities[1]) { delete entities[1]; entities[1] = nullptr; }
-            CreateCharacter("Zombie_Standard", "Gym Bro");
-            TraceLog(LOG_INFO, "Created enemy: Gym Bro");
+            CreateCharacter("Zombie_Standard", "Sorority");
+            PlaySound(gameSounds[SND_ZOM_GROAN]);
+            TraceLog(LOG_INFO, "Created enemy: Sorority");
         } 
         else 
         {
             if (entities && entities[1]) { delete entities[1]; entities[1] = nullptr; }
-            CreateCharacter("Zombie_Standard", "Chad");
-            TraceLog(LOG_INFO, "Created enemy: Chad");
+            CreateCharacter("Zombie_Standard", "Frat Bro");
+            PlaySound(gameSounds[SND_ZOM_GROAN]);
+            TraceLog(LOG_INFO, "Created enemy: Frat Bro");
         }
         
         // Validate enemy created
@@ -1134,6 +1239,16 @@ void GameManager::render() {
                        (float)ScreenTextures[gameScenes[currentSceneIndex].textureIndex].height},
                       {0.0f, 0.0f, SCREEN_WIDTH, SCREEN_HEIGHT}, {0.0f, 0.0f}, 0.0f, WHITE);
 
+        DrawRectangleRec(ScreenRects[R_EXP_PAUSE_BTN], COL_BUTTON);
+        DrawRectangleLinesEx(ScreenRects[R_EXP_PAUSE_BTN], 3.0f, BLACK);
+        if (GuiButton(ScreenRects[R_EXP_PAUSE_BTN], "")) {
+            changeGameState(GameState::PAUSE_MENU);
+        }
+        DrawTextEx(*nerdFont, CodepointToUTF8(ICON_PAUSE, &byteSize),
+                   {ScreenRects[R_EXP_PAUSE_BTN].x + (ScreenRects[R_EXP_PAUSE_BTN].width - MeasureTextEx(*nerdFont, CodepointToUTF8(ICON_PAUSE, &byteSize), FONT_SIZE_BTN + 20, 1.0f).x) / 2.0f,
+                    ScreenRects[R_EXP_PAUSE_BTN].y + (ScreenRects[R_EXP_PAUSE_BTN].height - MeasureTextEx(*nerdFont, CodepointToUTF8(ICON_PAUSE, &byteSize), FONT_SIZE_BTN + 20, 1.0f).y) / 2.0f},
+                   FONT_SIZE_BTN + 20, 1.0f, GetColor(GuiGetStyle(BUTTON, TEXT_COLOR_NORMAL)));
+
         for (const auto &item : gameScenes[currentSceneIndex].sceneItems) {
             if (!isItemCollected(item.itemName) &&
                 (!item.requiresVictory || (gameScenes[currentSceneIndex].hasEncounter && battleWon[gameScenes[currentSceneIndex].encounterID]))) {
@@ -1146,14 +1261,14 @@ void GameManager::render() {
         for (const auto &arrow : gameScenes[currentSceneIndex].sceneArrows) {
             if (!arrow.isEnabled || (!arrow.requiredKeyName.empty() && !isItemCollected(arrow.requiredKeyName)))
                 continue;
-
+            float scaledWidth = arrow.clickArea.width+ arrow.clickArea.width * animation::sinPulse(0.2f, PI, animation::easeInOutCubic(fmodf(GetTime(), 1.0f)));
+            float scaledHeight = arrow.clickArea.height + arrow.clickArea.height * animation::sinPulse(0.2f, PI, animation::easeInOutCubic(fmodf(GetTime(), 1.0f)));
             DrawTexturePro(ScreenTextures[TEX_ARROW],
                           {0.0f, 0.0f, (float)ScreenTextures[TEX_ARROW].width, (float)ScreenTextures[TEX_ARROW].height},
                           {arrow.clickArea.x + arrow.clickArea.width / 2.0f, arrow.clickArea.y + arrow.clickArea.height / 2.0f,
-                           arrow.clickArea.width, arrow.clickArea.height},
-                          {arrow.clickArea.width / 2.0f, arrow.clickArea.height / 2.0f},
+                           scaledWidth, scaledHeight},
+                          {scaledWidth/2.0f, scaledHeight/2.0f},
                           ARROW_ROTATION(arrow.dir), WHITE);
-            DrawRectangleLinesEx(arrow.clickArea, 2.0f, RED);
         }
 
         DrawRectangleLinesEx({MINIMAP_X, MINIMAP_Y, MINIMAP_SIZE, MINIMAP_SIZE}, MINIMAP_BORDER, BLACK);
@@ -1191,24 +1306,54 @@ void GameManager::render() {
             }
         }
 
-        if (!infoText.empty())
-            DrawText(infoText.c_str(), CENTERED_X(MeasureText(infoText.c_str(), 28)), 6, 28, WHITE);
+        bool hasVisibleItems = false;
+        if (infoText.empty())
+            for (const auto &item : gameScenes[currentSceneIndex].sceneItems) 
+            {
+                if (!isItemCollected(item.itemName) && (!item.requiresVictory || (gameScenes[currentSceneIndex].hasEncounter && battleWon[gameScenes[currentSceneIndex].encounterID]))) 
+                {
+                    hasVisibleItems = true;
+                    break;
+                }
+            }
+        
+        bool hasArrowsVisible = false;
+        for (const auto &arrow : gameScenes[currentSceneIndex].sceneArrows) {
+            if (arrow.isEnabled && (arrow.requiredKeyName.empty() || isItemCollected(arrow.requiredKeyName))) {
+                hasArrowsVisible = true;
+                break;
+            }
+        }
+
+        if (infoText.empty()) 
+        {
+            if (hasVisibleItems) {
+                infoText = "Please select the item(s) to add it to your inventory.";
+            } else if (hasArrowsVisible) {
+                infoText = "Please select an arrow to navigate.";
+            } else {
+                infoText = "There's nothing here.";
+            }
+
+        }
+
+        DrawText(infoText.c_str(), 20,ScreenRects[R_LOG_BOX].y + 5, 30, WHITE);
         break;
     }
 
     case GameState::COMBAT: {
         if (!combatHandler || !entities[0] || !entities[1] || !ScreenTextures || !ScreenRects ||!nerdFont) break;
 
-        DrawTexture(ScreenTextures[0], (int)COMBAT_BG_X(ScreenTextures[0]), (int)COMBAT_BG_Y(ScreenTextures[0]), WHITE);
+        DrawTexture(ScreenTextures[0], gameScenes[currentSceneIndex].combatBgX, gameScenes[currentSceneIndex].combatBgY, WHITE);
 
         DrawTexturePro(ScreenTextures[1],
                       {0.0f, 0.0f, (float)ScreenTextures[1].width, (float)ScreenTextures[1].height},
-                      {PLAYER_CHAR_X(ScreenTextures[0]), PLAYER_CHAR_Y(ScreenTextures[0]), 500.0f, 500.0f}, {0.0f, 0.0f}, 0.0f,
+                      {gameScenes[currentSceneIndex].playerCharX, gameScenes[currentSceneIndex].playerCharY, gameScenes[currentSceneIndex].playerScale.x, gameScenes[currentSceneIndex].playerScale.y}, {0.0f, 0.0f}, 0.0f,
                       combatHandler->playerHitFlashTimer > 0.0f ? RED : WHITE);
-
+            //texture, sourceRec, destRec, origin, rotation, tint
         DrawTexturePro(ScreenTextures[2],
                       {0.0f, 0.0f, (float)ScreenTextures[2].width, (float)ScreenTextures[2].height},
-                      {ENEMY_CHAR_X(ScreenTextures[0]), ENEMY_CHAR_Y(ScreenTextures[0]), 200.0f, 300.0f}, {0.0f, 0.0f}, 0.0f,
+                      {gameScenes[currentSceneIndex].enemyCharX, gameScenes[currentSceneIndex].enemyCharY, gameScenes[currentSceneIndex].enemyScale.x, gameScenes[currentSceneIndex].enemyScale.y}, {0.0f, 0.0f}, 0.0f,
                       combatHandler->enemyHitFlashTimer > 0.0f ? RED : WHITE);
 
         DrawRectangleRec(ScreenRects[R_PLAYER_NAME], COL_NAME_BAR);
@@ -1279,6 +1424,7 @@ void GameManager::render() {
                     combatHandler->showAttackMenu = false;
                     combatHandler->playerIsDefending = false;
                     combatHandler->enemyHitFlashTimer = resolve_melee(*entities[0], *entities[1], combatHandler->enemyIsDefending, combatHandler->log) ? 0.2f : 0.0f;
+                    if (combatHandler->enemyHitFlashTimer > 0.0f) PlaySound(gameSounds[SND_HIT]);
                     combatHandler->logScrollOffset = 1000.0f;
                     combatHandler->playerTurn = false;
                     combatHandler->enemyActionDelay = 0.6f;
@@ -1365,6 +1511,7 @@ void GameManager::render() {
                             dynamic_cast<PlayerCharacter*>(entities[0])->heal(items[i].healAmount);
                             AddNewLogEntry(combatHandler->log, entities[0]->getName() + " used " + items[i].name + " and healed " +
                                           std::to_string(entities[0]->vit.health - beforeHeal) + " HP!");
+                            PlaySound(gameSounds[SND_HEAL]);
                             dynamic_cast<PlayerCharacter*>(entities[0])->inv.removeitem(items[i].name, 1);
                             combatHandler->logScrollOffset = 1000.0f;
                             combatHandler->playerTurn = false;
@@ -1428,25 +1575,15 @@ void GameManager::render() {
 
         DrawRectangleRec(ScreenRects[R_BTN_RESUME], COL_BUTTON);
         if (GuiButton(ScreenRects[R_BTN_RESUME], "Resume"))
-            currentGameState = GameState::COMBAT;
+            currentGameState = prevGameState;
 
         DrawRectangleRec(ScreenRects[R_BTN_SAVE_EXIT], COL_BUTTON);
         if (GuiButton(ScreenRects[R_BTN_SAVE_EXIT], "Save & Exit")) {
-            if (combatHandler) {
-                combatHandler->victoryState = true;
-                combatHandler->gameOverTimer = 0.0f;
-            }
-            currentGameState = GameState::COMBAT;
             backToMainMenu = true;
         }
 
         DrawRectangleRec(ScreenRects[R_BTN_QUIT_NO_SAVE], COL_BUTTON);
         if (GuiButton(ScreenRects[R_BTN_QUIT_NO_SAVE], "Exit (No Save)")) {
-            if (combatHandler) {
-                combatHandler->gameOverState = true;
-                combatHandler->gameOverTimer = 0.0f;
-            }
-            currentGameState = GameState::COMBAT;
             backToMainMenu = true;
         }
         break;
@@ -1465,6 +1602,11 @@ void GameManager::update(float dt) {
     case GameState::EXPLORATION: {
         if (gameScenes.empty()) break;
 
+        if (sceneTransitionTimer > 0.0f) {
+            sceneTransitionTimer -= dt;
+            if (sceneTransitionTimer < 0.0f) sceneTransitionTimer = 0.0f;
+        }
+
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             for (auto &item : gameScenes[currentSceneIndex].sceneItems) {
                 if (!isItemCollected(item.itemName) &&
@@ -1474,10 +1616,8 @@ void GameManager::update(float dt) {
 
                     if (item.itemName == "Health Potion") 
                     {
-                        if (auto *pc = dynamic_cast<PlayerCharacter*>(entities[0])) {
                             HealthPotion hpotion;
-                            pc->inv.additem(hpotion);
-                        }
+                            dynamic_cast<PlayerCharacter*>(entities[0])->inv.additem(hpotion);
                     }
 
                     if (item.itemName == "Baseball Bat") 
@@ -1503,6 +1643,7 @@ void GameManager::update(float dt) {
 
                 if (CheckCollisionPointRec(virtualMouse, arrow.clickArea)) {
                     currentSceneIndex = arrow.targetSceneIndex;
+                    sceneTransitionTimer = 0.25f;
 
                     if (gameScenes[currentSceneIndex].hasEncounter && !battleWon[gameScenes[currentSceneIndex].encounterID]) {
                         savedPlayerSceneIndex = currentSceneIndex;
@@ -1537,8 +1678,27 @@ void GameManager::update(float dt) {
         if (combatHandler->gameOverState || combatHandler->victoryState) {
             combatHandler->gameOverTimer -= dt;
             if (combatHandler->gameOverTimer <= 0.0f) {
+                PlaySound(gameSounds[SND_ZOM_DEATH]);
                 if (combatHandler->victoryState && activeEncounterID >= 0) {
                     battleWon[activeEncounterID] = true;
+                    switch (activeEncounterID) 
+                    {
+                        case 0:
+                        {
+                            dynamic_cast<PlayerCharacter*>(entities[0])->zombie1Defeated = true;
+                            break;
+                        }
+                        case 1:
+                        {
+                            dynamic_cast<PlayerCharacter*>(entities[0])->zombie2Defeated = true;
+                            break;
+                        }
+                        case 2:
+                        {
+                            dynamic_cast<PlayerCharacter*>(entities[0])->zombie3Defeated = true;
+                            break;
+                        }
+                    }
                     activeEncounterID = -1;
                 }
                 changeGameState(GameState::EXPLORATION);
@@ -1557,6 +1717,7 @@ void GameManager::update(float dt) {
 
                 if (enemyAction.type == ActionType::Attack) {
                     combatHandler->playerHitFlashTimer = resolve_melee(*entities[1], *entities[0], combatHandler->playerIsDefending, combatHandler->log) ? 0.2f : 0.0f;
+                    if (combatHandler->playerHitFlashTimer > 0.0f) PlaySound(gameSounds[SND_HIT]);
                     combatHandler->logScrollOffset = 1000.0f;
                     if (!entities[0]->isAlive()) {
                         AddNewLogEntry(combatHandler->log, "You died.");
