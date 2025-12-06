@@ -646,8 +646,10 @@ void ScreenManager::update(float dt) {
                     CHARACTER_CARD_WIDTH,
                     CHARACTER_CARD_HEIGHT
                 };
-                characterCards[i].currentAnimationPos = characterCards[i].defaultRow;
+                
                 characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
+                characterCards[i].currentAnimationPos = characterCards[i].defaultRow;
+                characterCards[i].currentAnimationPos.y = SCREEN_HEIGHT + 200.0f;
             }
             CharSelectionStuff[2] = 1;
         }
@@ -1485,12 +1487,12 @@ void GameManager::update(float dt) {
 
                     if (item.itemName == "Key 1")
                     {
-                        dynamic_cast<Student*>(entities[0])->key1 = true;
+                        dynamic_cast<PlayerCharacter*>(entities[0])->key1 = true;
                     }
 
                     if (item.itemName == "Key 2")
                     {
-                        dynamic_cast<Student*>(entities[0])->key2 = true;
+                        dynamic_cast<PlayerCharacter*>(entities[0])->key2 = true;
                     }
                 }
             }
