@@ -174,9 +174,11 @@ class ScreenManager
 class GameManager {
     private:
         GameState currentGameState; // Current active game state
-        CombatHandler* combatHandler; // Combat handler to manage combat state
+        CombatHandler* combatHandler=nullptr; // Combat handler to manage combat state
         GameState prevGameState; // Previous game state before transition
         GameState nextGameState; // Next game state to transition to
+         
+
         
     
     public:

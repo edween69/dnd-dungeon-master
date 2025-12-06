@@ -16,7 +16,7 @@ CXX := g++ # Compiler
 #    			  These standards could be overridden when calling the make command in the terminal. 
 #                 This is just to insure that if the user (Professor Helsing) does not have c++17 he can still compile with
 #                 the following "make CXXFLAGS="-std=c++11 -Wall -I./src""
-CXXFLAGS ?= -std=c++17 -Wall -I./src -O3
+CXXFLAGS ?= -std=c++17 -Wall -I./src -O3 -g
 
 TARGET_NAME  := TheLastLift
 SRC_DIR := src
