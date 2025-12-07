@@ -815,6 +815,23 @@ void ScreenManager::render() {
         {
             changeScreen(ScreenState::CHARACTER_SELECT);
             loadedFromSave = false;
+            activeEncounterID = -1;
+            currentSceneIndex = TEX_ENTRANCE;
+            savedPlayerSceneIndex = TEX_ENTRANCE;
+            battleWon.clear();
+            collectedItems.clear();
+            if (entities)
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (entities[i])
+                    {
+                       delete entities[i];
+                        entities[i] = nullptr;
+                    }
+                    
+                }
+            }
         }
         if (GuiButton(ScreenRects[1], "Exit Game")) 
         {
@@ -1001,16 +1018,19 @@ void ScreenManager::enterScreen(ScreenState s) {
 
     case ScreenState::GAMEPLAY: {
         gamePlayStyles();
-        if (loadedFromSave) 
-        {
-            TraceLog(LOG_INFO, "Loading saved game state.");
+        if(entities && entities[0])
+        { 
             InitGameScenes(entities[0]);
-        }
-        gameManager = new GameManager;
-        if (activeEncounterID != -1) {
-            gameManager->changeGameState(GameState::COMBAT);
-        } else {
-            gameManager->enterGameState(gameManager->getCurrentGameState());
+            if (loadedFromSave) 
+            {
+                TraceLog(LOG_INFO, "Loading saved game state.");
+            }
+            gameManager = new GameManager;
+            if (activeEncounterID != -1) {
+                gameManager->changeGameState(GameState::COMBAT);
+            } else {
+                gameManager->enterGameState(gameManager->getCurrentGameState());
+            }
         }
         break;
     }
