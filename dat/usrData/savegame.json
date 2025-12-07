@@ -1,9 +1,8 @@
 {
     "combat": {
-        "ZombieHP": 15,
-        "ZombieMaxHP": 15,
+        "ZombieHP": 0,
+        "ZombieMaxHP": 0,
         "battleWon": {
-            "0": false,
             "1": true
         }
     },
@@ -22,16 +21,16 @@
             "initiative": 2
         },
         "defenseStats": {
-            "armor": 15
+            "armor": -96
         },
         "inventory": [],
         "keys": {
-            "key1": true,
+            "key1": false,
             "key2": false
         },
         "name": "Steve",
         "vitalStats": {
-            "health": 88,
+            "health": 40,
             "maxHealth": 100
         },
         "weapons": {
@@ -45,12 +44,9 @@
         }
     },
     "world": {
-        "activeEncounterID": 0,
-        "collectedItems": [
-            "Baseball Bat",
-            "Key 1"
-        ],
-        "currentSceneIndex": 7,
-        "savedPlayerSceneIndex": 7
+        "activeEncounterID": -1,
+        "collectedItems": [],
+        "currentSceneIndex": 10,
+        "savedPlayerSceneIndex": 10
     }
 }

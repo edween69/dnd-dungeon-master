@@ -117,52 +117,52 @@ class inventory
         //clear items when loading new game 
         void clearItems()
         {
-            items.clear();
+            items_.clear();
         }
         //setting player items when loading game
         void setItems(const std::vector<Item>& newItems)
         {
-            items = newItems;
+            items_ = newItems;
         }
     
         void additem(const Item& item)
         {
-            for(auto& it : items)
+            for(auto& it : items_)
             {
                 if(it.name == item.name && it.healAmount == item.healAmount) 
                 {
-                it.quantity += item.quantity;
+                it.quantity = static_cast<std::uint8_t>(it.quantity + item.quantity);;
                 return;
                 }
             }
-            items.push_back(item);
+            items_.push_back(item);
         }
 
-        bool removeitem(const std::string& name, int qty = 1)
+        bool removeitem(const std::string &name, int qty = 1)
         {
-            for (auto it = items.begin(); it != items.end(); ++it) 
+            for (auto it = items_.begin(); it != items_.end(); ++it)
             {
-                if (it->name == name) 
+                if (it->name != name)
+                    continue;
+
+                if (it->quantity < qty)
+                    return false;
+
+                it->quantity = static_cast<std::uint8_t>(it->quantity - qty);
+                if (it->quantity == 0)
                 {
-                    if (it->quantity < qty)
-                        return false;  
-
-                    it->quantity -= qty;
-
-                    if (it->quantity <= 0)
-                        items.erase(it);
-
-                    return true;        
+                    items_.erase(it);
                 }
+                return true;
             }
-            return false; // item not found
+            return false;
         }
         const std::vector<Item>& getItems() const
         {
-            return items;
+            return items_;
         }
     private:
-        std::vector<Item> items;
+        std::vector<Item> items_;
 
 };
 

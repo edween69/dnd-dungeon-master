@@ -217,7 +217,9 @@ void AddNewLogEntry(std::vector<std::string> &log, const std::string &entry)
     const int MAX_LOG_ENTRIES = 50;
     if (log.size() > MAX_LOG_ENTRIES)
     {
-        log.erase(log.begin(), log.end() - MAX_LOG_ENTRIES); // Remove the oldest entry
+        auto eraseBegin = log.begin();
+        auto eraseEnd   = log.end() - static_cast<std::ptrdiff_t>(MAX_LOG_ENTRIES);
+        log.erase(eraseBegin, eraseEnd); // Remove the oldest entry
     }
 }
 
