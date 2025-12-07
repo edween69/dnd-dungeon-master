@@ -444,8 +444,8 @@ void InitGameScenes(Character* playerCharacter) {
         s->minimapCoords = {0.2f, 0.475f};
         s->minimapRotation = 90.0f;
         s->sceneArrows = {
-            {{855, 850, 150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
-            {{855, 550, 150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{855, 850, 150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Return East", ""},
+            {{855, 550, 150, 150}, UP, TEX_ENTRANCE, true, "Go to Entrance", ""},
             {{500, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
             {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", "Key 2"}
         };
@@ -468,8 +468,8 @@ void InitGameScenes(Character* playerCharacter) {
         s->minimapCoords = {0.7f, 0.5f};
         s->minimapRotation = 270.0f;
         s->sceneArrows = {
-            {{855, 850, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
-            {{855, 550, 150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{855, 850, 150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Return West", ""},
+            {{855, 550, 150, 150}, UP, TEX_ENTRANCE, true, "Go to Entrance", ""},
             {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", "Key 2"},
             {{550, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""}
         };
