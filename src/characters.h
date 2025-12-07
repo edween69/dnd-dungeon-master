@@ -401,7 +401,8 @@ class Zombie : public NonPlayerCharacter
 
 std::ifstream* openStartingStatsCSV();
 std::istringstream* storeAllStatLines(std::ifstream* statsFile);
-std::int8_t getStatForCharacterID(std::istringstream* allLines, std::string characterID, CSVStats stat);
+std::int8_t getStatForCharacterID(std::istringstream* allStats, std::string characterID, CSVStats stat);
+void CreateCharacter(Character**& entities, std::istringstream* allStats, std::string ID, std::string name);
 
 struct charCard 
 {

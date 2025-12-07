@@ -1,15 +1,66 @@
-/* =================================== screenManager.cpp (REFACTORED) ====================================
-    OPTIMIZATIONS:
-    - More macros for shared calculations
-    - All rectangles use ScreenRects array
-    - All textures use ScreenTextures array
-    - Inline calculations, minimal local variables
-    - Direct memory management
-    - Added cleanup helper functions to prevent crashes during state transitions
+/* =================================== screenManager.cpp ====================================
+    Project: TTRPG Game ?
+    Subsystem: Screen Manager
+    Primary Author: Edwin Baiden
+    Description: This file defines the ScreenManager class and GameManager class to manage different game screens using raylib and raygui for rendering and GUI
+                 elements. It also implements enums for screen states and game states as well as namespace functions for simple animations.
+
+                 Screen States:
+                    - MAIN_MENU: The main menu screen where players can start or exit the game.
+
+                    - CHARACTER_SELECT: The character selection screen where players choose
+                    their character. You can only select student for now.
+
+                    - GAMEPLAY: The main gameplay screen (not fully implemented here, however
+                    combat is being worked on). Values from this screen will be used to
+                    determine player actions in combat.
+
+                    - SAVE_QUIT: The save and quit screen (not fully implemented here).
+
+                Each screen has its own styles(managed by functuons) and GUI resources
+                (textures and rectangles, which are dynamically allocated and deallocated
+                when entering and exiting screens).
+
+                Game States:
+                    - EXPLORATION: Exploration mode (not implemented here).
+
+                    - COMBAT: Combat mode where players and enemies take turns attacking
+                    each other.
+
+                    - DIALOGUE: Dialogue mode for conversations (not implemented here).
+
+                    - PAUSE_MENU: Pause menu mode (not implemented here).
+
+                Screen Manager Functions:
+                    - ScreenManager::ScreenManager(ScreenState initial): Constructor to initialize
+                      the ScreenManager with an initial screen state.
+
+                    - ScreenManager::~ScreenManager(): Destructor to clean up resources when the
+                      ScreenManager is destroyed.
+
+                    - void ScreenManager::init(): Initialize the screen manager by entering the initial screen.
+
+                    - void ScreenManager::changeScreen(ScreenState newScreen): Request a screen change to a new screen state.
+
+                    - ScreenState ScreenManager::getCurrentScreen() const: Get the current screen state.
+
+                    - void ScreenManager::update(float dt): Update the current screen with delta time.
+
+                    - void ScreenManager::render(): Render the current screen.
+
+                    - void ScreenManager::enterScreen(ScreenState screen): Handle entering a new screen by loading
+                      resources and setting styles.
+
+                    - void ScreenManager::exitScreen(ScreenState screen): Handle exiting a screen by unloading
+                      resources and cleaning up.
+
+                Game Manager Functions: 
+                    - GameManager::GameManager(GameState initial): Constructor to initialize the
 */
 
 #define RAYGUI_IMPLEMENTATION
 #include "screenManager.h"
+#include "progressLog.h"  // Temporarily disabled due to missing json.hpp
 #include <algorithm>
 
 //================= SCREEN & RESOLUTION MACROS ===================
@@ -187,7 +238,7 @@
 #define ICON_PAUSE 0xF03E4
 
 //======================= GLOBAL STATIC POINTERS =======================
-std::istringstream *allStatLines = nullptr;
+static std::istringstream *allStatLines = nullptr;
 static Sound *gameSounds = nullptr;
 static Texture2D *ScreenTextures = nullptr;
 static int numScreenTextures = 0;
@@ -207,6 +258,7 @@ static int savedPlayerSceneIndex = TEX_ENTRANCE;
 static std::map<int,bool> battleWon;
 static std::vector<std::string> collectedItems;
 static int byteSize=0;
+static bool loadedFromSave = false, savedSucessfully = false;
 
 //======================= SOUND INITIALIZATION =======================
 void InitGameSounds() {
@@ -554,37 +606,7 @@ void gamePlayStyles() {
     playerSelectStyles();
 }
 
-//======================= CHARACTER CREATION =======================
 
-void CreateCharacter(std::string ID, std::string name) {
-    TraceLog(LOG_INFO, "Creating character: %s with ID: %s", name.c_str(), ID.c_str());
-    if (!allStatLines) {
-        TraceLog(LOG_ERROR, "allStatLines is null!");
-        return;
-    }
-    Attributes CharAttrs = {
-        getStatForCharacterID(allStatLines, ID, CSVStats::STR),
-        getStatForCharacterID(allStatLines, ID, CSVStats::DEX),
-        getStatForCharacterID(allStatLines, ID, CSVStats::CON),
-        getStatForCharacterID(allStatLines, ID, CSVStats::WIS),
-        getStatForCharacterID(allStatLines, ID, CSVStats::CHA),
-        getStatForCharacterID(allStatLines, ID, CSVStats::INT)
-    };
-
-    DefenseStats CharDef = {getStatForCharacterID(allStatLines, ID, CSVStats::ARMOR), 0};
-    CombatStats CharCbt = {0, 0, getStatForCharacterID(allStatLines, ID, CSVStats::INITIATIVE)};
-    VitalStats CharVit = {
-        getStatForCharacterID(allStatLines, ID, CSVStats::MAX_HEALTH),
-        getStatForCharacterID(allStatLines, ID, CSVStats::MAX_HEALTH)
-    };
-    StatusEffects CharStatus = {};
-
-    if (ID == "Student") entities[0] = new Student(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
-    else if (ID == "Rat") entities[0] = new Rat(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
-    else if (ID == "Professor") entities[0] = new Professor(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
-    else if (ID == "Attila") entities[0] = new Atilla(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
-    else entities[1] = new Zombie(CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
-}
 
 void getIntroCrawlText(std::stringstream *ss, int chosenCharacterIdx) {
     if (!ss) return;
@@ -618,7 +640,6 @@ void getIntroCrawlText(std::stringstream *ss, int chosenCharacterIdx) {
         }
     }
 }
-
 void DrawStatusPanel(const Rectangle &panel, const StatusEffects &entityStatEff, const Font &fnt) {
     struct StatusType { const char *Effect; std::string Icon; Color GoodOrBadEff; };
     std::vector<StatusType> activeStatEffects;
@@ -790,17 +811,24 @@ void ScreenManager::render() {
         DrawTexture(ScreenTextures[0], 0, 0, WHITE);
         DrawTexture(ScreenTextures[1], CENTERED_X(ScreenTextures[1].width), -150, WHITE);
 
-        if (GuiButton(ScreenRects[0], "Start Game"))
+        if (GuiButton(ScreenRects[0], !loadedFromSave ? "Start Game" : "Start New Game"))
+        {
             changeScreen(ScreenState::CHARACTER_SELECT);
+            loadedFromSave = false;
+        }
         if (GuiButton(ScreenRects[1], "Exit Game")) 
         {
             exitScreen(currentScreen);
+            loadedFromSave = false;
             CloseWindow();
         }
         
         int prevStateMM = GuiGetState();
-        GuiDisable();
-        if(GuiButton(ScreenRects[2], "Load Saved Game"));
+        if (!loadedFromSave) GuiDisable();
+        if(GuiButton(ScreenRects[2], "Load Saved Game"))
+        {
+            changeScreen(ScreenState::GAMEPLAY);
+        }
         GuiSetState(prevStateMM);
         break;
     }
@@ -877,8 +905,7 @@ void ScreenManager::render() {
 
         if (GuiButton(ScreenRects[R_PLAY_BTN], "Play Game") && CharSelectionStuff[0] != -1) {
             entities = new Character*[2]{nullptr, nullptr};
-            CreateCharacter("Student", "Steve");
-            //CreateCharacter("Zombie_Standard", "Chad");
+            CreateCharacter(entities, allStatLines, "Student", "Steve");
             scrollIntroCrawl = new std::stringstream();
             getIntroCrawlText(scrollIntroCrawl, CharSelectionStuff[0]);
             introCrawlYPos = INTRO_CRAWL_START_Y;
@@ -945,12 +972,13 @@ void ScreenManager::enterScreen(ScreenState s) {
         ScreenRects[0] = {CENTERED_X(MAIN_BUTTON_WIDTH), SCREEN_CENTER_Y + MAIN_BUTTON_OFFSET_Y, MAIN_BUTTON_WIDTH, MAIN_BUTTON_HEIGHT};
         ScreenRects[1] = {CENTERED_X(MAIN_BUTTON_WIDTH), SCREEN_CENTER_Y + MAIN_BUTTON_OFFSET_Y + MAIN_BUTTON_SPACING, MAIN_BUTTON_WIDTH, MAIN_BUTTON_HEIGHT};
         ScreenRects[2] = {CENTERED_X(MAIN_BUTTON_WIDTH), SCREEN_CENTER_Y + MAIN_BUTTON_OFFSET_Y + 2 * MAIN_BUTTON_SPACING, MAIN_BUTTON_WIDTH, MAIN_BUTTON_HEIGHT};
+        allStatLines = storeAllStatLines(openStartingStatsCSV());
+        loadedFromSave = LoadProgress(entities, allStatLines, currentSceneIndex, activeEncounterID, savedPlayerSceneIndex, battleWon, collectedItems);
         break;
     }
 
     case ScreenState::CHARACTER_SELECT: {
         playerSelectStyles();
-        allStatLines = storeAllStatLines(openStartingStatsCSV());
         characterCards = new charCard[MAX_CHAR_CARDS];
 
         CharSelectionStuff = new int[3]{-1, -1, 0};
@@ -973,6 +1001,11 @@ void ScreenManager::enterScreen(ScreenState s) {
 
     case ScreenState::GAMEPLAY: {
         gamePlayStyles();
+        if (loadedFromSave) 
+        {
+            TraceLog(LOG_INFO, "Loading saved game state.");
+            InitGameScenes(entities[0]);
+        }
         gameManager = new GameManager;
         if (activeEncounterID != -1) {
             gameManager->changeGameState(GameState::COMBAT);
@@ -1134,25 +1167,38 @@ void GameManager::enterGameState(GameState state) {
         } else {
             TraceLog(LOG_INFO," Player: %s", entities[0]->getName().c_str());
         }
-        if (activeEncounterID == 0) 
+        if (activeEncounterID == 0 && !loadedFromSave) 
         {
             if (entities && entities[1]) { delete entities[1]; entities[1] = nullptr; }
-            CreateCharacter("Zombie_Prof", "Professor");
-            PlaySound(gameSounds[SND_ZOM_GROAN]);
-            TraceLog(LOG_INFO, "Created enemy: Professor");
-        } else if (activeEncounterID == 1) 
+            if (allStatLines) {
+                CreateCharacter(entities, allStatLines, "Zombie_Prof", "Professor");
+                TraceLog(LOG_INFO, "Created enemy: Professor");
+            } else {
+                TraceLog(LOG_ERROR, "Cannot create enemy: allStatLines is null");
+            }
+        } else if (activeEncounterID == 1 && !loadedFromSave) 
         {
             if (entities && entities[1]) { delete entities[1]; entities[1] = nullptr; }
-            CreateCharacter("Zombie_Standard", "Sorority");
-            PlaySound(gameSounds[SND_ZOM_GROAN]);
-            TraceLog(LOG_INFO, "Created enemy: Sorority");
+            if (allStatLines) {
+                CreateCharacter(entities, allStatLines, "Zombie_Standard", "Sorority");
+                TraceLog(LOG_INFO, "Created enemy: Sorority");
+            } else {
+                TraceLog(LOG_ERROR, "Cannot create enemy: allStatLines is null");
+            }
         } 
-        else 
+        else if (!loadedFromSave)
         {
             if (entities && entities[1]) { delete entities[1]; entities[1] = nullptr; }
-            CreateCharacter("Zombie_Standard", "Frat Bro");
-            PlaySound(gameSounds[SND_ZOM_GROAN]);
-            TraceLog(LOG_INFO, "Created enemy: Frat Bro");
+            if (allStatLines) {
+                CreateCharacter(entities, allStatLines, "Zombie_Standard", "Frat Bro");
+                TraceLog(LOG_INFO, "Created enemy: Frat Bro");
+            } else {
+                TraceLog(LOG_ERROR, "Cannot create enemy: allStatLines is null");
+            }
+        } else 
+        {
+            TraceLog(LOG_INFO, "Loaded enemy from save: %s", entities[1] ? entities[1]->getName().c_str() : "NULL");
+            loadedFromSave = false;
         }
         
         // Validate enemy created
@@ -1352,6 +1398,7 @@ void GameManager::render() {
                       combatHandler->playerHitFlashTimer > 0.0f ? RED : WHITE);
             //texture, sourceRec, destRec, origin, rotation, tint
         DrawTexturePro(ScreenTextures[2],
+                     
                       {0.0f, 0.0f, (float)ScreenTextures[2].width, (float)ScreenTextures[2].height},
                       {gameScenes[currentSceneIndex].enemyCharX, gameScenes[currentSceneIndex].enemyCharY, gameScenes[currentSceneIndex].enemyScale.x, gameScenes[currentSceneIndex].enemyScale.y}, {0.0f, 0.0f}, 0.0f,
                       combatHandler->enemyHitFlashTimer > 0.0f ? RED : WHITE);
@@ -1579,6 +1626,7 @@ void GameManager::render() {
 
         DrawRectangleRec(ScreenRects[R_BTN_SAVE_EXIT], COL_BUTTON);
         if (GuiButton(ScreenRects[R_BTN_SAVE_EXIT], "Save & Exit")) {
+            saveProgress(entities, currentSceneIndex, activeEncounterID, savedPlayerSceneIndex, battleWon, collectedItems);
             backToMainMenu = true;
         }
 
@@ -1740,4 +1788,11 @@ void GameManager::update(float dt) {
     case GameState::PAUSE_MENU:
         break;
     }
+}
+
+// Stub for saveProgress until json.hpp is available
+void saveProgress(Character** entities, int currentSceneIndex, int activeEncounterID, 
+                  int savedPlayerSceneIndex, std::map<int,bool>& battleWon, 
+                  std::vector<std::string>& collectedItems) {
+    TraceLog(LOG_INFO, "Save progress not yet implemented (requires json.hpp)");
 }

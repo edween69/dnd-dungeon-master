@@ -29,7 +29,8 @@ SRCS := \
 	$(SRC_DIR)/screenManager.cpp \
 	$(SRC_DIR)/characters.cpp \
 	$(SRC_DIR)/rng.cpp \
-	$(SRC_DIR)/combat.cpp
+	$(SRC_DIR)/combat.cpp \
+	$(SRC_DIR)/progressLog.cpp
 
 OBJS := $(SRCS:.cpp=.o) # The object files we want to create from the src files (just replacing .cpp with .o from what i understand)
 

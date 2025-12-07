@@ -87,3 +87,33 @@ std::int8_t getStatForCharacterID(std::istringstream* allLines, std::string char
     }
     return -128; // Return -128 if character ID or stat not found
 }
+
+void CreateCharacter(Character**& entities, std::istringstream* statlines, std::string ID, std::string name) {
+    TraceLog(LOG_INFO, "Creating character: %s with ID: %s", name.c_str(), ID.c_str());
+    if (!statlines) {
+        TraceLog(LOG_ERROR, "statlines is null!");
+        return;
+    }
+    Attributes CharAttrs = {
+        getStatForCharacterID(statlines, ID, CSVStats::STR),
+        getStatForCharacterID(statlines, ID, CSVStats::DEX),
+        getStatForCharacterID(statlines, ID, CSVStats::CON),
+        getStatForCharacterID(statlines, ID, CSVStats::WIS),
+        getStatForCharacterID(statlines, ID, CSVStats::CHA),
+        getStatForCharacterID(statlines, ID, CSVStats::INT)
+    };
+
+    DefenseStats CharDef = {getStatForCharacterID(statlines, ID, CSVStats::ARMOR), 0};
+    CombatStats CharCbt = {0, 0, getStatForCharacterID(statlines, ID, CSVStats::INITIATIVE)};
+    VitalStats CharVit = {
+        getStatForCharacterID(statlines, ID, CSVStats::MAX_HEALTH),
+        getStatForCharacterID(statlines, ID, CSVStats::MAX_HEALTH)
+    };
+    StatusEffects CharStatus = {};
+
+    if (ID == "Student") entities[0] = new Student(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    else if (ID == "Rat") entities[0] = new Rat(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    else if (ID == "Professor") entities[0] = new Professor(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    else if (ID == "Attila") entities[0] = new Atilla(name, CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+    else entities[1] = new Zombie(CharAttrs, CharDef, CharCbt, CharVit, CharStatus);
+}
