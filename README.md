@@ -237,10 +237,17 @@ Along the way, you can also:
 ---
 
 ### Key Item
-![Key](assets/images/items/Key1.png)
+<p align="center">
+  <img src="assets/images/items/Key1.png" width="180"/>
+</p>
+
+---
 
 ### Weapon Upgrade
-![Baseball Bat](assets/images/items/BaseballBat.png)
+<p align="center">
+  <img src="assets/images/items/BaseballBat.png" width="250"/>
+</p>
+
 
 
 ---
