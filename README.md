@@ -84,6 +84,7 @@ Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
   - Background + title textures
     - `Start Game` = goes to character select  
     - `Exit Game` = closes the game  
+    - `Load Saved Game` = proceeds game from where you last left off
 
 - **Character Select**
   - 4 character cards: Student, Rat, Professor, Attila  
@@ -115,32 +116,56 @@ Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
 
 ---
 
-## Console Combat Engine
+## How to Play
 
-File: `trialSebastian.cpp`  
+### Movement
+Use the **red arrow buttons on the screen** to move your character around the map. Explore carefully as enemies, keys, and upgrades are scattered throughout the dungeon.
 
-This is a separate, text-only combat prototype that uses the same character/stat system:
+### Combat
+When you encounter an enemy, you will enter combat. During your turn, you can choose from the following actions:
 
-- Builds a **Student** and a **Zombie_Standard** from `Character_Starting_Stats.csv`
-- Turn-based loop in the console:
-  - Player menu:
-    - `1) Attack`
-    - `2) Defend`
-    - `3) Use Range` (stub)
-    - `4) Use Item` (stub)
-  - Enemy AI:
-    - 25% chance to **Defend**
-    - Otherwise **Attack**
-- Uses:
-  - `resolve_melee()`
-  - `resolve_ranged()`
-  - Temporary defend bonus from `defend_bonus_armor()`
-- Logs each turn’s result with a `std::stringstream`
-- Ends on death of either side with a simple win/lose message
+- **Attack**
+  - Choose between **Melee** or **Ranged** attacks.
+  - Whether your attack hits is based on **random chance**.
+  - The amount of damage dealt is also **random**.
 
-This engine is used to test combat logic by itself.
+- **Defend**
+  - Decreases the chance an enemy’s next attack will land.
 
-**Note: combat.cpp and combat.h are not used for the purposes of this demonstration. All necessary code was allocated to trialSebastian.cpp for the milestone.**
+- **Use Potion**
+  - Use a **healing potion** to restore 15 of your health if one is available.
+
+### Objective
+Your main goal is to:
+1. **Find the keys hidden around the map**
+2. **Reach the exit**
+3. **Escape the building before you are defeated**
+
+Along the way, you can also:
+- Pick up **weapon upgrades** that improve your combat effectiveness.
+
+You can save your progress at any time outside of combat by pressing the pause button in the top right and selecting **save & exit**. Your progress will be saved and you will return to the title screen.
+
+---
+
+### Key Item (on its side)
+<p align="center">
+  <img src="assets/images/items/Key1.png" width="180"/>
+</p>
+
+---
+
+### Weapon Upgrade
+<p align="center">
+  <img src="assets/images/items/BaseballBat.png" width="250"/>
+</p>
+
+---
+
+### Health Potion
+<p align="center">
+  <img src="assets/images/items/HealthPotion.png" width="150"/>
+</p>
 
 ---
 
@@ -248,59 +273,6 @@ This engine is used to test combat logic by itself.
   - `usrData/...`
     - `savegame.json` – all saved player progress and game state
   - `Character_Starting_Stats.csv` – base starting stats for all characters
-
----
-
-## How to Play
-
-### Movement
-Use the **red arrow buttons on the screen** to move your character around the map. Explore carefully as enemies, keys, and upgrades are scattered throughout the dungeon.
-
-### Combat
-When you encounter an enemy, you will enter combat. During your turn, you can choose from the following actions:
-
-- **Attack**
-  - Choose between **Melee** or **Ranged** attacks.
-  - Whether your attack hits is based on **random chance**.
-  - The amount of damage dealt is also **random**.
-
-- **Defend**
-  - Decreases the chance an enemy’s next attack will land.
-
-- **Use Potion**
-  - Use a **healing potion** to restore 15 of your health if one is available.
-
-### Objective
-Your main goal is to:
-1. **Find the keys hidden around the map**
-2. **Reach the exit**
-3. **Escape the building before you are defeated**
-
-Along the way, you can also:
-- Pick up **weapon upgrades** that improve your combat effectiveness.
-
-You can save your progress at any time outside of combat by pressing the pause button in the top right and selecting **save & exit**. Your progress will be saved and you will return to the title screen.
-
----
-
-### Key Item (on its side)
-<p align="center">
-  <img src="assets/images/items/Key1.png" width="180"/>
-</p>
-
----
-
-### Weapon Upgrade
-<p align="center">
-  <img src="assets/images/items/BaseballBat.png" width="250"/>
-</p>
-
----
-
-### Health Potion
-<p align="center">
-  <img src="assets/images/items/HealthPotion.png" width="150"/>
-</p>
 
 ---
 
