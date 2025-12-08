@@ -109,10 +109,7 @@ Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
     - HP bars that scale with `currentHP / maxHealth`
     - Bottom panel with buttons: `Attack`, `Defend`, `Use Item`
     - Log box to show the **last** action’s message (will be a scrolling log later)
-  - `Attack` button calls `dealMeleeDamage` on the enemy and updates the log text  
-  - `Defend` / `Use Item` are placeholders in the GUI (no functionality yet)
-
-  This GUI flow is used to test screen management and basic combat UI layout
+  - See **How to Play** below for an explanation on how to play the game
 
 ---
 
