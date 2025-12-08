@@ -1,12 +1,13 @@
-# TTRPG Game 
+# TTRPG Game - The Last Lift
  _(formerly **dnd-dungeon-master**)_
 
-A small turn based TTRPG prototype built with C++, raylib, and raygui. For this **milestone**, the project is split into two separate prototypes: **a GUI prototype (main menu + character select + basic combat screen)** and a **console combat engine prototype** that runs entirely in the terminal and focuses on turn-based logic and damage resolution. Both prototypes load character stats from a CSV file and use the same character, once they are each finalized, the combat engine will be fully integrated into the GUI version so that all combat logic is driven by the same underlying system.
+A turn-based dungeon RPG built with **C++**, **raylib**, and **raygui**.  
+Players explore the dungeon using on-screen controls, battle enemies with melee and ranged attacks, collect keys and weapon upgrades, and attempt to escape before being defeated.
 
 ---
 ## How to Build and Run (Very Important)
 
-As aforesaid, there are two separate prototype submissions for this milestone. To run either one, you must first have **raylib** installed on your system. Please refer to the [raylib installation guide](https://raylib.com/) for your specific device if you are having issues with following these steps. **Also please feel free to reach out to us if you have any questions or run into any issues!**
+To run the program, you must first have **raylib** installed on your system. Please refer to the [raylib installation guide](https://raylib.com/) for your specific device if you are having issues with following these steps. **Also please feel free to reach out to us if you have any questions or run into any issues!**
 
 On Windows, go to raylib's [Windows installation instructions](https://raylib.com/) and download the windows installer. Follow the steps in the installer to set up raylib on your system
 
@@ -22,7 +23,7 @@ On MacOS, you can install raylib using Homebrew. Run the following command in yo
 brew install raylib
 ```
 
-After installing raylib, follow the instructions below to build and run each portion of the project.
+After installing raylib, follow the instructions below to build and run.
 ### 0. Download the Project ###
 - Clone the repository or download the ZIP file from GitHub and extract it to your desired location
 
@@ -30,38 +31,7 @@ After installing raylib, follow the instructions below to build and run each por
 
 - Download the ZIP file from Canvas and extract it to your desired location
 
-
-### 1. Combat Engine Prototype ###
-- To run this portion of the project, navigate to the `src` directory in your terminal and enter the following command: 
-
-    On Windows:
-    ```
-    g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian.exe -I "C:\raylib\raylib\src" -std=c++17 -Wall  -Wextra -g
-    ```
-
-    On Linux:
-    ```
-    g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian -I "/usr/local/include/raylib" -std=c++17 -Wall -Wextra -g
-    ```
-
-    On MacOS:
-    ```
-    g++ trialSebastian.cpp characters.cpp rng.cpp -o trialSebastian $(pkg-config --cflags --libs raylib) -std=c++17 -Wall -Wextra -g
-    ```
-- Then run the compiled executable in the terminal with the following command:
-
-    On Windows:
-    ```
-    .\trialSebastian
-    ```
-
-    On Linux or MacOS:
-    ```
-    ./trialSebastian
-    ```
-
-
-### 2. GUI Prototype ###
+### 1. Compile ###
 - To run this portion of the project, you will also need `make` installed on your system.
 
     - On Windows, you can install `mingw32-make` using MSYS2 URCT with the command 
@@ -91,8 +61,22 @@ After installing raylib, follow the instructions below to build and run each por
     make
     ```
 
-- This will compile the source files and create an executable named `TheLastLift` (or `TheLastLift.exe` on Windows) in the `src` directory, click on the executable to run the GUI prototype
+- This will compile the source files and create an executable named `TheLastLift` (or `TheLastLift.exe` on Windows) in the `src` directory.
 
+### 2. Run the game ###
+
+- You can run the game either by clicking the executable directly or by using the terminal.
+
+    On Windows:
+    ```
+    src\TheLastLift.exe
+    ```
+
+    On Linux or MacOS:
+    ```
+    ./src/TheLastLift
+    ```
+- Now, enjoy the game.
 
 ## Screen Flow / GUI
 Main Files: `screenManager.h / screenManager.cpp` and `main.cpp`
@@ -163,46 +147,107 @@ This engine is used to test combat logic by itself.
 ## Code Layout
 
 - `screenManager.h / screenManager.cpp`
-  - `ScreenManager`:
-    - Manages `MAIN_MENU`, `CHARACTER_SELECT`, `GAMEPLAY`, `SAVE_QUIT`
-    - `enterScreen` / `exitScreen` load and unload textures and rectangles
-  - `GameManager`:
-    - Manages `EXPLORATION`, `COMBAT`, `DIALOGUE`, `PAUSE_MENU`
-    - `COMBAT` sets up the full combat UI layout and rendering
-  - GUI style helpers:
-    - `defaultStyles()`
-    - `startMenuStyles()`
-    - `playerSelectStyles()`
-  - Character select animation and layout logic
+  - `ScreenManager`
+    - Controls high-level screen flow:
+      - `MAIN_MENU`
+      - `CHARACTER_SELECT`
+      - `GAMEPLAY`
+      - `SAVE_QUIT`
+    - Handles screen transitions and lifecycle:
+      - `enterScreen()`
+      - `exitScreen()`
+    - Manages loading and unloading of textures, UI rectangles, and screen-specific assets
+
+  - `GameManager`
+    - Controls in-game state logic:
+      - `EXPLORATION`
+      - `COMBAT`
+      - `DIALOGUE`
+      - `PAUSE_MENU`
+    - Handles:
+      - Player movement and map interaction
+      - Enemy encounters and combat triggering
+      - Combat UI setup and rendering
+      - Game over and victory transitions
+
+  - GUI style and layout helpers:
+    - Menu styling and layout configuration
+    - Character select UI styling
+    - Shared GUI visual settings
+
+  - Character select:
+    - Animation handling
+    - Character portrait positioning
+    - Input handling and transitions
 
 - `characters.h / characters.cpp`
-  - Base `Character` plus `Student`, `NonPlayerCharacter`
-  - Stat structs: `Attributes`, `DefenseStats`, `CombatStats`, `VitalStats`, `StatusEffects`
-  - CSV helpers:
-    - `openStartingStatsCSV()`
-    - `storeAllStatLines()`
-    - `getStatForCharacterID()`
+  - Base `Character` class
+  - Derived character types:
+    - `Student`
+    - Enemy and non-player character classes
+  - Core stat structures:
+    - `Attributes`
+    - `DefenseStats`
+    - `CombatStats`
+    - `VitalStats`
+    - `StatusEffects`
+
+  - Character creation system:
+    - Character factory for spawning players and enemies by ID
+    - Shared stat initialization used by both gameplay and combat systems
+
+  - Inventory and items:
+    - `Item` definitions
+    - Consumable healing items
+    - Weapon and upgrade support
+
+  - Character behavior:
+    - Melee and ranged damage dealing
+    - Healing
+    - Death detection
+
+- `combat.h / combat.cpp`
+  - Core turn-based combat logic
+  - Player actions:
+    - `resolve_melee()`
+    - `resolve_ranged()`
+    - `resolve_inventory()`
+  - Damage, hit/miss, and defend resolution
+  - Combat log system:
+    - `AddNewLogEntry()`
+  - Combat state tracking:
+    - Player turn / enemy turn
+    - Defending states
+    - Victory / Game Over detection
 
 - `rng.cpp / rng.h`
   - RNG utilities for damage rolls, AI decisions, etc.
+
+- `progressLog.h / progressLog.cpp`
+  - Game progression and event tracking
+  - Logs key player actions and milestones
+  - Used to record:
+    - Combat outcomes
+    - Item pickups
+    - Player progression
+  - Provides a centralized history system for gameplay events
 
 - `trialSebastian.cpp`
   - Console combat engine and temporary `main()` for combat testing
 
 - `assets/`
-  - `images/UI/...` – menus (start, character select)
-  - `images/characters/...` – player and enemy sprites (character select + gameplay)
-  - `images/environments/...` – exploration/combat backgrounds (gameplay)
+  - `fonts/...` – JetBrains Mono Nerd Font used across all UI displays
+  - `images/...`
+    - `images/UI/...` – menu visuals (start menu, character select)
+    - `images/characters/...` – player and enemy sprites (character select + gameplay)
+    - `images/environments/...` – exploration and combat backgrounds
+    - `images/items/...` – consumable items, weapon upgrades, and story items
+  - `sfx/...` – all sound effects and background music
 
 - `dat/`
-  - `Character_Starting_Stats.csv` – all starting stats
-
----
-
-## Status / Notes
-
-- Only **Student** is playable and selectable.
-- Rat, Professor, and Attila exist visually in the character select screen but have no real implementation yet
+  - `usrData/...`
+    - `savegame.json` – all saved player progress and game state
+  - `Character_Starting_Stats.csv` – base starting stats for all characters
 
 ---
 
@@ -234,6 +279,8 @@ Your main goal is to:
 Along the way, you can also:
 - Pick up **weapon upgrades** that improve your combat effectiveness.
 
+You can save your progress at any time outside of combat by pressing the pause button in the top right and selecting **save & exit**. Your progress will be saved and you will return to the title screen.
+
 ---
 
 ### Key Item (on its side)
@@ -257,11 +304,19 @@ Along the way, you can also:
 
 ---
 
+## Status / Notes
+
+- Only **Student** is playable and selectable.
+- Rat, Professor, and Attila exist visually in the character select screen but have no real implementation yet
+
+---
+
 ## What's Next
 
 - Finish the story for the **Student** character.
 - Implement gameplay and story paths for all characters.
 - Expand the combat system, including more consumables and weapon upgrades for the player.
+- Randomize zombie spawns and item placement around the map.
 - Implement status effects (e.g., poison) for both player and enemy attacks.
 - Improve the **minimap** for better navigation and clarity.
 - Balance the combat system to fine-tune difficulty and pacing.
