@@ -811,7 +811,7 @@ void ScreenManager::render() {
         DrawTexture(ScreenTextures[0], 0, 0, WHITE);
         DrawTexture(ScreenTextures[1], CENTERED_X(ScreenTextures[1].width), -150, WHITE);
 
-        if (GuiButton(ScreenRects[0], !loadedFromSave ? "Start Game" : "Start New Game"))
+        if (GuiButton(ScreenRects[0], !loadedFromSave ? "START" : "RESTART"))
         {
             changeScreen(ScreenState::CHARACTER_SELECT);
             loadedFromSave = false;
@@ -833,7 +833,7 @@ void ScreenManager::render() {
                 }
             }
         }
-        if (GuiButton(ScreenRects[1], "Exit Game")) 
+        if (GuiButton(ScreenRects[2], "EXIT")) 
         {
             exitScreen(currentScreen);
             loadedFromSave = false;
@@ -842,7 +842,7 @@ void ScreenManager::render() {
         
         int prevStateMM = GuiGetState();
         if (!loadedFromSave) GuiDisable();
-        if(GuiButton(ScreenRects[2], "Load Saved Game"))
+        if(GuiButton(ScreenRects[1], "RELOAD SAVED GAME"))
         {
             changeScreen(ScreenState::GAMEPLAY);
         }
@@ -1065,15 +1065,18 @@ void ScreenManager::exitScreen(ScreenState s) {
 
 //=================== GAMEMANAGER CLASS ===================
 
-GameManager::GameManager(GameState initial) : currentGameState(initial), nextGameState(initial), prevGameState(initial) {
+GameManager::GameManager(GameState initial) : currentGameState(initial), nextGameState(initial), prevGameState(initial) 
+{
     ChangeDirectory(GetApplicationDirectory());
 }
 
-GameManager::~GameManager() {
+GameManager::~GameManager() 
+{
     exitGameState(currentGameState);
 }
 
-void GameManager::changeGameState(GameState newState) {
+void GameManager::changeGameState(GameState newState) 
+{
     if (newState == currentGameState) return;
     nextGameState = newState;
     exitGameState(currentGameState);
@@ -1646,7 +1649,7 @@ void GameManager::render() {
 
         DrawRectangleRec(ScreenRects[R_BTN_SAVE_EXIT], COL_BUTTON);
         if (GuiButton(ScreenRects[R_BTN_SAVE_EXIT], "Save & Exit")) {
-            saveProgress(entities, currentSceneIndex, activeEncounterID, savedPlayerSceneIndex, battleWon, collectedItems);
+            savedSucessfully = saveProgress(entities, currentSceneIndex, activeEncounterID, savedPlayerSceneIndex, battleWon, collectedItems);
             backToMainMenu = true;
         }
 

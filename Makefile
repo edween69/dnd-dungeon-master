@@ -16,7 +16,7 @@ CXX := g++ # Compiler
 #    			  These standards could be overridden when calling the make command in the terminal. 
 #                 This is just to insure that if the user (Professor Helsing) does not have c++17 he can still compile with
 #                 the following "make CXXFLAGS="-std=c++11 -Wall -I./src""
-CXXFLAGS ?= -std=c++17 -Wall -I./src -O3 -g
+CXXFLAGS ?= -std=c++17 -Wall -I./src -O3 -g -Wno-stringop-overflow
 
 TARGET_NAME  := TheLastLift
 SRC_DIR := src
@@ -41,8 +41,8 @@ RM := # Command to remove files (OS dependent, will be set later)
 # Detecting the OS and setting the appropriate flags and libraries for raylib
 # On Windows, $(OS) is already set to Windows_NT so we don't need to call uname
 ifeq ($(OS),Windows_NT)     # This is for the windows case (OS is a free environment variable in windows)
-	CXXFLAGS  += -IC:/msys64/ucrt64/include 
-	LDFLAGS   += -LC:/msys64/ucrt64/lib 
+	CXXFLAGS  += -IC:/msys64/ucrt64/include  -IC:/raylib/raylib/src
+	LDFLAGS   += -LC:/msys64/ucrt64/lib -LC:/raylib/raylib/src
 	LDLIBS    += -lraylib -lopengl32 -lgdi32 -lwinmm
 	RM        := del /Q
 	OBJSTOCLEAN := $(subst /,\,$(OBJS)) # Apparently windows uses "\" instead of "/" for file paths
@@ -63,10 +63,10 @@ endif
 all: $(TARGET) # Default to target(the executable) when "make" command is run
 	
 
-# Link it all toghether and make the executable
+# Link it all toghether and make the executable and then clean up the object files
 $(TARGET): $(OBJS)#Basically saying that to make the target we need all the object files
 	$(CXX) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
-	$(RM) $(OBJSTOCLEAN) # Cleaning up the object files after they are linked
+	$(RM) $(OBJSTOCLEAN) 
 	
 
 # Rule for compiling .cpp files to .o files (but inside src/)

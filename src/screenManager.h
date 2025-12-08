@@ -175,9 +175,9 @@ class ScreenManager
 class GameManager {
     private:
         GameState currentGameState; // Current active game state
+        GameState nextGameState = GameState::EXPLORATION; // Next game state to transition to
+        GameState prevGameState = GameState::EXPLORATION; // Previous game state before transition
         CombatHandler* combatHandler=nullptr; // Combat handler to manage combat state
-        GameState prevGameState; // Previous game state before transition
-        GameState nextGameState; // Next game state to transition to
         float sceneTransitionTimer = 0.0f; // Timer for scene transitions
          
 
