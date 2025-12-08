@@ -201,24 +201,47 @@ This engine is used to test combat logic by itself.
 
 ## Status / Notes
 
-- Only **Student** is somewhat playable and selectable.
+- Only **Student** is playable and selectable.
 - Rat, Professor, and Attila exist visually in the character select screen but have no real implementation yet
-- GUI combat only partially supports **Attack** right now.
-- TUI combat has more complete logic than the GUI combat
-- Resources in the screen manager are manually managed using pointers, beware about memory leaks.
 
 ---
 
-## What's next?
+## How to Play
 
-After milestone one, priorities will include:
-- Introduce std::unique_ptr and other RAII principles to ensure safe, automatic deallocation, and prevent memory leaks.
-- Expand combat logic with ranged attacks, item interactions, and improved AI decision-making.
-- Transition the current TUI-based combat logic into a fully interactive GUI layer for a more intuitive player experience.
-- Flesh out the overall interface design, refining layouts, feedback cues, and visual hierarchy.
-- Begin implementing player movement and map navigation, establishing the foundation for exploration.
-- Streamline data storage and reduce redundant file loading by introducing persistent in-memory data structures.
-- Audit and optimize data types for efficiency and consistency to improving performance and maintainability.
+### Movement
+Use the **red arrow buttons on the screen** to move your character around the map. Explore carefully as enemies, keys, and upgrades are scattered throughout the dungeon.
+
+### Combat
+When you encounter an enemy, you will enter combat. During your turn, you can choose from the following actions:
+
+- **Attack**
+  - Choose between **Melee** or **Ranged** attacks.
+  - Whether your attack hits is based on **random chance**.
+  - The amount of damage dealt is also **random**.
+
+- **Defend**
+  - Decreases the chance an enemy’s next attack will land.
+
+- **Use Potion**
+  - Use a **healing potion** to restore 15 of your health if one is available.
+
+### Objective
+Your main goal is to:
+1. **Find the keys hidden around the map**
+2. **Reach the exit**
+3. **Escape the building before you are defeated**
+
+Along the way, you can also:
+- Pick up **weapon upgrades** that improve your combat effectiveness.
+
+---
+
+### Key Item
+![Key](assets/images/items/Key1.png)
+
+### Weapon Upgrade
+![Baseball Bat](assets/images/items/BaseballBat.png)
+
 
 ---
 
