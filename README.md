@@ -236,7 +236,7 @@ Along the way, you can also:
 
 ---
 
-### Key Item
+### Key Item (on its side)
 <p align="center">
   <img src="assets/images/items/Key1.png" width="180"/>
 </p>
@@ -252,11 +252,20 @@ Along the way, you can also:
 
 ### Health Potion
 <p align="center">
-  <img src="assets/images/items/HealthPotion.png" width="250"/>
+  <img src="assets/images/items/HealthPotion.png" width="150"/>
 </p>
 
 ---
 
+## What's Next
 
+- Finish the story for the **Student** character.
+- Implement gameplay and story paths for all characters.
+- Expand the combat system, including more consumables and weapon upgrades for the player.
+- Implement status effects (e.g., poison) for both player and enemy attacks.
+- Improve the **minimap** for better navigation and clarity.
+- Balance the combat system to fine-tune difficulty and pacing.
+
+---
 
 
