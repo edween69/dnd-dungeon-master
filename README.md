@@ -248,7 +248,12 @@ Along the way, you can also:
   <img src="assets/images/items/BaseballBat.png" width="250"/>
 </p>
 
+---
 
+### Health Potion
+<p align="center">
+  <img src="assets/images/items/HealthPotion.png" width="250"/>
+</p>
 
 ---
 
