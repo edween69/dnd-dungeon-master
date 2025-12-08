@@ -60,283 +60,220 @@
 
 #define RAYGUI_IMPLEMENTATION
 #include "screenManager.h"
-#include "progressLog.h"  // Temporarily disabled due to missing json.hpp
-#include <algorithm>
+#include "progressLog.h"
 
-//================= SCREEN & RESOLUTION MACROS ===================
-#define SCREEN_WIDTH (float)GAME_SCREEN_WIDTH
-#define SCREEN_HEIGHT (float)GAME_SCREEN_HEIGHT
-#define SCREEN_CENTER_X (SCREEN_WIDTH / 2.0f)
-#define SCREEN_CENTER_Y (SCREEN_HEIGHT / 2.0f)
 
-//================= CHARACTER SELECT MACROS ===================
-#define MAX_CHAR_CARDS 4
-#define MAIN_BUTTON_WIDTH 600.0f
-#define MAIN_BUTTON_HEIGHT 70.0f
-#define MAIN_BUTTON_OFFSET_Y 100.0f
-#define MAIN_BUTTON_SPACING 100.0f
+//======================= GLOBAL STATIC VARIABLES =======================
+/*
+    Global static variables to hold shared resources and game states.
+    These persist through out the entireity of the game.
 
-#define CHARACTER_CARD_WIDTH 300.0f
-#define CHARACTER_CARD_HEIGHT 400.0f
-#define CHARACTER_CARD_SPACING 50.0f
-#define CHARACTER_DOCK_SPACING 90.0f
-#define CHARACTER_DOCK_X (SCREEN_WIDTH - CHARACTER_CARD_WIDTH - 40.0f)
-#define CHARACTER_DOCK_Y_START (SCREEN_HEIGHT - CHARACTER_CARD_HEIGHT - 300.0f)
+    - allStatLines: Holds all the lines of stats for characters from the CSV file  (this is then used to display stats and 
+                                                                                    create new characters as the game goes on)
+    
+    - gameSounds: Holds all the sounds that will be used while the program is opened (on event that something happens 
+                                                                                      the appropriate sound will be played)
 
-#define PLAY_BTN_WIDTH 400.0f
-#define PLAY_BTN_HEIGHT 60.0f
-#define PLAY_BTN_OFFSET_Y 36.0f
+    - ScreenTextures: Holds textures for different screens (these are dynamically allocated and deallocated
+                                                            when entering and exiting screens)
 
-//================= INTRO CRAWL MACROS ===================
-#define INTRO_CRAWL_SPEED 30.0f
-#define INTRO_CRAWL_START_Y (float)GAME_SCREEN_HEIGHT
-#define INTRO_CRAWL_END_Y -1400
-#define INTRO_CRAWL_FONT_SIZE 28
-#define INTRO_CRAWL_LINE_HEIGHT 34
-//================= SOUND INDICES ===================
-#define SND_SELECT 0
-#define SND_HIT 1
-#define SND_HEAL 2
-#define SND_ZOM_DEATH 3
-#define SND_ZOM_GROAN 4
-#define TOTAL_SOUNDS 5
-//================= COMBAT UI RECTANGLE INDICES ===================
-#define R_PLAYER_NAME 0
-#define R_ENEMY_NAME 1
-#define R_PLAYER_PANEL 2
-#define R_ENEMY_PANEL 3
-#define R_PLAYER_HP_BG 4
-#define R_PLAYER_HP_FG 5
-#define R_ENEMY_HP_BG 6
-#define R_ENEMY_HP_FG 7
-#define R_PLAYER_STATUS 8
-#define R_ENEMY_STATUS 9
-#define R_BOTTOM_PANEL 10
-#define R_BTN_ATTACK 11
-#define R_BTN_DEFEND 12
-#define R_BTN_USE_ITEM 13
-#define R_LOG_BOX 14
-#define R_ATTACK_MENU 15
-#define R_MELEE_BTN 16
-#define R_RANGED_BTN 17
-#define R_ITEM_MENU 18
-#define R_PAUSE_BTN 19
-#define R_PAUSE_BG_OVERLAY 20
-#define R_PAUSE_PANEL 21
-#define R_BTN_RESUME 22
-#define R_BTN_SAVE_EXIT 23
-#define R_BTN_QUIT_NO_SAVE 24
+    - ScreenRects: Holds rectangles for different screens (these are dynamically allocated and deallocated
+                                                            when entering and exiting screens)
 
-// ================= EXPLORATION PAUSE MENU RECTANGLES =================
-#define R_EXP_PAUSE_BTN 19
-#define R_EXP_PAUSE_BG_OVERLAY 20
-#define R_EXP_PAUSE_PANEL 21
-#define R_EXP_BTN_RESUME 22
-#define R_EXP_BTN_SAVE_EXIT 23
-#define R_EXP_BTN_QUIT_NO_SAVE 24
+    - characterCards (Character Selection Only but needs to be available to render() and update() and stuff in that state):
+    Holds  character chard data such as current position, target position, default row, and texture (needed for animation)
 
-// Character select screen rects
-#define R_PLAY_BTN 0
-#define R_INFO_BOX 1
-#define R_SELECT_INNER_OUTLINE 2
-#define R_SELECT_OUTER_OUTLINE 3
-#define R_HOVER_INFO_POS 4
+    - CharSelectionStuff (Character Selection Only but needs to be available to render() and update()): 
+    Holds data on what character has been selected[0], whoch one is being hovered on[1], and if the character selection menu has been initialized[2]
 
-//================= PAUSE MENU MACROS ===================
-#define PAUSE_PANEL_WIDTH 400.0f
-#define PAUSE_PANEL_HEIGHT 300.0f
-#define PAUSE_BTN_WIDTH 300.0f
-#define PAUSE_BTN_HEIGHT 60.0f
-#define PAUSE_BTN_SPACING 20.0f
-#define PAUSE_PANEL_X ((SCREEN_WIDTH - PAUSE_PANEL_WIDTH) / 2.0f)
-#define PAUSE_PANEL_Y ((SCREEN_HEIGHT - PAUSE_PANEL_HEIGHT) / 2.0f)
-#define PAUSE_BTN_X (PAUSE_PANEL_X + (PAUSE_PANEL_WIDTH - PAUSE_BTN_WIDTH) / 2.0f)
+    - scrollIntroCrawl(Intro Crawl screen only but needs to be available to render() and update()): 
+    Holds the intro crawl text that will be scrolled up the screen in the intro crawl screen
 
-//================= TEXT SIZE MACROS ===================
-#define FONT_SIZE_NAME 30
-#define FONT_SIZE_HP 20
-#define FONT_SIZE_BTN 30
-#define FONT_SIZE_LOG 20
-#define LOG_LINE_HEIGHT 24
+    - entities: Holds the player and enemy entities for combat (these are dynamically allocated and deallocated
+                                                            when entering and exiting screens; Player is at index 0, enemy is at index 1)
+    
+    - gameManager: Holds the game manager instance to manage game states and transitions
 
-//================= HELPER CALCULATION MACROS ===================
-#define CENTER_TEXT_X(rect, txt, size) \
-    (int)((rect).x + (rect).width / 2.0f - MeasureText((txt), (size)) / 2.0f)
+    - nerdFont: Holds the nerd font used for rendering text in the game
 
-#define CENTER_TEXT_Y(rect, size) \
-    (int)((rect).y + (rect).height / 2.0f - (size) / 2.0f)
+    NOTE: All pointers are initialized to nullptr and dynamically allocated when needed.
+          They are cleaned up in the Cleanup functions. This is to avoid memory leaks and 
+          ensure proper resource management(vectors would have been better but raw pointers were a req).
 
-#define HEALTH_BAR_WIDTH(rectBg, cur, max) \
-    ((float)(rectBg).width * ((float)(cur) / (float)(max)))
+    - numScreenTextures: Holds the number of textures in ScreenTextures array
+    - numScreenRects: Holds the number of rectangles in ScreenRects array
+    - introCrawlYPos: Holds the current Y position of the intro crawl text for scrolling effect
+    - gameScenes: Holds all the game scenes with their respective textures, arrows, items, and encounters (using a nodal mapping structure; not sure if this is the best way to do it)
+    - activeEncounterID: Holds the ID of the currently active encounter
+    - currentSceneIndex: Holds the index of the currently active scene in gameScenes
+    - savedPlayerSceneIndex: Holds the index of the player's last saved scene
+    - battleWon: Holds a map of encounter IDs to whether the player has won that encounter
+    - collectedItems: Holds a vector of item names that the player has collected
+    - byteSize: Holds the byte size of the icons that are used through out the game
+    - loadedFromSave: Holds whether the game was loaded from a save file
+    - savedSucessfully: Holds whether the game was saved successfully
 
-#define CENTERED_X(width) ((SCREEN_WIDTH - (width)) / 2.0f)
-#define CENTERED_Y(height) ((SCREEN_HEIGHT - (height)) / 2.0f)
+*/ 
+static std::istringstream *allStatLines = nullptr; // Used throughout game
+static Sound *gameSounds = nullptr; // Used throughout game
+static Texture2D *ScreenTextures = nullptr; // Used throughout game
+static Rectangle *ScreenRects = nullptr; // Used throughout game
+static charCard *characterCards = nullptr; // Used in Character Select state only
+static int *CharSelectionStuff = nullptr; // Used in Character Select state only (holds selected character[0], hovered character[1], and initialized state[2])
+static std::stringstream *scrollIntroCrawl = nullptr; // Used in Intro Crawl state only
+static Character **entities = nullptr; // Used in Combat state only (Player at index 0, Enemy at index 1)
+static GameManager *gameManager = nullptr; // Used throughout GAMEPLAY state
+static Font *nerdFont = nullptr; // Used throughout game
 
-//================= COMBAT UI COLOR MACROS ===================
-#define COL_NAME_BAR Color{8, 8, 12, 255}
-#define COL_BOTTOM_PANEL Color{112, 120, 128, 255}
-#define COL_STATUS_PANEL Color{55, 61, 57, 220}
-#define COL_STATUS_INNER Color{91, 94, 92, 255}
-#define COL_LOG_BOX Color{167, 171, 170, 255}
-#define COL_BUTTON Color{68, 74, 72, 255}
-#define COL_HP_BG Color{60, 15, 20, 255}
-#define COL_HP_FG Color{190, 50, 60, 255}
 
-//================= TEXTURE INDICES ===================
-#define TEX_ENTRANCE 0
-#define TEX_EXIT 1
-#define TEX_FRONT_OFFICE 2
-#define TEX_EAST_HALLWAY_TOWARD 3
-#define TEX_EAST_HALLWAY_AWAY 4
-#define TEX_WEST_HALLWAY_TOWARD 5
-#define TEX_WEST_HALLWAY_AWAY 6
-#define TEX_CLASSROOM_1 7
-#define TEX_CLASSROOM_2 8
-#define TEX_CLASSROOM_3 9
-#define TEX_IN_OFFICE 10
-#define TEX_BATH_MEN 11
-#define TEX_BATH_WOM 12
-#define TEX_KEY_1 13
-#define TEX_KEY_2 14
-#define TEX_HEALTH_POTION 15
-#define TEX_BAT 16
-#define TEX_ARROW 17
-#define TEX_MINIMAP 18
-#define TEX_TURTLE 19
-#define TOTAL_EXP_TEX 20
-
-//================= MINIMAP MACROS ===================
-#define MINIMAP_SIZE 300.0f
-#define MINIMAP_MARGIN 20.0f
-#define MINIMAP_BORDER 4.0f
-#define MINIMAP_X (SCREEN_WIDTH - MINIMAP_SIZE - MINIMAP_MARGIN)
-#define MINIMAP_Y (SCREEN_HEIGHT - MINIMAP_SIZE - MINIMAP_MARGIN)
-
-//================= COMBAT POSITIONING MACROS ===================
-#define COMBAT_BG_X(bgTex) (SCREEN_CENTER_X - (bgTex).width / 2.0f)
-#define COMBAT_BG_Y(bgTex) (SCREEN_CENTER_Y - (bgTex).height / 2.0f - 175.0f)
-#define PLAYER_CHAR_X(bgTex) (SCREEN_CENTER_X + (bgTex).width / 2.0f - 500.0f)
-#define PLAYER_CHAR_Y(bgTex) (SCREEN_CENTER_Y + (bgTex).height / 2.0f - 650.0f)
-#define ENEMY_CHAR_X(bgTex) (SCREEN_CENTER_X + (bgTex).width / 2.0f - 600.0f)
-#define ENEMY_CHAR_Y(bgTex) (SCREEN_CENTER_Y + (bgTex).height / 2.0f - 725.0f)
-
-//================= ARROW ROTATION MACRO ===================
-#define ARROW_ROTATION(dir) \
-    ((dir) == DOWN ? 180.0f : (dir) == LEFT ? -90.0f : (dir) == RIGHT ? 90.0f : 0.0f)
-
-//================= NERD FONT ICON CODEPOINTS ===================
-#define ICON_SWORD 0xF04E5
-#define ICON_BOW_ARROW 0xF1841
-#define ICON_POISON 0xF0BC7
-#define ICON_FIRE 0xF0238
-#define ICON_ARROW_DOWN 0xF063
-#define ICON_ARROW_UP 0xF062
-#define ICON_PLUS_CIRCLE 0xF0415
-#define ICON_LIGHTNING 0xF1677
-#define ICON_SPEEDOMETER 0xF140B
-#define ICON_SHIELD 0xF0498
-#define ICON_PAUSE 0xF03E4
-
-//======================= GLOBAL STATIC POINTERS =======================
-static std::istringstream *allStatLines = nullptr;
-static Sound *gameSounds = nullptr;
-static Texture2D *ScreenTextures = nullptr;
 static int numScreenTextures = 0;
-static Rectangle *ScreenRects = nullptr;
 static int numScreenRects = 0;
-static charCard *characterCards = nullptr;
-static std::stringstream *scrollIntroCrawl = nullptr;
 static float introCrawlYPos = 0.0f;
-static int *CharSelectionStuff = nullptr;
-static Character **entities = nullptr;
-static GameManager *gameManager = nullptr;
-static Font *nerdFont = nullptr;
+static int byteSize=0;
+
+//Game scenes and related data (Please review above comment block)
 static std::vector<GameScene> gameScenes;
+static std::map<int,bool> battleWon;
+static std::vector<std::string> collectedItems;
+static bool loadedFromSave = false, savedSucessfully = false;
 static int activeEncounterID = -1;
 static int currentSceneIndex = TEX_ENTRANCE;
 static int savedPlayerSceneIndex = TEX_ENTRANCE;
-static std::map<int,bool> battleWon;
-static std::vector<std::string> collectedItems;
-static int byteSize=0;
-static bool loadedFromSave = false, savedSucessfully = false;
 
-//======================= SOUND INITIALIZATION =======================
-void InitGameSounds() {
-    gameSounds = new Sound[TOTAL_SOUNDS];
-    gameSounds[SND_SELECT] = LoadSound("../assets/sfx/select.wav");
-    gameSounds[SND_HIT] = LoadSound("../assets/sfx/hitHurt.wav");
-    gameSounds[SND_HEAL] = LoadSound("../assets/sfx/heal.wav");
-    gameSounds[SND_ZOM_DEATH] = LoadSound("../assets/sfx/explosion.wav");
-    gameSounds[SND_ZOM_GROAN] = LoadSound("../assets/sfx/zombieGroan.wav");
-}
 //======================= RESOURCE CLEANUP FUNCTIONS =======================
+//These are a set of functions that delete/deallocate any and all dynamic resources being used in the game.
 
-// Safely cleans up all screen textures
-void CleanupScreenTextures() {
+//@brief Safely cleans up all screen textures. This function checks if ScreenTextures is not null, then iterates through each texture, unloading them before deleting the array and setting the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupScreenTextures() 
+{
     if (ScreenTextures) {
         for (int i = 0; i < numScreenTextures; ++i) {
-            UnloadTexture(ScreenTextures[i]);
+            UnloadTexture(ScreenTextures[i]); // Unload each texture
         }
-        delete[] ScreenTextures;
-        ScreenTextures = nullptr;
+        delete[] ScreenTextures; // Delete the array of textures
+        ScreenTextures = nullptr; // Set pointer to nullptr to avoid dangling pointer
     }
-    numScreenTextures = 0;
+    numScreenTextures = 0; //Reset the count of screen textures
 }
 
-// Safely cleans up all screen rectangles
-void CleanupScreenRects() {
+//@brief Safely cleans up all screen rectangles. This function checks if ScreenRects is not null, then deletes the array and sets the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupScreenRects() 
+{
     if (ScreenRects) {
-        delete[] ScreenRects;
-        ScreenRects = nullptr;
+        delete[] ScreenRects; // Delete the array of rectangles
+        ScreenRects = nullptr; // Set pointer to nullptr to avoid dangling pointer
     }
-    numScreenRects = 0;
+    numScreenRects = 0; // Reset the count of screen rectangles
 }
 
-// Safely cleans up character cards
-void CleanupCharacterCards() {
+//@brief Safely cleans up character cards. This function checks if characterCards is not null, then deletes the array and sets the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupCharacterCards() 
+{
     if (characterCards) {
-        delete[] characterCards;
-        characterCards = nullptr;
+        delete[] characterCards; // Delete the array of character cards
+        characterCards = nullptr; // Set pointer to nullptr
     }
 }
 
-// Safely cleans up character selection state
-void CleanupCharSelectionStuff() {
+//@brief Safely cleans up character selection stuff. This function checks if CharSelectionStuff is not null, then deletes the array and sets the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupCharSelectionStuff() 
+{
     if (CharSelectionStuff) {
-        delete[] CharSelectionStuff;
-        CharSelectionStuff = nullptr;
+        delete[] CharSelectionStuff; // Delete the array of character selection stuff
+        CharSelectionStuff = nullptr; // Set pointer to nullptr
     }
 }
 
-// Safely cleans up stat lines
-void CleanupStatLines() {
+//@brief Safely cleans up stat lines. This function checks if allStatLines is not null, then clears the stringstream, deletes it, and sets the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupStatLines() 
+{
     if (allStatLines) {
-        allStatLines->clear();
-        allStatLines->str("");
-        delete allStatLines;
-        allStatLines = nullptr;
+        allStatLines->clear(); // Clear the stringstream flags
+        allStatLines->str(""); // Clear the stringstream content
+        delete allStatLines; // Delete the stringstream
+        allStatLines = nullptr; // Set pointer to nullptr
     }
 }
 
-// Safely cleans up intro crawl
-void CleanupIntroCrawl() {
+//@brief Safely cleans up the intro crawl text. This function checks if scrollIntroCrawl is not null, then clears the stringstream, deletes it, and sets the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupIntroCrawl() 
+{
     if (scrollIntroCrawl) {
-        delete scrollIntroCrawl;
+        scrollIntroCrawl->clear(); // Clear the stringstream flags
+        scrollIntroCrawl->str(""); // Clear the stringstream content
+        delete scrollIntroCrawl;//Delete
         scrollIntroCrawl = nullptr;
     }
 }
 
-// Safely cleans up nerd font
-void CleanupNerdFont() {
+//@brief Safely cleans up nerd font. This function checks if nerdFont is not null, then unloads the font, deletes the pointer, and sets it to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupNerdFont() 
+{
     if (nerdFont) {
-        UnloadFont(*nerdFont);
-        delete nerdFont;
-        nerdFont = nullptr;
+        UnloadFont(*nerdFont); // Unload font
+        delete nerdFont; // Delete
+        nerdFont = nullptr;//Set to nullptr
     }
 }
 
-// Cleans up all screen resources (textures, rects, cards, selection state, stat lines)
-void CleanupAllScreenResources() {
+//@brief Safely cleans up game sounds. This function checks if gameSounds is not null, then iterates through each sound, unloading them before deleting the array and setting the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupGameSounds() 
+{
+    if (gameSounds) {
+        for (int i = 0; i < TOTAL_SOUNDS; ++i) {
+            UnloadSound(gameSounds[i]); // Unload each sound
+        }
+        delete[] gameSounds; // Delete the array of sounds
+        gameSounds = nullptr; // Set pointer to nullptr
+    }
+}
+
+//@brief Safely cleans up entities array. This function checks if entities is not null, then deletes each entity and sets pointers to nullptr before deleting the array and setting the pointer to nullptr.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupEntities() 
+{
+    if (entities) 
+    {
+        //If player character exists in array delete
+        if (entities[0]) 
+        {
+            delete entities[0];
+            entities[0] = nullptr;
+        }
+
+        //If enemy character exists in array delete
+        if (entities[1]) 
+        {
+            delete entities[1];
+            entities[1] = nullptr;
+        }
+        delete[] entities; // Delete the array of entities
+        entities = nullptr;
+    }
+}
+
+//@brief Safely cleans up all screen resources including textures, rects, character cards, selection state, and stat lines.
+//@version 1.0
+//@author Edwin Baiden
+void CleanupAllScreenResources() 
+{
     CleanupScreenTextures();
     CleanupScreenRects();
     CleanupCharacterCards();
@@ -344,24 +281,41 @@ void CleanupAllScreenResources() {
     CleanupStatLines();
 }
 
-//======================= HELPER FUNCTIONS =======================
 
+//======================= GAMESCENE FUNCTION DEFINITIONS =======================
+
+
+//@brief Checks if an item has been collected by comparing the item name with the collected items list.
+//@param itemName The name of the item to check for collection status.
+//@return true if the item has been collected, false otherwise.
+//@version 1.0
+//@author Edwin Baiden
 bool isItemCollected(const std::string& itemName) {
-    for (const auto& item : collectedItems) 
-        if (item == itemName) return true;
-    return false;
+    for (const auto& item : collectedItems) // Iterate through collected items
+        if (item == itemName) return true; // Item found, return true
+    return false; // Item not found, return false
 }
 
-void InitGameScenes(Character* playerCharacter) {
+//@brief Initializes all game scenes with their respective textures, arrows (and where they lead to), items, and encounters.
+//@param playerCharacter Pointer to the player character (used for scene initialization per character type [has not been fully implemented due to time]).
+//@version 1.0
+//@author Edwin Baiden
+void InitGameScenes(Character* playerCharacter) 
+{
     
-    
+    // Clear existing scenes if any
     gameScenes.clear();
     
-    if (dynamic_cast<Student*>(playerCharacter)) {
+    //Using dynamic_cast to check if the player character is of type Student, if yes then 
+    if (dynamic_cast<Student*>(playerCharacter)) 
+    {
+        // Initialize scenes for Student character
+
+        // Load screen textures
         numScreenTextures = TOTAL_EXP_TEX;
         ScreenTextures = new Texture2D[numScreenTextures];
 
-        ChangeDirectory(GetApplicationDirectory());
+        ChangeDirectory(GetApplicationDirectory()); // Change to application directory so that relative paths works (Cause MacOS)
         ScreenTextures[TEX_ENTRANCE] = LoadTexture("../assets/images/environments/Building1/Hallway/Entrance.png");
         ScreenTextures[TEX_EXIT] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-4].png");
         ScreenTextures[TEX_FRONT_OFFICE] = LoadTexture("../assets/images/environments/Building1/Hallway/Hallway[2-2].png");
@@ -383,20 +337,24 @@ void InitGameScenes(Character* playerCharacter) {
         ScreenTextures[TEX_MINIMAP] = LoadTexture("../assets/images/environments/Building1/NewLayout.png");
         ScreenTextures[TEX_TURTLE] = LoadTexture("../assets/images/UI/turtleIcon.png");
 
+        // Initialize game scenes
         gameScenes.resize(TEX_BATH_WOM + 1);
 
+        // Entrance Scene
         GameScene* s = &gameScenes[TEX_ENTRANCE];
         s->sceneName = "Entrance";
         s->textureIndex = TEX_ENTRANCE;
         s->minimapCoords = {0.475f, 0.8f};
         s->minimapRotation = 0.0f;
         s->sceneArrows = {
+            //{{x, y, width, height}, direction, targetSceneIndex, isEnabled, hoverText, requiredKeyName}
             {{550, 500, 150, 150}, LEFT, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""},
             {{1220, 500, 150, 150}, RIGHT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
             {{885, 650, 150, 150}, UP, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
             {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", "Key 2"}
         };
 
+        // Exit Scene
         s = &gameScenes[TEX_EXIT];
         s->sceneName = "Exit";
         s->textureIndex = TEX_EXIT;
@@ -435,7 +393,7 @@ void InitGameScenes(Character* playerCharacter) {
         s->sceneArrows = {
             {{500, 535, 150, 150}, LEFT, TEX_CLASSROOM_1, true, "Enter Classroom 1", ""},
             {{1250, 535, 150, 150}, RIGHT, TEX_CLASSROOM_2, true, "Enter Classroom 2", "Key 1"},
-            {{875, 750, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""}
+            {{875, 750, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Return East", ""}
         };
 
         s = &gameScenes[TEX_WEST_HALLWAY_AWAY];
@@ -444,9 +402,9 @@ void InitGameScenes(Character* playerCharacter) {
         s->minimapCoords = {0.2f, 0.475f};
         s->minimapRotation = 90.0f;
         s->sceneArrows = {
-            {{855, 850, 150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Return East", ""},
-            {{855, 550, 150, 150}, UP, TEX_ENTRANCE, true, "Go to Entrance", ""},
-            {{500, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""},
+            {{855, 850, 150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Return West", ""},
+            {{855, 550, 150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""},
+            {{500, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Entrance", ""},
             {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", "Key 2"}
         };
 
@@ -468,10 +426,10 @@ void InitGameScenes(Character* playerCharacter) {
         s->minimapCoords = {0.7f, 0.5f};
         s->minimapRotation = 270.0f;
         s->sceneArrows = {
-            {{855, 850, 150, 150}, UP, TEX_EAST_HALLWAY_TOWARD, true, "Return West", ""},
-            {{855, 550, 150, 150}, UP, TEX_ENTRANCE, true, "Go to Entrance", ""},
-            {{1250, 500, 150, 150}, RIGHT, TEX_EXIT, true, "Exit Building", "Key 2"},
-            {{550, 500, 150, 150}, LEFT, TEX_FRONT_OFFICE, true, "Go to Office Front", ""}
+            {{855, 850, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Return East", ""},
+            {{855, 550, 150, 150}, UP, TEX_WEST_HALLWAY_TOWARD, true, "Go West", ""},
+            {{1250, 500, 150, 150}, RIGHT, TEX_FRONT_OFFICE, true, "Go to Office Entrance", ""},
+            {{550, 500, 150, 150}, LEFT, TEX_EXIT, true, "Go to Exit", "Key 2"}
         };
 
         s = &gameScenes[TEX_CLASSROOM_1];
@@ -480,7 +438,7 @@ void InitGameScenes(Character* playerCharacter) {
         s->environmentTexture = "../assets/images/environments/Building1/Class-Office/Classroom1.png";
         s->minimapCoords = {0.19f, 0.625f};
         s->minimapRotation = 180.0f;
-        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Exit Classroom", ""}};
         s->sceneItems = {{"Key 2", "Pick up Key 2", {600, 625, 150, 150}, TEX_KEY_2, true}};
         s->hasEncounter = true;
         s->encounterID = 0;
@@ -499,7 +457,7 @@ void InitGameScenes(Character* playerCharacter) {
         s->textureIndex = TEX_CLASSROOM_2;
         s->minimapCoords = {0.15f, 0.325f};
         s->minimapRotation = 0.0f;
-        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_WEST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_WEST_HALLWAY_TOWARD, true, "Exit Classroom", ""}};
         s->sceneItems = {{"Health Potion", "Pick up Health Potion", {500, 480, 150, 150}, TEX_HEALTH_POTION, false}};
 
         s = &gameScenes[TEX_CLASSROOM_3];
@@ -507,7 +465,7 @@ void InitGameScenes(Character* playerCharacter) {
         s->textureIndex = TEX_CLASSROOM_3;
         s->minimapCoords = {0.15f, 0.65f};
         s->minimapRotation = 90.0f;
-        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_EAST_HALLWAY_AWAY, true, "Exit Classroom", ""}};
+        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Exit Classroom", ""}};
 
         s = &gameScenes[TEX_IN_OFFICE];
         s->sceneName = "Office";
@@ -547,6 +505,17 @@ void InitGameScenes(Character* playerCharacter) {
         s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
         
     }
+}
+
+//======================= SOUND INITIALIZATION =======================
+void InitGameSounds() 
+{
+    gameSounds = new Sound[TOTAL_SOUNDS];
+    gameSounds[SND_SELECT] = LoadSound("../assets/sfx/select.wav");
+    gameSounds[SND_HIT] = LoadSound("../assets/sfx/hitHurt.wav");
+    gameSounds[SND_HEAL] = LoadSound("../assets/sfx/heal.wav");
+    gameSounds[SND_ZOM_DEATH] = LoadSound("../assets/sfx/explosion.wav");
+    gameSounds[SND_ZOM_GROAN] = LoadSound("../assets/sfx/zombieGroan.wav");
 }
 
 //======================= GUI STYLE FUNCTIONS =======================
@@ -598,7 +567,7 @@ void gamePlayStyles() {
     CleanupNerdFont();
     nerdFont = new Font();
     int codepoints[11] = {ICON_SWORD, ICON_BOW_ARROW, ICON_POISON, ICON_FIRE, ICON_ARROW_DOWN, 
-                          ICON_ARROW_UP, ICON_PLUS_CIRCLE, ICON_LIGHTNING, ICON_SPEEDOMETER, 
+                          ICON_ARROW_UP, ICON_PLUS, ICON_SNAIL, ICON_LIGHTNING, 
                           ICON_SHIELD, ICON_PAUSE};
     ChangeDirectory(GetApplicationDirectory());
     *nerdFont = LoadFontEx("../assets/fonts/JetBrainsMonoNLNerdFontMono-Bold.ttf", 32, codepoints, 11);
@@ -647,10 +616,10 @@ void DrawStatusPanel(const Rectangle &panel, const StatusEffects &entityStatEff,
     if (entityStatEff.isPoisoned) activeStatEffects.push_back({"POISONED", CodepointToUTF8(ICON_POISON, &byteSize), RED});
     if (entityStatEff.isBurning) activeStatEffects.push_back({"BURNING", CodepointToUTF8(ICON_FIRE, &byteSize), RED});
     if (entityStatEff.isWeakened) activeStatEffects.push_back({"WEAKENED", CodepointToUTF8(ICON_ARROW_DOWN, &byteSize), RED});
-    if (entityStatEff.isSlowed) activeStatEffects.push_back({"SLOWED", CodepointToUTF8(ICON_LIGHTNING, &byteSize), RED});
+    if (entityStatEff.isSlowed) activeStatEffects.push_back({"SLOWED", CodepointToUTF8(ICON_SNAIL, &byteSize), RED});
     if (entityStatEff.isStrengthened) activeStatEffects.push_back({"STRENGTHENED", CodepointToUTF8(ICON_ARROW_UP, &byteSize), GREEN});
-    if (entityStatEff.isRegenerating) activeStatEffects.push_back({"REGENERATING", CodepointToUTF8(ICON_PLUS_CIRCLE, &byteSize), GREEN});
-    if (entityStatEff.isFast) activeStatEffects.push_back({"FAST", CodepointToUTF8(ICON_SPEEDOMETER, &byteSize), GREEN});
+    if (entityStatEff.isRegenerating) activeStatEffects.push_back({"REGENERATING", CodepointToUTF8(ICON_PLUS, &byteSize), GREEN});
+    if (entityStatEff.isFast) activeStatEffects.push_back({"FAST", CodepointToUTF8(ICON_LIGHTNING, &byteSize), GREEN});
     if (entityStatEff.defending) activeStatEffects.push_back({"DEFENDING", CodepointToUTF8(ICON_SHIELD, &byteSize), GREEN});
 
     for (size_t i = 0; i < activeStatEffects.size(); ++i) {
@@ -673,6 +642,13 @@ ScreenManager::ScreenManager(ScreenState initial) : currentScreen(initial), scal
 ScreenManager::~ScreenManager() {
     UnloadRenderTexture(target);
     exitScreen(currentScreen);
+    
+    // Clean up persistent resources that last the entire game session
+    CleanupGameSounds();
+    CleanupEntities();
+    CleanupStatLines();
+    CleanupNerdFont();
+    CleanupIntroCrawl();
 }
 
 void ScreenManager::init() {
@@ -704,8 +680,8 @@ Vector2 ScreenManager::GetVirtualMousePosition() {
 
 void ScreenManager::update(float dt) {
     scale = std::min((float)GetScreenWidth() / GAME_SCREEN_WIDTH, (float)GetScreenHeight() / GAME_SCREEN_HEIGHT);
-    offset = {((float)GetScreenWidth() - (GAME_SCREEN_WIDTH * scale)) * 0.5f,
-              ((float)GetScreenHeight() - (GAME_SCREEN_HEIGHT * scale)) * 0.5f};
+    offset = {((float)GetScreenWidth() - ((float)GAME_SCREEN_WIDTH * scale)) * 0.5f,
+              ((float)GetScreenHeight() - ((float)GAME_SCREEN_HEIGHT * scale)) * 0.5f};
 
     switch (currentScreen) {
     case ScreenState::MAIN_MENU:
@@ -729,7 +705,7 @@ void ScreenManager::update(float dt) {
                 
                 //characterCards[i].targetAnimationPos = characterCards[i].defaultRow;
                 characterCards[i].currentAnimationPos = characterCards[i].defaultRow;
-                //characterCards[i].currentAnimationPos.y = SCREEN_HEIGHT + 200.0f;
+                //characterCards[i].currentAnimationPos.y = (float)GAME_SCREEN_HEIGHT + 200.0f;
             }
             CharSelectionStuff[2] = 1;
         }
@@ -796,8 +772,8 @@ void ScreenManager::update(float dt) {
 
 void ScreenManager::render() {
     scale = std::min((float)GetScreenWidth() / GAME_SCREEN_WIDTH, (float)GetScreenHeight() / GAME_SCREEN_HEIGHT);
-    offset = {((float)GetScreenWidth() - (GAME_SCREEN_WIDTH * scale)) * 0.5f,
-              ((float)GetScreenHeight() - (GAME_SCREEN_HEIGHT * scale)) * 0.5f};
+    offset = {((float)GetScreenWidth() - ((float)GAME_SCREEN_WIDTH * scale)) * 0.5f,
+              ((float)GetScreenHeight() - ((float)GAME_SCREEN_HEIGHT * scale)) * 0.5f};
 
     SetMouseOffset(-offset.x, -offset.y);
     SetMouseScale(1.0f / scale, 1.0f / scale);
@@ -887,7 +863,7 @@ void ScreenManager::render() {
 
         if (CharSelectionStuff[1] != -1 && CharSelectionStuff[1] != CharSelectionStuff[0]) {
             ScreenRects[R_INFO_BOX] = {
-                (characterCards[CharSelectionStuff[1]].currentAnimationPos.x + CHARACTER_CARD_WIDTH + 260.0f < SCREEN_WIDTH) ?
+                (characterCards[CharSelectionStuff[1]].currentAnimationPos.x + CHARACTER_CARD_WIDTH + 260.0f < (float)GAME_SCREEN_WIDTH) ?
                     (characterCards[CharSelectionStuff[1]].currentAnimationPos.x + CHARACTER_CARD_WIDTH + 5.0f) :
                     (characterCards[CharSelectionStuff[1]].currentAnimationPos.x - 265.0f),
                 characterCards[CharSelectionStuff[1]].currentAnimationPos.y - 250.0f,
@@ -946,7 +922,7 @@ void ScreenManager::render() {
                     DrawText(line.c_str(), CENTERED_X(MeasureText(line.c_str(), INTRO_CRAWL_FONT_SIZE)),
                             (int)y, INTRO_CRAWL_FONT_SIZE, GOLD);
             }
-            DrawText("Press ENTER to skip", 20, (int)SCREEN_HEIGHT - 40, 20, GRAY);
+            DrawText("Press ENTER to skip", 20, (int)(float)GAME_SCREEN_HEIGHT - 40, 20, GRAY);
         }
         break;
 
@@ -968,7 +944,7 @@ void ScreenManager::render() {
     ClearBackground(BLACK);
     DrawTexturePro(target.texture,
                    {0.0f, 0.0f, (float)target.texture.width, -(float)target.texture.height},
-                   {offset.x, offset.y, GAME_SCREEN_WIDTH * scale, GAME_SCREEN_HEIGHT * scale},
+                   {offset.x, offset.y, (float)GAME_SCREEN_WIDTH * scale, (float)GAME_SCREEN_HEIGHT * scale},
                    {0.0f, 0.0f}, 0.0f, WHITE);
     SetMouseOffset(0, 0);
     SetMouseScale(1.0f, 1.0f);
@@ -1107,8 +1083,8 @@ void GameManager::enterGameState(GameState state) {
         // Pause button in top-right corner
         numScreenRects = 25;
         ScreenRects = new Rectangle[numScreenRects];
-        ScreenRects[R_EXP_PAUSE_BTN] = {SCREEN_WIDTH - 75 - 10, 50, 75, 75};
-        ScreenRects[R_EXP_PAUSE_BG_OVERLAY] = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+        ScreenRects[R_EXP_PAUSE_BTN] = {(float)GAME_SCREEN_WIDTH - 75 - 10, 50, 75, 75};
+        ScreenRects[R_EXP_PAUSE_BG_OVERLAY] = {0, 0, (float)GAME_SCREEN_WIDTH, (float)GAME_SCREEN_HEIGHT};
         ScreenRects[R_EXP_PAUSE_PANEL] = {PAUSE_PANEL_X, PAUSE_PANEL_Y, PAUSE_PANEL_WIDTH, PAUSE_PANEL_HEIGHT};
         ScreenRects[R_EXP_BTN_RESUME] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
         ScreenRects[R_EXP_BTN_SAVE_EXIT] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f + PAUSE_BTN_HEIGHT + PAUSE_BTN_SPACING, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
@@ -1157,26 +1133,26 @@ void GameManager::enterGameState(GameState state) {
         numScreenRects = 25;
         ScreenRects = new Rectangle[numScreenRects];
         ScreenRects[R_PLAYER_NAME] = {0, 0, 450, 50};
-        ScreenRects[R_ENEMY_NAME] = {SCREEN_WIDTH - 450, 0, 450, 50};
+        ScreenRects[R_ENEMY_NAME] = {(float)GAME_SCREEN_WIDTH - 450, 0, 450, 50};
         ScreenRects[R_PLAYER_PANEL] = {0, 50, 450, 832};
-        ScreenRects[R_ENEMY_PANEL] = {SCREEN_WIDTH - 450, 50, 450, 832};
+        ScreenRects[R_ENEMY_PANEL] = {(float)GAME_SCREEN_WIDTH - 450, 50, 450, 832};
         ScreenRects[R_PLAYER_HP_BG] = {20, 150, 410, 30};
         ScreenRects[R_PLAYER_HP_FG] = {20, 150, 410, 30};
-        ScreenRects[R_ENEMY_HP_BG] = {SCREEN_WIDTH - 430, 150, 410, 30};
-        ScreenRects[R_ENEMY_HP_FG] = {SCREEN_WIDTH - 430, 150, 410, 30};
+        ScreenRects[R_ENEMY_HP_BG] = {(float)GAME_SCREEN_WIDTH - 430, 150, 410, 30};
+        ScreenRects[R_ENEMY_HP_FG] = {(float)GAME_SCREEN_WIDTH - 430, 150, 410, 30};
         ScreenRects[R_PLAYER_STATUS] = {20, 250, 410, 500};
-        ScreenRects[R_ENEMY_STATUS] = {SCREEN_WIDTH - 430, 250, 410, 500};
-        ScreenRects[R_BOTTOM_PANEL] = {0, SCREEN_HEIGHT - 200, SCREEN_WIDTH, 215};
-        ScreenRects[R_BTN_ATTACK] = {20, SCREEN_HEIGHT - 180, 400, 80};
-        ScreenRects[R_BTN_DEFEND] = {20, SCREEN_HEIGHT - 80, 400, 80};
-        ScreenRects[R_BTN_USE_ITEM] = {570, SCREEN_HEIGHT - 180, 400, 80};
-        ScreenRects[R_LOG_BOX] = {SCREEN_WIDTH - 800, SCREEN_HEIGHT - 180, 780, 175};
+        ScreenRects[R_ENEMY_STATUS] = {(float)GAME_SCREEN_WIDTH - 430, 250, 410, 500};
+        ScreenRects[R_BOTTOM_PANEL] = {0, (float)GAME_SCREEN_HEIGHT - 200, (float)GAME_SCREEN_WIDTH, 215};
+        ScreenRects[R_BTN_ATTACK] = {20, (float)GAME_SCREEN_HEIGHT - 180, 400, 80};
+        ScreenRects[R_BTN_DEFEND] = {20, (float)GAME_SCREEN_HEIGHT - 80, 400, 80};
+        ScreenRects[R_BTN_USE_ITEM] = {570, (float)GAME_SCREEN_HEIGHT - 180, 400, 80};
+        ScreenRects[R_LOG_BOX] = {(float)GAME_SCREEN_WIDTH - 800, (float)GAME_SCREEN_HEIGHT - 180, 780, 175};
         ScreenRects[R_ATTACK_MENU] = {0};
         ScreenRects[R_MELEE_BTN] = {0};
         ScreenRects[R_RANGED_BTN] = {0};
         ScreenRects[R_ITEM_MENU] = {0};
-        ScreenRects[R_PAUSE_BTN] = {SCREEN_WIDTH - 450 - 75 - 10, 50 - 37.5f, 75, 75};
-        ScreenRects[R_PAUSE_BG_OVERLAY] = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+        ScreenRects[R_PAUSE_BTN] = {(float)GAME_SCREEN_WIDTH - 450 - 75 - 10, 50 - 37.5f, 75, 75};
+        ScreenRects[R_PAUSE_BG_OVERLAY] = {0, 0, (float)GAME_SCREEN_WIDTH, (float)GAME_SCREEN_HEIGHT};
         ScreenRects[R_PAUSE_PANEL] = {PAUSE_PANEL_X, PAUSE_PANEL_Y, PAUSE_PANEL_WIDTH, PAUSE_PANEL_HEIGHT};
         ScreenRects[R_BTN_RESUME] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
         ScreenRects[R_BTN_SAVE_EXIT] = {PAUSE_BTN_X, PAUSE_PANEL_Y + 60.0f + PAUSE_BTN_HEIGHT + PAUSE_BTN_SPACING, PAUSE_BTN_WIDTH, PAUSE_BTN_HEIGHT};
@@ -1306,7 +1282,7 @@ void GameManager::render() {
         DrawTexturePro(ScreenTextures[gameScenes[currentSceneIndex].textureIndex],
                       {0.0f, 0.0f, (float)ScreenTextures[gameScenes[currentSceneIndex].textureIndex].width,
                        (float)ScreenTextures[gameScenes[currentSceneIndex].textureIndex].height},
-                      {0.0f, 0.0f, SCREEN_WIDTH, SCREEN_HEIGHT}, {0.0f, 0.0f}, 0.0f, WHITE);
+                      {0.0f, 0.0f, (float)GAME_SCREEN_WIDTH, (float)GAME_SCREEN_HEIGHT}, {0.0f, 0.0f}, 0.0f, WHITE);
 
         DrawRectangleRec(ScreenRects[R_EXP_PAUSE_BTN], COL_BUTTON);
         DrawRectangleLinesEx(ScreenRects[R_EXP_PAUSE_BTN], 3.0f, BLACK);
@@ -1353,7 +1329,7 @@ void GameManager::render() {
 
         DrawText(gameScenes[currentSceneIndex].sceneName.c_str(), MINIMAP_X, MINIMAP_Y - 30, 30, WHITE);
         DrawRectangleLinesEx({MINIMAP_X, MINIMAP_Y, MINIMAP_SIZE, MINIMAP_SIZE}, MINIMAP_BORDER, BLACK);
-        DrawRectangle(0, 0, SCREEN_WIDTH, 40, BLACK);
+        DrawRectangle(0, 0, (float)GAME_SCREEN_WIDTH, 40, BLACK);
 
         std::string infoText;
         for (const auto &item : gameScenes[currentSceneIndex].sceneItems) {
@@ -1665,8 +1641,8 @@ void GameManager::render() {
 void GameManager::update(float dt) {
     float scale = std::min((float)GetScreenWidth() / GAME_SCREEN_WIDTH, (float)GetScreenHeight() / GAME_SCREEN_HEIGHT);
     Vector2 virtualMouse = {
-        ((GetMousePosition().x - (((float)GetScreenWidth() - (GAME_SCREEN_WIDTH * scale)) * 0.5f)) / scale),
-        ((GetMousePosition().y - (((float)GetScreenHeight() - (GAME_SCREEN_HEIGHT * scale)) * 0.5f)) / scale)
+        ((GetMousePosition().x - (((float)GetScreenWidth() - ((float)GAME_SCREEN_WIDTH * scale)) * 0.5f)) / scale),
+        ((GetMousePosition().y - (((float)GetScreenHeight() - ((float)GAME_SCREEN_HEIGHT * scale)) * 0.5f)) / scale)
     };
 
     switch (currentGameState) {
@@ -1693,7 +1669,23 @@ void GameManager::update(float dt) {
 
                     if (item.itemName == "Baseball Bat") 
                     {
-
+                        if (dynamic_cast<Student*>(entities[0]))
+                        {
+                            dynamic_cast<Student*>(entities[0])->wep.meleeWeapon += 2;
+                            dynamic_cast<Student*>(entities[0])->wep.rangeWeapon += 1;
+                        } else if (dynamic_cast<Rat*>(entities[0]))
+                        {
+                            dynamic_cast<Rat*>(entities[0])->wep.meleeWeapon += 2;
+                            dynamic_cast<Rat*>(entities[0])->wep.rangeWeapon += 1;
+                        } else if (dynamic_cast<Professor*>(entities[0]))
+                        {
+                            dynamic_cast<Professor*>(entities[0])->wep.meleeWeapon += 2;
+                            dynamic_cast<Professor*>(entities[0])->wep.rangeWeapon += 1;
+                        } else if (dynamic_cast<Atilla*>(entities[0]))
+                        {
+                            dynamic_cast<Atilla*>(entities[0])->wep.meleeWeapon += 2;
+                            dynamic_cast<Atilla*>(entities[0])->wep.rangeWeapon += 1;
+                        }
                     }
 
                     if (item.itemName == "Key 1")

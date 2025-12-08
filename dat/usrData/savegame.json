@@ -1,0 +1,61 @@
+{
+    "combat": {
+        "ZombieHP": 0,
+        "ZombieMaxHP": 0,
+        "battleWon": {
+            "1": true
+        }
+    },
+    "player": {
+        "CombatStats": {
+            "meleeDamage": 4,
+            "rangeDamage": 0
+        },
+        "attributes": {
+            "constitution": 2,
+            "dexterity": 2,
+            "strength": 2
+        },
+        "class": "Student",
+        "combatStats": {
+            "initiative": 2
+        },
+        "defenseStats": {
+            "armor": 15
+        },
+        "inventory": [
+            {
+                "healAmount": 15,
+                "name": "Health Potion",
+                "quantity": 1
+            }
+        ],
+        "keys": {
+            "key1": true,
+            "key2": false
+        },
+        "name": "Steve",
+        "vitalStats": {
+            "health": 91,
+            "maxHealth": 100
+        },
+        "weapons": {
+            "meleeWeapon": 4,
+            "rangeWeapon": 3
+        },
+        "zombiesDefeated": {
+            "zombie1": false,
+            "zombie2": true,
+            "zombie3": false
+        }
+    },
+    "world": {
+        "activeEncounterID": -1,
+        "collectedItems": [
+            "Baseball Bat",
+            "Key 1"
+        ],
+        "currentSceneIndex": 2,
+        "savedPlayerSceneIndex": 10
+    }
+}

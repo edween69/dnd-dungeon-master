@@ -100,23 +100,231 @@
                     Found info about these functions and how to implement them here: https://easings.net/
 */
 
-//Including necessary libraries and headers
-#include "raylib.h"
-#include <cmath>
-#include <map>
-#include "characters.h"
-#include "combat.h"
-#include "raygui.h"
-#include "rng.h"
+//======================= STANDARD LIBRARY INCLUDES =======================
+#include <cmath> // for std::exp, fmodf
+#include <map> // for battleWon map
+#include <algorithm> // for std::clamp, std::max, std::min
+
+//======================= PROJECT INCLUDES =======================
+#include "raylib.h" // used for screen rendering 
+#include "characters.h" // for Character class and related definitions
+#include "combat.h" // to manage combat state and perform actions
+#include "raygui.h" // for GUI elements
 
 
+//=============== HEADER GUARD ===============
 #ifndef SCREENMANAGER_H
 #define SCREENMANAGER_H
 
-// ======================== VIRTUAL RESOLUTION CONSTANTS ========================
-// The internal resolution the game logic "thinks" it is running at.
+//======================== SCREEN AND GUI CONSTANTS & MACROS ========================
+
+// Tricking the game into thinking its running at 1920x1080  no matter what the actual window size is, for scaling purposes
 #define GAME_SCREEN_WIDTH 1920
 #define GAME_SCREEN_HEIGHT 1080
+
+//Gets the center of the screen
+#define SCREEN_CENTER_X ((float)GAME_SCREEN_WIDTH / 2.0f)
+#define SCREEN_CENTER_Y ((float)GAME_SCREEN_HEIGHT / 2.0f)
+
+//Macro to the starting X position of text if it were to be centered in a rectangle
+//Used macro instead of function so stuff is done in line and no extra overhead is used during runtime
+#define CENTER_TEXT_X(rect, txt, size) \
+    (int)((rect).x + (rect).width / 2.0f - MeasureText((txt), (size)) / 2.0f)
+
+//Macro to the starting Y position of text if it were to be centered in a rectangle
+//Used macro instead of function so stuff is done in line and no extra overhead is used during runtime
+#define CENTER_TEXT_Y(rect, size) \
+    (int)((rect).y + (rect).height / 2.0f - (size) / 2.0f)
+
+
+// Macro to get the centered X position of an element w respect to the screen width
+#define CENTERED_X(width) (((float)GAME_SCREEN_WIDTH - (width)) / 2.0f)
+
+//Macro to get the centered Y position of an element w respect to the screen height
+#define CENTERED_Y(height) (((float)GAME_SCREEN_HEIGHT - (height)) / 2.0f)
+
+
+
+//====================== SOUND INDICES ======================
+#define SND_SELECT 0 //Select sound when navigating character select menu
+#define SND_HIT 1 //Sound when player or enemy hits during combat
+#define SND_HEAL 2 //Sound when player heals during combat
+#define SND_ZOM_DEATH 3 //Sound when enemy/player dies during combat
+#define SND_ZOM_GROAN 4 //Sound when player walks in on a zombie encounter
+#define TOTAL_SOUNDS 5
+
+//================= NERD FONT ICON CODEPOINTS ===================
+// Got these values from nerdfonts.com/cheat-sheet
+#define ICON_SWORD 0xF04E5
+#define ICON_BOW_ARROW 0xF1841
+#define ICON_POISON 0xF0BC7
+#define ICON_FIRE 0xF0238
+#define ICON_ARROW_DOWN 0xF063
+#define ICON_ARROW_UP 0xF062
+#define ICON_PLUS 0xF0415
+#define ICON_SNAIL 0xF1677
+#define ICON_LIGHTNING 0xF140B
+#define ICON_SHIELD 0xF0498
+#define ICON_PAUSE 0xF03E4
+
+//======================== MAIN MENU SCREEN CONSTANTS & MACROS =========================
+#define MAIN_BUTTON_WIDTH 600.0f 
+#define MAIN_BUTTON_HEIGHT 70.0f
+#define MAIN_BUTTON_OFFSET_Y 100.0f // Offset form vertical center
+#define MAIN_BUTTON_SPACING 100.0f // Spacing between buttons
+
+
+//========================= CHARACTER SELECTION SCREEN CONSTANTS & MACROS =========================
+#define MAX_CHAR_CARDS 4 // Number of character cards available (Student, Rat, Professor, Atilla)
+
+// Character card dimensions
+#define CHARACTER_CARD_WIDTH 300.0f 
+#define CHARACTER_CARD_HEIGHT 400.0f
+
+//Spacing between character cards in both docked and default positions
+#define CHARACTER_CARD_SPACING 50.0f
+#define CHARACTER_DOCK_SPACING 90.0f
+
+// Starting position for docked character cards
+#define CHARACTER_DOCK_X ((float)GAME_SCREEN_WIDTH - CHARACTER_CARD_WIDTH - 40.0f)
+#define CHARACTER_DOCK_Y_START ((float)GAME_SCREEN_HEIGHT - CHARACTER_CARD_HEIGHT - 300.0f)
+
+// Play button dimensions and position
+#define PLAY_BTN_WIDTH 400.0f
+#define PLAY_BTN_HEIGHT 60.0f
+#define PLAY_BTN_OFFSET_Y 36.0f // Offset from bottom of screen
+
+// Character select screen rects (indices)
+#define R_PLAY_BTN 0 // Play button rectangle index
+#define R_INFO_BOX 1 // Info box rectangle index
+#define R_SELECT_INNER_OUTLINE 2 // Inner outline rectangle index (when a character is selected)
+#define R_SELECT_OUTER_OUTLINE 3 // Outer outline rectangle index (when a character is selected)
+#define R_HOVER_INFO_POS 4 // Hover info position rectangle index (when hovering over a character card)
+
+//======================== INTRO CRAWL SCREEN CONSTANTS & MACROS =========================
+#define INTRO_CRAWL_SPEED 30.0f // Speed of the intro crawl
+#define INTRO_CRAWL_START_Y (float)GAME_SCREEN_HEIGHT // Starting Y position for the intro crawl (bottom of the screen)
+#define INTRO_CRAWL_END_Y -1400 // Ending Y position for the intro crawl (off the top of the screen)
+#define INTRO_CRAWL_FONT_SIZE 28 // Font size for the intro crawl text
+#define INTRO_CRAWL_LINE_HEIGHT 34 // spacing between lines in the intro crawl
+
+//========================= GAMEPLAY SCREEN CONSTANTS & MACROS =========================
+
+// Text Sizes
+#define FONT_SIZE_NAME 30
+#define FONT_SIZE_HP 20
+#define FONT_SIZE_BTN 30
+#define FONT_SIZE_LOG 20
+#define LOG_LINE_HEIGHT 24
+
+// ================== Exploration constants and macros ==================
+
+// Background texture indices in the exploration screen
+#define TEX_ENTRANCE 0
+#define TEX_EXIT 1
+#define TEX_FRONT_OFFICE 2
+#define TEX_EAST_HALLWAY_TOWARD 3
+#define TEX_EAST_HALLWAY_AWAY 4
+#define TEX_WEST_HALLWAY_TOWARD 5
+#define TEX_WEST_HALLWAY_AWAY 6
+#define TEX_CLASSROOM_1 7
+#define TEX_CLASSROOM_2 8
+#define TEX_CLASSROOM_3 9
+#define TEX_IN_OFFICE 10
+#define TEX_BATH_MEN 11
+#define TEX_BATH_WOM 12
+
+//Item texture indices in the exploration screen
+#define TEX_KEY_1 13
+#define TEX_KEY_2 14
+#define TEX_HEALTH_POTION 15
+#define TEX_BAT 16
+
+//Other texture indices in the exploration screen
+#define TEX_ARROW 17
+#define TEX_MINIMAP 18
+#define TEX_TURTLE 19
+#define TOTAL_EXP_TEX 20
+
+//Minimap specific macros
+#define MINIMAP_SIZE 300.0f
+#define MINIMAP_MARGIN 20.0f
+#define MINIMAP_BORDER 4.0f
+#define MINIMAP_X ((float)GAME_SCREEN_WIDTH - MINIMAP_SIZE - MINIMAP_MARGIN) // X position of the minimap
+#define MINIMAP_Y ((float)GAME_SCREEN_HEIGHT - MINIMAP_SIZE - MINIMAP_MARGIN) // Y position of the minimap
+
+//Arrow rotation macro function (used this instead of an actual function cause macros are inline and faster and save runtime overhead)
+#define ARROW_ROTATION(dir) \
+    ((dir) == DOWN ? 180.0f : (dir) == LEFT ? -90.0f : (dir) == RIGHT ? 90.0f : 0.0f)
+
+
+//Exploration Pause rectangels (indices; used in pause menu, used same indices as combat pause menu to reuse code)
+#define R_EXP_PAUSE_BTN 19
+#define R_EXP_PAUSE_BG_OVERLAY 20
+#define R_EXP_PAUSE_PANEL 21
+#define R_EXP_BTN_RESUME 22
+#define R_EXP_BTN_SAVE_EXIT 23
+#define R_EXP_BTN_QUIT_NO_SAVE 24
+
+// ================== Combat constants and macros ==================
+
+// Combat screen rectangles (indices)
+#define R_PLAYER_NAME 0 // Player name box rectangle index
+#define R_ENEMY_NAME 1 // Enemy name box rectangle index
+#define R_PLAYER_PANEL 2 // Player panel(Big) rectangle index
+#define R_ENEMY_PANEL 3 // Enemy panel(Big) rectangle index
+#define R_PLAYER_HP_BG 4 // Player HP background rectangle index
+#define R_PLAYER_HP_FG 5 // Player HP foreground rectangle index
+#define R_ENEMY_HP_BG 6 // Enemy HP background rectangle index
+#define R_ENEMY_HP_FG 7 // Enemy HP foreground rectangle index
+#define R_PLAYER_STATUS 8 // Player status rectangle index
+#define R_ENEMY_STATUS 9 // Enemy status rectangle index
+#define R_BOTTOM_PANEL 10 // Bottom panel rectangle index
+#define R_BTN_ATTACK 11 // Attack button rectangle index
+#define R_BTN_DEFEND 12 // Defend button rectangle index
+#define R_BTN_USE_ITEM 13 // Use item button rectangle index
+#define R_LOG_BOX 14 // Log box rectangle index
+#define R_ATTACK_MENU 15 // Attack menu rectangle index
+#define R_MELEE_BTN 16 // Melee button rectangle index
+#define R_RANGED_BTN 17 // Ranged button rectangle index
+#define R_ITEM_MENU 18 // Item menu rectangle index
+#define R_PAUSE_BTN 19 // Pause button rectangle index (Same as exploration pause button index)
+#define R_PAUSE_BG_OVERLAY 20 // Pause background overlay rectangle index (Same as exploration pause bg overlay index)
+#define R_PAUSE_PANEL 21 // Pause panel rectangle index (Same as exploration pause panel index)
+#define R_BTN_RESUME 22 // Resume button rectangle index (Same as exploration resume button rectangle index)
+#define R_BTN_SAVE_EXIT 23 // Save and exit button rectangle index (Same as exploration save and exit button rectangle index)
+#define R_BTN_QUIT_NO_SAVE 24 // Quit without saving button rectangle index (Same as exploration quit without saving button rectangle index)
+
+//Health Bar Macro Function(once again used macro for speed)
+#define HEALTH_BAR_WIDTH(rectBg, cur, max) \
+    ((float)(rectBg).width * ((float)(cur) / (float)(max))) //Health bar width scaled as (current health / max health) * background width
+
+
+// Colors for UI in Combat Screen
+#define COL_NAME_BAR Color{8, 8, 12, 255} 
+#define COL_BOTTOM_PANEL Color{112, 120, 128, 255}
+#define COL_STATUS_PANEL Color{55, 61, 57, 220}
+#define COL_STATUS_INNER Color{91, 94, 92, 255}
+#define COL_LOG_BOX Color{167, 171, 170, 255}
+#define COL_BUTTON Color{68, 74, 72, 255}
+#define COL_HP_BG Color{60, 15, 20, 255}
+#define COL_HP_FG Color{190, 50, 60, 255}
+
+// =========================== Pause Menu Constants and Macros ===========================
+
+//Pause menu main rectangle dimensions
+#define PAUSE_PANEL_WIDTH 400.0f 
+#define PAUSE_PANEL_HEIGHT 300.0f 
+
+// Sizing and Spacing for buttons
+#define PAUSE_BTN_WIDTH 300.0f
+#define PAUSE_BTN_HEIGHT 60.0f
+#define PAUSE_BTN_SPACING 20.0f
+#define PAUSE_PANEL_X (((float)GAME_SCREEN_WIDTH - PAUSE_PANEL_WIDTH) / 2.0f) 
+#define PAUSE_PANEL_Y (((float)GAME_SCREEN_HEIGHT - PAUSE_PANEL_HEIGHT) / 2.0f)
+#define PAUSE_BTN_X (PAUSE_PANEL_X + (PAUSE_PANEL_WIDTH - PAUSE_BTN_WIDTH) / 2.0f)
+
+
 
 // ======================== GAME AND SCREEN STATE ENUMS ========================
 
