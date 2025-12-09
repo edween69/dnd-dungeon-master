@@ -1797,6 +1797,32 @@ void GameManager::render() {
                        (float)ScreenTextures[gameScenes[currentSceneIndex].textureIndex].height},
                       {0.0f, 0.0f, (float)GAME_SCREEN_WIDTH, (float)GAME_SCREEN_HEIGHT}, {0.0f, 0.0f}, 0.0f, WHITE);
 
+        if (currentSceneIndex == TEX_OUTSIDE)
+        {
+            if (endScreenPhase >= 1)
+            {
+                const char* text1 = "You Survived";
+                int fontSize1 = 80;
+                int text1Width = MeasureText(text1, fontSize1);
+                DrawText(text1, (GAME_SCREEN_WIDTH - text1Width) / 2, 300, fontSize1, WHITE);
+            }
+
+            if (endScreenPhase >= 2)
+            {
+                const char* text2 = "For Now...";
+                int fontSize2 = 60;
+                int text2Width = MeasureText(text2, fontSize2);
+                DrawText(text2, (GAME_SCREEN_WIDTH - text2Width) / 2, 400, fontSize2, WHITE);
+
+                const char* text3 = "(Thank you for playing our demo)";
+                int fontSize3 = 40;
+                int text3Width = MeasureText(text3, fontSize3);
+                DrawText(text3, (GAME_SCREEN_WIDTH - text3Width) / 2, 500, fontSize3, GRAY);
+            }
+
+            break;
+        }
+
         // Draw the pause button in the corner
         DrawRectangleRec(ScreenRects[R_EXP_PAUSE_BTN], COL_BUTTON);
         DrawRectangleLinesEx(ScreenRects[R_EXP_PAUSE_BTN], 3.0f, BLACK);
@@ -1924,35 +1950,6 @@ void GameManager::render() {
 
         // Draw the room as combat background
         DrawTexture(ScreenTextures[0], gameScenes[currentSceneIndex].combatBgX, gameScenes[currentSceneIndex].combatBgY, WHITE);
-
-        if (currentSceneIndex == TEX_OUTSIDE)
-        {
-            if (endScreenPhase >= 1)
-            {
-                // "You Survived"
-                const char* text1 = "You Survived";
-                int fontSize1 = 80;
-                int text1Width = MeasureText(text1, fontSize1);
-                DrawText(text1, (GAME_SCREEN_WIDTH - text1Width) / 2, 300, fontSize1, WHITE);
-            }
-
-            if (endScreenPhase >= 2)
-            {
-                // "For Now..." - 
-                const char* text2 = "For Now...";
-                int fontSize2 = 60;
-                int text2Width = MeasureText(text2, fontSize2);
-                DrawText(text2, (GAME_SCREEN_WIDTH - text2Width) / 2, 400, fontSize2, WHITE);
-
-                // "(Thank you for playing our demo)" - centered horizontally, below second text
-                const char* text3 = "(Thank you for playing our demo)";
-                int fontSize3 = 40;
-                int text3Width = MeasureText(text3, fontSize3);
-                DrawText(text3, (GAME_SCREEN_WIDTH - text3Width) / 2, 500, fontSize3, GRAY);
-            }
-
-            break; // skip drawing arrows, minimap, etc on end screen
-        }
 
         // Draw the player sprite (flashes red when taking damage)
         DrawTexturePro(ScreenTextures[1],
@@ -2266,6 +2263,26 @@ void GameManager::update(float dt) {
     case GameState::EXPLORATION: {
         if (gameScenes.empty()) break;
 
+        if (currentSceneIndex == TEX_OUTSIDE)
+        {
+            if (endScreenPhase == 0)
+            {
+                endScreenPhase = 1;
+                endScreenTimer = 3.0f;
+            }
+
+            if (endScreenTimer > 0.0f) endScreenTimer -= dt;
+
+            if (endScreenPhase == 1 && endScreenTimer <= 0.0f)
+            {
+                UnloadTexture(ScreenTextures[TEX_OUTSIDE]);
+                ScreenTextures[TEX_OUTSIDE] = LoadTexture("../assets/images/environments/Building1/finalScene[2].png");
+                endScreenPhase = 2;
+            }
+
+            break;
+        }
+
         // scene transition timer prevents instant clicks after changing rooms
         if (sceneTransitionTimer > 0.0f) {
             sceneTransitionTimer -= dt;
@@ -2344,29 +2361,6 @@ void GameManager::update(float dt) {
                     }
                     break; // only process one arrow click
                 }
-            }
-
-            if (currentSceneIndex == TEX_OUTSIDE)
-            {
-
-                if (endScreenPhase == 0)
-                {
-                    endScreenPhase = 1;
-                    endScreenTimer = 3.0f; // 3 second timer for first phase
-                }
-    
-            // count down timer
-            if (endScreenTimer > 0.0f) endScreenTimer -= dt;
-    
-            // transition to phase 2 when timer runs out
-            if (endScreenPhase == 1 && endScreenTimer <= 0.0f)
-            {
-                // unload current outside texture and load new one
-                UnloadTexture(ScreenTextures[TEX_OUTSIDE]);
-                ScreenTextures[TEX_OUTSIDE] = LoadTexture("../assets/images/environments/Building1/finalScene[2].png"); // change to your second image path
-                endScreenPhase = 2;
-            }
-
             }
         }
         break;
@@ -2473,4 +2467,3 @@ void GameManager::update(float dt) {
         break;
     }
 }
-
