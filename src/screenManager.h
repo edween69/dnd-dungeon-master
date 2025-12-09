@@ -101,15 +101,15 @@
 */
 
 //======================= STANDARD LIBRARY INCLUDES =======================
-#include <cmath> // for std::exp, fmodf
-#include <map> // for battleWon map
-#include <algorithm> // for std::clamp, std::max, std::min
+#include <cmath>       // for std::exp, fmodf
+#include <map>         // for battleWon map
+#include <algorithm>   // for std::clamp, std::max, std::min
 
 //======================= PROJECT INCLUDES =======================
-#include "raylib.h" // used for screen rendering 
-#include "characters.h" // for Character class and related definitions
-#include "combat.h" // to manage combat state and perform actions
-#include "raygui.h" // for GUI elements
+#include "raylib.h"    // used for screen rendering 
+#include "characters.h"// for Character class and related definitions
+#include "combat.h"    // to manage combat state and perform actions
+#include "raygui.h"    // for GUI elements
 
 
 //=============== HEADER GUARD ===============
@@ -118,7 +118,7 @@
 
 //======================== SCREEN AND GUI CONSTANTS & MACROS ========================
 
-// Tricking the game into thinking its running at 1920x1080  no matter what the actual window size is, for scaling purposes
+// Tricking the game into thinking its running at 1920x1080 no matter what the actual window size is, for scaling purposes
 #define GAME_SCREEN_WIDTH 1920
 #define GAME_SCREEN_HEIGHT 1080
 
@@ -129,12 +129,12 @@
 //Macro to the starting X position of text if it were to be centered in a rectangle
 //Used macro instead of function so stuff is done in line and no extra overhead is used during runtime
 #define CENTER_TEXT_X(rect, txt, size) \
-    (int)((rect).x + (rect).width / 2.0f - MeasureText((txt), (size)) / 2.0f)
+        (int)((rect).x + (rect).width / 2.0f - MeasureText((txt), (size)) / 2.0f)
 
 //Macro to the starting Y position of text if it were to be centered in a rectangle
 //Used macro instead of function so stuff is done in line and no extra overhead is used during runtime
 #define CENTER_TEXT_Y(rect, size) \
-    (int)((rect).y + (rect).height / 2.0f - (size) / 2.0f)
+        (int)((rect).y + (rect).height / 2.0f - (size) / 2.0f)
 
 
 // Macro to get the centered X position of an element w respect to the screen width
@@ -146,11 +146,11 @@
 
 
 //====================== SOUND INDICES ======================
-#define SND_SELECT 0 //Select sound when navigating character select menu
-#define SND_HIT 1 //Sound when player or enemy hits during combat
-#define SND_HEAL 2 //Sound when player heals during combat
-#define SND_ZOM_DEATH 3 //Sound when enemy/player dies during combat
-#define SND_ZOM_GROAN 4 //Sound when player walks in on a zombie encounter
+#define SND_SELECT 0       //Select sound when navigating character select menu
+#define SND_HIT 1          //Sound when player or enemy hits during combat
+#define SND_HEAL 2         //Sound when player heals during combat
+#define SND_ZOM_DEATH 3    //Sound when enemy/player dies during combat
+#define SND_ZOM_GROAN 4    //Sound when player walks in on a zombie encounter
 #define TOTAL_SOUNDS 5
 
 //================= NERD FONT ICON CODEPOINTS ===================
@@ -171,7 +171,7 @@
 #define MAIN_BUTTON_WIDTH 600.0f 
 #define MAIN_BUTTON_HEIGHT 70.0f
 #define MAIN_BUTTON_OFFSET_Y 100.0f // Offset form vertical center
-#define MAIN_BUTTON_SPACING 100.0f // Spacing between buttons
+#define MAIN_BUTTON_SPACING 100.0f  // Spacing between buttons
 
 
 //========================= CHARACTER SELECTION SCREEN CONSTANTS & MACROS =========================
@@ -195,18 +195,18 @@
 #define PLAY_BTN_OFFSET_Y 36.0f // Offset from bottom of screen
 
 // Character select screen rects (indices)
-#define R_PLAY_BTN 0 // Play button rectangle index
-#define R_INFO_BOX 1 // Info box rectangle index
+#define R_PLAY_BTN 0             // Play button rectangle index
+#define R_INFO_BOX 1             // Info box rectangle index
 #define R_SELECT_INNER_OUTLINE 2 // Inner outline rectangle index (when a character is selected)
 #define R_SELECT_OUTER_OUTLINE 3 // Outer outline rectangle index (when a character is selected)
-#define R_HOVER_INFO_POS 4 // Hover info position rectangle index (when hovering over a character card)
+#define R_HOVER_INFO_POS 4       // Hover info position rectangle index (when hovering over a character card)
 
 //======================== INTRO CRAWL SCREEN CONSTANTS & MACROS =========================
-#define INTRO_CRAWL_SPEED 30.0f // Speed of the intro crawl
+#define INTRO_CRAWL_SPEED 30.0f        // Speed of the intro crawl
 #define INTRO_CRAWL_START_Y (float)GAME_SCREEN_HEIGHT // Starting Y position for the intro crawl (bottom of the screen)
-#define INTRO_CRAWL_END_Y -1400 // Ending Y position for the intro crawl (off the top of the screen)
-#define INTRO_CRAWL_FONT_SIZE 28 // Font size for the intro crawl text
-#define INTRO_CRAWL_LINE_HEIGHT 34 // spacing between lines in the intro crawl
+#define INTRO_CRAWL_END_Y -1400        // Ending Y position for the intro crawl (off the top of the screen)
+#define INTRO_CRAWL_FONT_SIZE 28       // Font size for the intro crawl text
+#define INTRO_CRAWL_LINE_HEIGHT 34     // spacing between lines in the intro crawl
 
 //========================= GAMEPLAY SCREEN CONSTANTS & MACROS =========================
 
@@ -250,15 +250,15 @@
 #define MINIMAP_SIZE 300.0f
 #define MINIMAP_MARGIN 20.0f
 #define MINIMAP_BORDER 4.0f
-#define MINIMAP_X ((float)GAME_SCREEN_WIDTH - MINIMAP_SIZE - MINIMAP_MARGIN) // X position of the minimap
-#define MINIMAP_Y ((float)GAME_SCREEN_HEIGHT - MINIMAP_SIZE - MINIMAP_MARGIN) // Y position of the minimap
+#define MINIMAP_X ((float)GAME_SCREEN_WIDTH - MINIMAP_SIZE - MINIMAP_MARGIN)   // X position of the minimap
+#define MINIMAP_Y ((float)GAME_SCREEN_HEIGHT - MINIMAP_SIZE - MINIMAP_MARGIN)  // Y position of the minimap
 
-//Arrow rotation macro function (used this instead of an actual function cause macros are inline and faster and save runtime overhead)
+//Arrow rotation macro function (used this instead of an actual function because macros are inline and avoid call overhead)
 #define ARROW_ROTATION(dir) \
-    ((dir) == DOWN ? 180.0f : (dir) == LEFT ? -90.0f : (dir) == RIGHT ? 90.0f : 0.0f)
+        ((dir) == DOWN ? 180.0f : (dir) == LEFT ? -90.0f : (dir) == RIGHT ? 90.0f : 0.0f)
 
 
-//Exploration Pause rectangels (indices; used in pause menu, used same indices as combat pause menu to reuse code)
+//Exploration Pause rectangles (indices; used in pause menu, reused same indices as combat pause menu)
 #define R_EXP_PAUSE_BTN 19
 #define R_EXP_PAUSE_BG_OVERLAY 20
 #define R_EXP_PAUSE_PANEL 21
@@ -269,46 +269,46 @@
 // ================== Combat constants and macros ==================
 
 // Combat screen rectangles (indices)
-#define R_PLAYER_NAME 0 // Player name box rectangle index
-#define R_ENEMY_NAME 1 // Enemy name box rectangle index
-#define R_PLAYER_PANEL 2 // Player panel(Big) rectangle index
-#define R_ENEMY_PANEL 3 // Enemy panel(Big) rectangle index
-#define R_PLAYER_HP_BG 4 // Player HP background rectangle index
-#define R_PLAYER_HP_FG 5 // Player HP foreground rectangle index
-#define R_ENEMY_HP_BG 6 // Enemy HP background rectangle index
-#define R_ENEMY_HP_FG 7 // Enemy HP foreground rectangle index
-#define R_PLAYER_STATUS 8 // Player status rectangle index
-#define R_ENEMY_STATUS 9 // Enemy status rectangle index
-#define R_BOTTOM_PANEL 10 // Bottom panel rectangle index
-#define R_BTN_ATTACK 11 // Attack button rectangle index
-#define R_BTN_DEFEND 12 // Defend button rectangle index
-#define R_BTN_USE_ITEM 13 // Use item button rectangle index
-#define R_LOG_BOX 14 // Log box rectangle index
-#define R_ATTACK_MENU 15 // Attack menu rectangle index
-#define R_MELEE_BTN 16 // Melee button rectangle index
-#define R_RANGED_BTN 17 // Ranged button rectangle index
-#define R_ITEM_MENU 18 // Item menu rectangle index
-#define R_PAUSE_BTN 19 // Pause button rectangle index (Same as exploration pause button index)
-#define R_PAUSE_BG_OVERLAY 20 // Pause background overlay rectangle index (Same as exploration pause bg overlay index)
-#define R_PAUSE_PANEL 21 // Pause panel rectangle index (Same as exploration pause panel index)
-#define R_BTN_RESUME 22 // Resume button rectangle index (Same as exploration resume button rectangle index)
-#define R_BTN_SAVE_EXIT 23 // Save and exit button rectangle index (Same as exploration save and exit button rectangle index)
-#define R_BTN_QUIT_NO_SAVE 24 // Quit without saving button rectangle index (Same as exploration quit without saving button rectangle index)
+#define R_PLAYER_NAME 0          // Player name box rectangle index
+#define R_ENEMY_NAME 1           // Enemy name box rectangle index
+#define R_PLAYER_PANEL 2         // Player panel(Big) rectangle index
+#define R_ENEMY_PANEL 3          // Enemy panel(Big) rectangle index
+#define R_PLAYER_HP_BG 4         // Player HP background rectangle index
+#define R_PLAYER_HP_FG 5         // Player HP foreground rectangle index
+#define R_ENEMY_HP_BG 6          // Enemy HP background rectangle index
+#define R_ENEMY_HP_FG 7          // Enemy HP foreground rectangle index
+#define R_PLAYER_STATUS 8        // Player status rectangle index
+#define R_ENEMY_STATUS 9         // Enemy status rectangle index
+#define R_BOTTOM_PANEL 10        // Bottom panel rectangle index
+#define R_BTN_ATTACK 11          // Attack button rectangle index
+#define R_BTN_DEFEND 12          // Defend button rectangle index
+#define R_BTN_USE_ITEM 13        // Use item button rectangle index
+#define R_LOG_BOX 14             // Log box rectangle index
+#define R_ATTACK_MENU 15         // Attack menu rectangle index
+#define R_MELEE_BTN 16           // Melee button rectangle index
+#define R_RANGED_BTN 17          // Ranged button rectangle index
+#define R_ITEM_MENU 18           // Item menu rectangle index
+#define R_PAUSE_BTN 19           // Pause button rectangle index (Same as exploration pause button index)
+#define R_PAUSE_BG_OVERLAY 20    // Pause background overlay rectangle index (Same as exploration pause bg overlay index)
+#define R_PAUSE_PANEL 21         // Pause panel rectangle index (Same as exploration pause panel index)
+#define R_BTN_RESUME 22          // Resume button rectangle index (Same as exploration resume button rectangle index)
+#define R_BTN_SAVE_EXIT 23       // Save and exit button rectangle index (Same as exploration save and exit button rectangle index)
+#define R_BTN_QUIT_NO_SAVE 24    // Quit without saving button rectangle index (Same as exploration quit without saving button rectangle index)
 
 //Health Bar Macro Function(once again used macro for speed)
 #define HEALTH_BAR_WIDTH(rectBg, cur, max) \
-    ((float)(rectBg).width * ((float)(cur) / (float)(max))) //Health bar width scaled as (current health / max health) * background width
+        ((float)(rectBg).width * ((float)(cur) / (float)(max))) // Health bar width scaled as (current health / max health) * background width
 
 
 // Colors for UI in Combat Screen
-#define COL_NAME_BAR Color{8, 8, 12, 255} 
-#define COL_BOTTOM_PANEL Color{112, 120, 128, 255}
-#define COL_STATUS_PANEL Color{55, 61, 57, 220}
-#define COL_STATUS_INNER Color{91, 94, 92, 255}
-#define COL_LOG_BOX Color{167, 171, 170, 255}
-#define COL_BUTTON Color{68, 74, 72, 255}
-#define COL_HP_BG Color{60, 15, 20, 255}
-#define COL_HP_FG Color{190, 50, 60, 255}
+#define COL_NAME_BAR      Color{8, 8, 12, 255} 
+#define COL_BOTTOM_PANEL  Color{112, 120, 128, 255}
+#define COL_STATUS_PANEL  Color{55, 61, 57, 220}
+#define COL_STATUS_INNER  Color{91, 94, 92, 255}
+#define COL_LOG_BOX       Color{167, 171, 170, 255}
+#define COL_BUTTON        Color{68, 74, 72, 255}
+#define COL_HP_BG         Color{60, 15, 20, 255}
+#define COL_HP_FG         Color{190, 50, 60, 255}
 
 // =========================== Pause Menu Constants and Macros ===========================
 
@@ -331,12 +331,12 @@
 //@author: Edwin Baiden
 //@brief: Enum representing different screen states (main menu, character select, gameplay, save & quit).
 //@version: 1.0
-enum class ScreenState {MAIN_MENU, CHARACTER_SELECT,INTRO_CRAWL, GAMEPLAY};
+enum class ScreenState { MAIN_MENU, CHARACTER_SELECT, INTRO_CRAWL, GAMEPLAY };
 
 //author: Edwin Baiden
 //@brief: Enum representing different game states (exploration, combat, dialogue, pause menu).
 //@version: 1.0
-enum class GameState {EXPLORATION, COMBAT, PAUSE_MENU};
+enum class GameState { EXPLORATION, COMBAT, PAUSE_MENU };
 
 //@author: Edwin Baiden
 //@brief: Class to manage screen states and transitions
@@ -345,114 +345,121 @@ enum class GameState {EXPLORATION, COMBAT, PAUSE_MENU};
 //======================= SCREEN MANAGER CLASS DEFINITION =======================
 class ScreenManager 
 {
-    private:
-        ScreenState currentScreen; // Current active screen state
-        
-        // VIRTUAL RESOLUTION VARIABLES
-        RenderTexture2D target; // The texture we render the game onto
-        float scale;            // The scale factor to fit the window
-        Vector2 offset;         // The offset to center the game in the window
+private:
+    ScreenState currentScreen; // Current active screen state
+    
+    // VIRTUAL RESOLUTION VARIABLES
+    RenderTexture2D target; // The texture we render the game onto
+    float scale; // The scale factor to fit the window
+    Vector2 offset;// The offset to center the game in the window
 
-        void enterScreen(ScreenState screen); // Handle entering a new screen loading resources
-        void exitScreen(ScreenState screen); // Handle exiting a screen unloading resources
+    void enterScreen(ScreenState screen); // Handle entering a new screen loading resources
+    void exitScreen(ScreenState screen);  // Handle exiting a screen unloading resources
 
-        
+public:
+    explicit ScreenManager(ScreenState initial = ScreenState::MAIN_MENU); // Constructor with default initial screen
+    ~ScreenManager(); // Destructor
+    void init(); // Initialize the screen manager
+    void changeScreen(ScreenState newScreen); // Request a screen change
+    /*
+        - [[nodiscard]]: Makes sure that the returned is actually used by the caller(helps catch bugs where return value is ignored)
+        - const: Ensures that the function is a read-only operation
+    */
+    [[nodiscard]] ScreenState getCurrentScreen() const; // Get the current screen state used 
+    void update(float deltaTime); // Update the current screen with delta time
+    void render(); // Render the current screen
 
-
-    public:
-        explicit ScreenManager(ScreenState initial = ScreenState::MAIN_MENU);// Constructor with default initial screen
-        ~ScreenManager(); // Destructor
-        void init(); // Initialize the screen manager
-        void changeScreen(ScreenState newScreen); // Request a screen change
-        /*
-            - [[nodiscard]]: Makes sure that the returned is actually used by the caller(helps catch bugs where return value is ignored)
-            - const: Ensures that the function is a read-only operation
-        */
-        [[nodiscard]] ScreenState getCurrentScreen() const; // Get the current screen state used 
-        void update(float deltaTime); // Update the current screen with delta time
-        void render(); // Render the current screen
-
-        // Helper to convert real mouse coordinates to virtual game coordinates
-        Vector2 GetVirtualMousePosition();
+    // Helper to convert real mouse coordinates to virtual game coordinates
+    Vector2 GetVirtualMousePosition();
 };
 
 //======================= GAME MANAGER CLASS DEFINITION =======================
 //@author: Edwin Baiden
-//@brief: Class to manage game states and transitions.Helper for screenManager once gameplay is started. Literally the same as ScreenManager but for game states
+//@brief: Class to manage game states and transitions. Helper for ScreenManager once gameplay is started. Literally the same as ScreenManager but for game states
 //@version: 1.0
 class GameManager {
-    private:
-        GameState currentGameState; // Current active game state
-        GameState nextGameState = GameState::EXPLORATION; // Next game state to transition to
-        GameState prevGameState = GameState::EXPLORATION; // Previous game state before transition
-        CombatHandler* combatHandler=nullptr; // Combat handler to manage combat state
-        float sceneTransitionTimer = 0.0f; // Timer for scene transitions
-         
+private:
+    GameState currentGameState; // Current active game state
+    GameState nextGameState = GameState::EXPLORATION; // Next game state to transition to
+    GameState prevGameState = GameState::EXPLORATION; // Previous game state before transition
+    CombatHandler* combatHandler = nullptr; // Combat handler to manage combat state
+    float sceneTransitionTimer = 0.0f; // Timer for scene transitions
 
-        
-    
-    public:
-        explicit GameManager(GameState initial = GameState::EXPLORATION); //TODO: REMEMBER TO CHANGE TO EXPLORATION LATER
-        ~GameManager(); // Destructor
-        void changeGameState(GameState newState); // Request a game state change
-        [[nodiscard]] GameState getCurrentGameState() const; // Get the current game state
-        void update(float deltaTime); // Update the current game state with delta time
-        void render(); // Render the current game state
-        void enterGameState(GameState state); // Handle entering a new game state loading resources
-        void exitGameState(GameState state); // Handle exiting a game state unloading resources
-        bool backToMainMenu = false; // Flag to indicate returning to main menu
+public:
+    explicit GameManager(GameState initial = GameState::EXPLORATION);
+    ~GameManager(); // Destructor
+    void changeGameState(GameState newState); // Request a game state change
+    [[nodiscard]] GameState getCurrentGameState() const; // Get the current game state (used [[nodiscard]] to ensure return value is used by caller; used const to make it read-only)
+    void update(float deltaTime); // Update the current game state with delta time
+    void render(); // Render the current game state
+    void enterGameState(GameState state); // Handle entering a new game state loading resources
+    void exitGameState(GameState state); // Handle exiting a game state unloading resources
+    bool backToMainMenu = false; // Flag to indicate returning to main menu
 };
 
+//@author: Edwin Baiden
+//@brief: Simple enum for direction. mostly used for arrows in exploration
+//@version: 1.0
 enum ArrowDirection { NONE = -1, UP, DOWN, LEFT, RIGHT };
 
-// Items on the floor (Keys, Potions)
+// Items on in the area (Keys, Potions)
+//@author: Edwin Baiden
+//@brief: Struct defining an item that sits on the floor in exploration mode. basicly stuff u can pick up
+//@version: 1.0
 struct SceneItem {
-    std::string itemName;   // Name to match inventory string (e.g. "Key 1")
-    std::string hoverText;  // Text to display on mouseover
-    Rectangle clickArea;    // Click zone on screen
-    int textureIndex;       // Index in Global ScreenTextures
-    bool requiresVictory;   // True if item only appears after room battle is won
+    std::string itemName; // Name to match inventory string (e.g. "Key 1")
+    std::string hoverText; // Text to display on mouseover (tells player what it is)
+    Rectangle clickArea; // Click zone on screen (hitbox)
+    int textureIndex; // Index in Global ScreenTextures array (dont mess this up)
+    bool requiresVictory; // True if item only appears after room battle is won (loot drop)
 };
 
 // Navigation points (Doors, Hallway Arrows)
+//@author: Edwin Baiden
+//@brief: Struct for navigation arrows. Tells the game where to go next.
+//@version: 1.0
 struct SceneArrow {
-    Rectangle clickArea;    
-    ArrowDirection dir;     
-    int targetSceneIndex;   
-    bool isEnabled;         
-    std::string hoverText;  
-    std::string requiredKeyName; // If not empty, checks player inventory for this string
+    Rectangle clickArea; // clickable area on screen
+    ArrowDirection dir; // which way is it pointing
+    int targetSceneIndex; // where does this arrow take u
+    bool isEnabled; // is the arrow clickable?
+    std::string hoverText; // text when mouse hovers
+    std::string requiredKeyName;// If not empty, checks player inventory for this string (locked doors)
 };
 
 // The Room Container
+//@author: Edwin Baiden
+//@brief: Class that holds all data for a specific room or "scene" in the game. basicly a container for all the stuff in a room
+//@version: 1.0
 class GameScene 
 {
-    public:
-        std::string sceneName;
-        int textureIndex;       // Background texture index
-        std::string environmentTexture = ""; // Environment texture file path
+public:
+    std::string sceneName;               // Name displayed on minimap
+    int textureIndex;                    // Background texture index for the room
+    std::string environmentTexture = ""; // Environment texture file path (for combat background loading)
+    
+    Vector2 minimapCoords;  // 0.0-1.0 Position on map image (normalized coords)
+    float minimapRotation;  // Rotation of the turtle icon on minimap
+    
+    std::vector<SceneArrow> sceneArrows; // List of nav arrows
+    std::vector<SceneItem> sceneItems;   // List of items in room
         
-        Vector2 minimapCoords;  // 0.0-1.0 Position on map image
-        float minimapRotation;  // Rotation of the turtle icon
+    // Combat Trigger stuff
+    bool hasEncounter = false; // Does this room have a fight?
+    int encounterID = -1;      // Which enemy is it?
         
-        std::vector<SceneArrow> sceneArrows;
-        std::vector<SceneItem> sceneItems; 
-        
-        // Combat Trigger
-        bool hasEncounter = false; 
-        int encounterID = -1;   
-        
-        float combatBgX=0.0f;
-        float combatBgY=0.0f;
+    // Coordinates for drawing combat elements (took a while to calibrate these)
+    float combatBgX = 0.0f;
+    float combatBgY = 0.0f;
 
-        float playerCharX=0.0f;
-        float playerCharY=0.0f;
-        
-        float enemyCharX=0.0f;
-        float enemyCharY=0.0f;
+    float playerCharX = 0.0f;
+    float playerCharY = 0.0f;
+    
+    float enemyCharX = 0.0f;
+    float enemyCharY = 0.0f;
 
-        Vector2 playerScale = {0.0f, 0.0f};
-        Vector2 enemyScale = {0.0f, 0.0f};
+    Vector2 playerScale = {0.0f, 0.0f}; // size of player in this room
+    Vector2 enemyScale = {0.0f, 0.0f};  // size of enemy in this room
 };
 
 void InitGameScenes(Character* playerCharacter); // Initialize all game scenes
@@ -517,7 +524,7 @@ namespace animation {
     inline Color slopeInt(const Color& start, const Color& end, float blendFactor) 
     {
         blendFactor = saturate(blendFactor); // Clamp blend factor between 0 and 1
-        //Casting into an unsinged char since it goes from 0 to 255
+        // Casting into an unsigned char since it goes from 0 to 255
         return {
             static_cast<unsigned char>(start.r + (end.r - start.r) * blendFactor), // Interpolating each color channel separately
             static_cast<unsigned char>(start.g + (end.g - start.g) * blendFactor),
@@ -534,7 +541,7 @@ namespace animation {
     inline float easeInQuad(float blendFactor)
     {
         blendFactor = saturate(blendFactor); // Clamp blend factor between 0 and 1
-        return ((blendFactor * blendFactor)- (2*blendFactor));// Quadratic ease-in formula (1-(1-t)^2)
+        return ((blendFactor * blendFactor) - (2 * blendFactor)); // Quadratic ease-in formula (1-(1-t)^2)
     }
 
     //@brief: Cubic ease-in-out function for smooth acceleration and deceleration of a property over time
@@ -556,9 +563,16 @@ namespace animation {
         }
     }
 
+
+    // @brief: Sine wave pulse function for oscillating animations
+    //@param: amplitudeFactor - Amplitude of the sine wave
+    //@param: speedFactor - Speed of the sine wave
+    //@param: blendFactor - The input blend factor
+    //@return: The sine wave value
+    //@version: 1.0
     inline float sinPulse(float amplitudeFactor, float speedFactor, float blendFactor)
     {
-        return amplitudeFactor * sinf(speedFactor * saturate(blendFactor));
+        return amplitudeFactor * sinf(speedFactor * saturate(blendFactor)); // Sine wave formula for pulsing effect (A * sin(Bt))
     }
 }
 
