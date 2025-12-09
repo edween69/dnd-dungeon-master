@@ -233,18 +233,19 @@
 #define TEX_IN_OFFICE 10
 #define TEX_BATH_MEN 11
 #define TEX_BATH_WOM 12
+#define TEX_OUTSIDE 13
 
 //Item texture indices in the exploration screen
-#define TEX_KEY_1 13
-#define TEX_KEY_2 14
-#define TEX_HEALTH_POTION 15
-#define TEX_BAT 16
+#define TEX_KEY_1 14
+#define TEX_KEY_2 15
+#define TEX_HEALTH_POTION 16
+#define TEX_BAT 17
 
 //Other texture indices in the exploration screen
-#define TEX_ARROW 17
-#define TEX_MINIMAP 18
-#define TEX_TURTLE 19
-#define TOTAL_EXP_TEX 20
+#define TEX_ARROW 18
+#define TEX_MINIMAP 19
+#define TEX_TURTLE 20
+#define TOTAL_EXP_TEX 21
 
 //Minimap specific macros
 #define MINIMAP_SIZE 300.0f

@@ -166,6 +166,8 @@ static int numScreenTextures = 0; // how many textures we got loaded rn
 static int numScreenRects = 0; // how many rectangles we got
 static float introCrawlYPos = 0.0f; // where the scrolly text is at
 static int byteSize=0; // needed for the icon rendering stuff
+static Music backgroundMusic = {0};
+static bool musicLoaded = false;
 
 //Game scenes and related data (Please review above comment block)
 // these are for keeping track of where the player is and what theyve done
@@ -427,6 +429,7 @@ void InitGameScenes(Character* playerCharacter)
         ScreenTextures[TEX_IN_OFFICE] = LoadTexture("../assets/images/environments/Building1/Class-Office/Office.png");
         ScreenTextures[TEX_BATH_MEN] = LoadTexture("../assets/images/environments/Building1/Bathrooms/BathroomM.png"); // mens room
         ScreenTextures[TEX_BATH_WOM] = LoadTexture("../assets/images/environments/Building1/Bathrooms/BathroomG.png"); // womens room
+        ScreenTextures[TEX_OUTSIDE] = LoadTexture("../assets/images/environments/Building1/Hallway/finalScene[1].png"); // outside area
         
         // Load item textures that can be picked up in the game
         // keys, potions, weapons, the usual RPG stuff
@@ -442,7 +445,7 @@ void InitGameScenes(Character* playerCharacter)
 
         // Initialize game scenes array to hold all the different locations
         // resize it to fit all our scenes
-        gameScenes.resize(TEX_BATH_WOM + 1);
+        gameScenes.resize(TEX_OUTSIDE + 1);
 
         // ==================== ENTRANCE SCENE ====================
         // This is where the player starts when they begin the game
@@ -458,7 +461,7 @@ void InitGameScenes(Character* playerCharacter)
             {{550, 500, 150, 150}, LEFT, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""}, // go left
             {{1220, 500, 150, 150}, RIGHT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""}, // go right
             {{885, 650, 150, 150}, UP, TEX_FRONT_OFFICE, true, "Go to Office Front", ""}, // go forward
-            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", "Key 2"} // exit but needs key 2 first
+            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""} // exit but needs key 2 first
         };
 
         // ==================== EXIT SCENE ====================
@@ -470,9 +473,10 @@ void InitGameScenes(Character* playerCharacter)
         s->environmentTexture = "../assets/images/environments/Building1/Hallway/Hallway[2-4].png"; // used as combat background when fighting here
         s->minimapCoords = {0.5f, 0.825f};
         s->minimapRotation = 180.0f; // facing the other way
-        s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_ENTRANCE, true, "Enter Building", ""}}; // can go back inside
-        s->hasEncounter = true; // theres a fight here
-        s->encounterID = 2; // its encounter number 2 (the frat bro)
+        s->sceneArrows = {{{885, 875, 150, 150}, DOWN, TEX_ENTRANCE, true, "Enter Building", ""},
+                          {{885, 650, 150, 150}, UP, TEX_OUTSIDE, true, "Exit Building", ""}}; // can go back inside
+        s->hasEncounter = false; // theres a fight here
+        s->encounterID = 0; // its encounter number 2 (the frat bro)
         // Combat positioning values - where to draw stuff during the fight
         // these took a while to get right, lots of trial and error
         s->combatBgX = (SCREEN_CENTER_X - (ScreenTextures[TEX_EXIT].width) / 2.0f);
@@ -652,6 +656,15 @@ void InitGameScenes(Character* playerCharacter)
         s->minimapCoords = {0.8f, 0.6f};
         s->minimapRotation = 180.0f;
         s->sceneArrows = {{{885, 855, 150, 150}, DOWN, TEX_EAST_HALLWAY_TOWARD, true, "Exit Bathroom", ""}};
+
+        // ==================== OUTSIDE SCENE ====================
+        // outside area - final scene after you exit the building
+        s = &gameScenes[TEX_OUTSIDE];
+        s->sceneName = "Outside";
+        s->textureIndex = TEX_OUTSIDE;
+        s->minimapCoords = {0.5f, 0.9f};
+        s->minimapRotation = 180.0f;
+        
         
     }
     // if we had time we would add more character types here with different maps
@@ -675,6 +688,7 @@ void InitGameSounds()
     gameSounds[SND_HEAL] = LoadSound("../assets/sfx/heal.wav"); // healing sound
     gameSounds[SND_ZOM_DEATH] = LoadSound("../assets/sfx/explosion.wav"); // zombie death sound
     gameSounds[SND_ZOM_GROAN] = LoadSound("../assets/sfx/zombieGroan.wav"); // creepy zombie noise
+    
 }
 
 //======================= GUI STYLE FUNCTIONS =======================
@@ -963,6 +977,7 @@ Vector2 ScreenManager::GetVirtualMousePosition() {
  * @author Edwin Baiden
  */
 void ScreenManager::update(float dt) {
+    UpdateMusicStream(backgroundMusic); // keep the music playing smoothly
     // Calculate scale and offset for resolution-independent rendering
     // this math figures out how to fit the game in the window
     scale = std::min((float)GetScreenWidth() / GAME_SCREEN_WIDTH, (float)GetScreenHeight() / GAME_SCREEN_HEIGHT);
@@ -1308,6 +1323,7 @@ void ScreenManager::enterScreen(ScreenState s) {
     switch (s) {
     case ScreenState::MAIN_MENU: {
         startMenuStyles(); // set up the menu button styles
+
         
         // Load menu textures (just 2: background and title)
         numScreenTextures = 2;
@@ -1325,6 +1341,18 @@ void ScreenManager::enterScreen(ScreenState s) {
         // Load character stats from CSV and try to load any saved game
         allStatLines = storeAllStatLines(openStartingStatsCSV());
         loadedFromSave = LoadProgress(entities, allStatLines, currentSceneIndex, activeEncounterID, savedPlayerSceneIndex, battleWon, collectedItems);
+
+        if (!musicLoaded) 
+        {
+            backgroundMusic = LoadMusicStream("../assets/sfx/gamePlayMusic.mp3");
+            backgroundMusic.looping = true;
+            musicLoaded = true; // Set flag to true so we don't load it again
+        }
+
+        if (!IsMusicStreamPlaying(backgroundMusic)) 
+        {
+            PlayMusicStream(backgroundMusic);
+        }
         break;
     }
 
@@ -1524,6 +1552,9 @@ void GameManager::enterGameState(GameState state) {
         // Clean up first
         CleanupScreenTextures();
         CleanupScreenRects();
+        UnloadMusicStream(backgroundMusic); // stop exploration music
+        musicLoaded = false; // Reset flag so we can load new music
+        
         
         // Make sure we have the stat lines loaded for creating enemies
         if (!allStatLines) {
@@ -1678,6 +1709,18 @@ void GameManager::enterGameState(GameState state) {
         combatHandler->logScrollOffset = 0.0f;
         AddNewLogEntry(combatHandler->log, "A wild " + entities[1]->getName() + " appears!");
         combatHandler->enemyActionDelay = 1.0f; // enemy waits a sec before attacking (so player can see whats happening)
+
+        // Load and start playing combat music
+        if (!musicLoaded) 
+        {
+            backgroundMusic = LoadMusicStream("../assets/sfx/battleMusicLoop.mp3");
+            backgroundMusic.looping = true;
+            musicLoaded = true; // Set flag to true so we don't load it again
+        }
+        if (!IsMusicStreamPlaying(backgroundMusic)) 
+        {
+            PlayMusicStream(backgroundMusic);
+        }
         break;
     }
 
@@ -1706,6 +1749,12 @@ void GameManager::exitGameState(GameState state) {
 
     case GameState::COMBAT:
         if (nextGameState != GameState::PAUSE_MENU) {
+
+            UnloadMusicStream(backgroundMusic); // stop combat music
+            backgroundMusic = Music{LoadMusicStream("../assets/sfx/gamePlayMusic.mp3")}; // load exploration music
+            PlayMusicStream(backgroundMusic);
+            backgroundMusic.looping = true;
+
             // Clean up combat handler
             if (combatHandler) {
                 delete combatHandler;

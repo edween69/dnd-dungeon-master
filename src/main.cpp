@@ -17,7 +17,11 @@ int main()
     #endif
 
     InitAudioDevice();// Initialize audio device
+
+    
+
     InitWindow(1280, 720, "The Last Lift"); // Windowed mode for development
+    
     
     
     SetTargetFPS(30); // Set desired frame rate
