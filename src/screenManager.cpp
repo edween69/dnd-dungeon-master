@@ -168,6 +168,8 @@ static float introCrawlYPos = 0.0f; // where the scrolly text is at
 static int byteSize=0; // needed for the icon rendering stuff
 static Music backgroundMusic = {0};
 static bool musicLoaded = false;
+static float endScreenTimer = 0.0f;
+static int endScreenPhase = 0;
 
 //Game scenes and related data (Please review above comment block)
 // these are for keeping track of where the player is and what theyve done
@@ -429,7 +431,7 @@ void InitGameScenes(Character* playerCharacter)
         ScreenTextures[TEX_IN_OFFICE] = LoadTexture("../assets/images/environments/Building1/Class-Office/Office.png");
         ScreenTextures[TEX_BATH_MEN] = LoadTexture("../assets/images/environments/Building1/Bathrooms/BathroomM.png"); // mens room
         ScreenTextures[TEX_BATH_WOM] = LoadTexture("../assets/images/environments/Building1/Bathrooms/BathroomG.png"); // womens room
-        ScreenTextures[TEX_OUTSIDE] = LoadTexture("../assets/images/environments/Building1/Hallway/finalScene[1].png"); // outside area
+        ScreenTextures[TEX_OUTSIDE] = LoadTexture("../assets/images/environments/Building1/finalScene[1].png"); // outside area
         
         // Load item textures that can be picked up in the game
         // keys, potions, weapons, the usual RPG stuff
@@ -461,7 +463,7 @@ void InitGameScenes(Character* playerCharacter)
             {{550, 500, 150, 150}, LEFT, TEX_WEST_HALLWAY_AWAY, true, "Go West", ""}, // go left
             {{1220, 500, 150, 150}, RIGHT, TEX_EAST_HALLWAY_TOWARD, true, "Go East", ""}, // go right
             {{885, 650, 150, 150}, UP, TEX_FRONT_OFFICE, true, "Go to Office Front", ""}, // go forward
-            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", ""} // exit but needs key 2 first
+            {{885, 875, 150, 150}, DOWN, TEX_EXIT, true, "Exit Building", "Key 2"} // exit but needs key 2 first
         };
 
         // ==================== EXIT SCENE ====================
@@ -475,8 +477,8 @@ void InitGameScenes(Character* playerCharacter)
         s->minimapRotation = 180.0f; // facing the other way
         s->sceneArrows = {{{885, 875, 150, 150}, DOWN, TEX_ENTRANCE, true, "Enter Building", ""},
                           {{885, 650, 150, 150}, UP, TEX_OUTSIDE, true, "Exit Building", ""}}; // can go back inside
-        s->hasEncounter = false; // theres a fight here
-        s->encounterID = 0; // its encounter number 2 (the frat bro)
+        s->hasEncounter = true; // theres a fight here
+        s->encounterID = 2; // its encounter number 2 (the frat bro)
         // Combat positioning values - where to draw stuff during the fight
         // these took a while to get right, lots of trial and error
         s->combatBgX = (SCREEN_CENTER_X - (ScreenTextures[TEX_EXIT].width) / 2.0f);
@@ -1117,6 +1119,7 @@ void ScreenManager::render() {
         // Draw the game title logo thing
         DrawTexture(ScreenTextures[1], CENTERED_X(ScreenTextures[1].width), -150, WHITE);
 
+        endScreenPhase = 0;
         // START/RESTART button - if we loaded from save it says RESTART instead
         if (GuiButton(ScreenRects[0], !loadedFromSave ? "START" : "RESTART"))
         {
@@ -1922,6 +1925,35 @@ void GameManager::render() {
         // Draw the room as combat background
         DrawTexture(ScreenTextures[0], gameScenes[currentSceneIndex].combatBgX, gameScenes[currentSceneIndex].combatBgY, WHITE);
 
+        if (currentSceneIndex == TEX_OUTSIDE)
+        {
+            if (endScreenPhase >= 1)
+            {
+                // "You Survived"
+                const char* text1 = "You Survived";
+                int fontSize1 = 80;
+                int text1Width = MeasureText(text1, fontSize1);
+                DrawText(text1, (GAME_SCREEN_WIDTH - text1Width) / 2, 300, fontSize1, WHITE);
+            }
+
+            if (endScreenPhase >= 2)
+            {
+                // "For Now..." - 
+                const char* text2 = "For Now...";
+                int fontSize2 = 60;
+                int text2Width = MeasureText(text2, fontSize2);
+                DrawText(text2, (GAME_SCREEN_WIDTH - text2Width) / 2, 400, fontSize2, WHITE);
+
+                // "(Thank you for playing our demo)" - centered horizontally, below second text
+                const char* text3 = "(Thank you for playing our demo)";
+                int fontSize3 = 40;
+                int text3Width = MeasureText(text3, fontSize3);
+                DrawText(text3, (GAME_SCREEN_WIDTH - text3Width) / 2, 500, fontSize3, GRAY);
+            }
+
+            break; // skip drawing arrows, minimap, etc on end screen
+        }
+
         // Draw the player sprite (flashes red when taking damage)
         DrawTexturePro(ScreenTextures[1],
                       {0.0f, 0.0f, (float)ScreenTextures[1].width, (float)ScreenTextures[1].height},
@@ -2312,6 +2344,29 @@ void GameManager::update(float dt) {
                     }
                     break; // only process one arrow click
                 }
+            }
+
+            if (currentSceneIndex == TEX_OUTSIDE)
+            {
+
+                if (endScreenPhase == 0)
+                {
+                    endScreenPhase = 1;
+                    endScreenTimer = 3.0f; // 3 second timer for first phase
+                }
+    
+            // count down timer
+            if (endScreenTimer > 0.0f) endScreenTimer -= dt;
+    
+            // transition to phase 2 when timer runs out
+            if (endScreenPhase == 1 && endScreenTimer <= 0.0f)
+            {
+                // unload current outside texture and load new one
+                UnloadTexture(ScreenTextures[TEX_OUTSIDE]);
+                ScreenTextures[TEX_OUTSIDE] = LoadTexture("../assets/images/environments/Building1/finalScene[2].png"); // change to your second image path
+                endScreenPhase = 2;
+            }
+
             }
         }
         break;
