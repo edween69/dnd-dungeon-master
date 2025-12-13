@@ -273,6 +273,19 @@ You can save your progress at any time outside of combat by pressing the pause b
 
 ---
 
+## Credits
+
+- **Programming:**  
+  Edwin Baiden, Sebastian Cardona, and Andrew Kurtz
+
+- **Art & Image Assets:**  
+  Many of the visual assets were created using image editing and generation tools, including **GIMP**, **OpenAI’s image generation tools**, and **Pixelorama**.
+
+- **Music:**  
+  Special thanks to **Aaron Kurtz** for composing and producing the music for the game.
+
+---
+
 ## Status / Notes
 
 - Only **Student** is playable and selectable.
