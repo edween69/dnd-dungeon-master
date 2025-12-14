@@ -130,7 +130,7 @@ bool LoadProgress (Character**& ent, std::istringstream* aStatLines, int& curren
     ent[0]->def.armor = j["player"]["defenseStats"]["armor"].get<std::int8_t>();
     ent[0]->cbt.meleeDamage = j["player"]["CombatStats"]["meleeDamage"].get<std::uint8_t>();
     ent[0]->cbt.rangeDamage = j["player"]["CombatStats"]["rangeDamage"].get<std::uint8_t>();
-    ent[0]->cbt.initiative = j["player"]["combatStats"]["initiative"].get<std::int8_t>();
+    ent[0]->cbt.initiative = j["player"]["CombatStats"]["initiative"].get<std::int8_t>();
     dynamic_cast<PlayerCharacter*>(ent[0])->wep.meleeWeapon = j["player"]["weapons"]["meleeWeapon"].get<std::uint8_t>();
     dynamic_cast<PlayerCharacter*>(ent[0])->wep.rangeWeapon = j["player"]["weapons"]["rangeWeapon"].get<std::uint8_t>();
     ent[0]->vit.health = j["player"]["vitalStats"]["health"].get<std::int8_t>();
@@ -161,8 +161,12 @@ bool LoadProgress (Character**& ent, std::istringstream* aStatLines, int& curren
     {
         CreateCharacter(ent, aStatLines, "Zombie_Standard", "Zombie");
     }
-    ent[1]->vit.health = j["combat"]["ZombieHP"].get<std::int8_t>();
-    ent[1]->vit.maxHealth = j["combat"]["ZombieMaxHP"].get<std::int8_t>();
+    
+    if (activeEncounterID != -1)
+    {
+        ent[1]->vit.health = j["combat"]["ZombieHP"].get<std::int8_t>();
+        ent[1]->vit.maxHealth = j["combat"]["ZombieMaxHP"].get<std::int8_t>();
+    }
 
     battleWon.clear();
     for (auto& [encounterIDStr, won] : j["combat"]["battleWon"].items()) 

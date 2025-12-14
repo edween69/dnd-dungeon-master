@@ -1940,7 +1940,7 @@ void GameManager::render() {
         }
 
         // actually draw the info text
-        DrawText(infoText.c_str(), 20,ScreenRects[R_LOG_BOX].y + 5, 30, WHITE);
+        DrawText(infoText.c_str(), 20, 25, 30, WHITE);
         break;
     }
 
